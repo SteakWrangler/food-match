@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import SwipeInterface from '@/components/SwipeInterface';
 import FilterPanel from '@/components/FilterPanel';
@@ -6,6 +5,7 @@ import CreateRoomModal from '@/components/CreateRoomModal';
 import JoinRoomModal from '@/components/JoinRoomModal';
 import QRCodeModal from '@/components/QRCodeModal';
 import MatchModal from '@/components/MatchModal';
+import LocationModal from '@/components/LocationModal';
 import { Button } from '@/components/ui/button';
 import { Filter, Users, MapPin, QrCode, UserPlus } from 'lucide-react';
 import useRoom from '@/hooks/useRoom';
@@ -17,7 +17,9 @@ const Index = () => {
   const [showJoinRoom, setShowJoinRoom] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [showMatch, setShowMatch] = useState(false);
+  const [showLocation, setShowLocation] = useState(false);
   const [matchedRestaurant, setMatchedRestaurant] = useState<any>(null);
+  const [location, setLocation] = useState('San Francisco');
   
   const {
     roomState,
@@ -67,6 +69,10 @@ const Index = () => {
     }
   };
 
+  const handleLocationChange = (newLocation: string) => {
+    setLocation(newLocation);
+  };
+
   const isInRoom = !!roomState;
   const roomPartner = roomState?.participants.find(p => p.id !== roomState.hostId);
 
@@ -85,10 +91,13 @@ const Index = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-sm text-gray-600">
+            <button
+              onClick={() => setShowLocation(true)}
+              className="flex items-center gap-1 text-sm text-gray-600 hover:text-orange-600 transition-colors"
+            >
               <MapPin className="w-4 h-4" />
-              <span>San Francisco</span>
-            </div>
+              <span>{location}</span>
+            </button>
             <Button
               variant="outline"
               size="sm"
@@ -220,6 +229,14 @@ const Index = () => {
         <MatchModal
           restaurant={matchedRestaurant}
           onClose={() => setShowMatch(false)}
+        />
+      )}
+
+      {showLocation && (
+        <LocationModal
+          currentLocation={location}
+          onLocationChange={handleLocationChange}
+          onClose={() => setShowLocation(false)}
         />
       )}
 
