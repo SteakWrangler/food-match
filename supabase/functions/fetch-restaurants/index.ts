@@ -53,54 +53,17 @@ function getCuisineImage(cuisine: string, amenity: string, name: string) {
     'soup': 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop'
   };
 
-  const lowerName = name.toLowerCase();
-  
-  // Enhanced restaurant name matching for specific chains
-  if (lowerName.includes('red lobster') || lowerName.includes('lobster')) return cuisineImages['lobster'];
-  if (lowerName.includes('pizza') || lowerName.includes('domino') || lowerName.includes('papa')) return cuisineImages['pizza'];
-  if (lowerName.includes('burger') || lowerName.includes('mcdonald') || lowerName.includes('burger king') || lowerName.includes('five guys') || lowerName.includes('shake shack') || lowerName.includes('whataburger')) return cuisineImages['burger'];
-  if (lowerName.includes('sushi') || lowerName.includes('japanese') || lowerName.includes('sake')) return cuisineImages['sushi'];
-  if (lowerName.includes('coffee') || lowerName.includes('starbucks') || lowerName.includes('cafe') || lowerName.includes('dunkin')) return cuisineImages['coffee'];
-  if (lowerName.includes('steakhouse') || lowerName.includes('steak') || lowerName.includes('outback')) return cuisineImages['steakhouse'];
-  if (lowerName.includes('bbq') || lowerName.includes('barbecue') || lowerName.includes('smokehouse')) return cuisineImages['bbq'];
-  if (lowerName.includes('seafood') || lowerName.includes('fish') || lowerName.includes('crab') || lowerName.includes('shrimp')) return cuisineImages['seafood'];
-  if (lowerName.includes('taco') || lowerName.includes('mexican') || lowerName.includes('burrito') || lowerName.includes('chipotle')) return cuisineImages['mexican'];
-  if (lowerName.includes('chinese') || lowerName.includes('panda') || lowerName.includes('wok')) return cuisineImages['chinese'];
-  if (lowerName.includes('thai')) return cuisineImages['thai'];
-  if (lowerName.includes('indian')) return cuisineImages['indian'];
-  if (lowerName.includes('italian')) return cuisineImages['italian'];
-  if (lowerName.includes('noodle') || lowerName.includes('ramen') || lowerName.includes('pho')) return cuisineImages['noodles'];
-
-  // Enhanced cuisine tag matching
+  // Prioritize cuisine tag matching
   if (cuisine) {
     const cuisineWords = cuisine.toLowerCase().split(';').map(c => c.trim());
-    
     for (const word of cuisineWords) {
-      // Direct matches first
       if (cuisineImages[word]) {
         return cuisineImages[word];
       }
-      
-      // Partial matches
-      if (word.includes('mexican') || word.includes('taco')) return cuisineImages['mexican'];
-      if (word.includes('italian') || word.includes('pizza')) return cuisineImages['pizza'];
-      if (word.includes('chinese') || word.includes('asian')) return cuisineImages['chinese'];
-      if (word.includes('japanese') || word.includes('sushi')) return cuisineImages['japanese'];
-      if (word.includes('indian') || word.includes('curry')) return cuisineImages['indian'];
-      if (word.includes('thai')) return cuisineImages['thai'];
-      if (word.includes('french')) return cuisineImages['french'];
-      if (word.includes('american')) return cuisineImages['american'];
-      if (word.includes('mediterranean') || word.includes('greek')) return cuisineImages['mediterranean'];
-      if (word.includes('korean')) return cuisineImages['korean'];
-      if (word.includes('vietnamese')) return cuisineImages['vietnamese'];
-      if (word.includes('seafood') || word.includes('fish')) return cuisineImages['seafood'];
-      if (word.includes('pasta')) return cuisineImages['pasta'];
-      if (word.includes('noodle')) return cuisineImages['noodles'];
-      if (word.includes('sandwich')) return cuisineImages['sandwich'];
     }
   }
 
-  // Check amenity type
+  // If no cuisine match, check amenity
   const lowerAmenity = amenity ? amenity.toLowerCase() : '';
   if (lowerAmenity === 'fast_food') return cuisineImages['fast_food'];
   if (lowerAmenity === 'cafe') return cuisineImages['cafe'];
