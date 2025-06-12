@@ -1,10 +1,16 @@
-
 import React, { useState, useRef } from 'react';
 import RestaurantCard from './RestaurantCard';
 import MatchModal from './MatchModal';
 import { restaurants } from '@/data/restaurants';
+import useRoom from '@/hooks/useRoom';
 
-const SwipeInterface: React.FC = () => {
+interface SwipeInterfaceProps {
+  roomState?: any;
+  onSwipe?: (restaurantId: string, direction: 'left' | 'right') => void;
+  onMatch?: (restaurant: any) => void;
+}
+
+const SwipeInterface: React.FC<SwipeInterfaceProps> = ({ roomState, onSwipe, onMatch }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userSwipes, setUserSwipes] = useState<Record<string, 'left' | 'right'>>({});
   const [partnerSwipes] = useState<Record<string, 'left' | 'right'>>({
@@ -27,8 +33,10 @@ const SwipeInterface: React.FC = () => {
   const handleSwipe = (direction: 'left' | 'right') => {
     if (!currentRestaurant) return;
 
-    const newUserSwipes = { ...userSwipes, [currentRestaurant.id]: direction };
-    setUserSwipes(newUserSwipes);
+    // Call the onSwipe callback if provided (for room mode)
+    if (onSwipe) {
+      onSwipe(currentRestaurant.id, direction);
+    }
 
     // Check for match
     if (direction === 'right' && partnerSwipes[currentRestaurant.id] === 'right') {
