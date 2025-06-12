@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import SwipeInterface from '@/components/SwipeInterface';
 import FilterPanel from '@/components/FilterPanel';
 import CreateRoomModal from '@/components/CreateRoomModal';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Filter, Users, MapPin, QrCode, UserPlus } from 'lucide-react';
 import useRoom from '@/hooks/useRoom';
 import { restaurants } from '@/data/restaurants';
+import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
 
 const Index = () => {
   const [showFilters, setShowFilters] = useState(false);
@@ -20,6 +21,7 @@ const Index = () => {
   const [showLocation, setShowLocation] = useState(false);
   const [matchedRestaurant, setMatchedRestaurant] = useState<any>(null);
   const [location, setLocation] = useState('San Francisco');
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
   
   const {
     roomState,
@@ -30,6 +32,11 @@ const Index = () => {
     checkForMatch,
     leaveRoom
   } = useRoom();
+
+  // Filter restaurants based on current filter settings
+  const filteredRestaurants = useMemo(() => {
+    return filterRestaurants(restaurants, filters);
+  }, [filters]);
 
   // Check for room parameter in URL
   useEffect(() => {
@@ -61,7 +68,7 @@ const Index = () => {
     addSwipe(restaurantId, direction);
     
     if (direction === 'right' && checkForMatch(restaurantId)) {
-      const restaurant = restaurants.find(r => r.id === restaurantId);
+      const restaurant = filteredRestaurants.find(r => r.id === restaurantId);
       if (restaurant) {
         setMatchedRestaurant(restaurant);
         setShowMatch(true);
@@ -184,6 +191,7 @@ const Index = () => {
 
             {/* Swipe Interface */}
             <SwipeInterface 
+              restaurants={filteredRestaurants}
               roomState={roomState}
               onSwipe={handleSwipe}
             />
@@ -243,6 +251,8 @@ const Index = () => {
       <FilterPanel
         isOpen={showFilters}
         onClose={() => setShowFilters(false)}
+        filters={filters}
+        onFiltersChange={setFilters}
       />
     </div>
   );

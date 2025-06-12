@@ -1,16 +1,22 @@
+
 import React, { useState, useRef } from 'react';
 import RestaurantCard from './RestaurantCard';
 import MatchModal from './MatchModal';
-import { restaurants } from '@/data/restaurants';
-import useRoom from '@/hooks/useRoom';
+import { Restaurant } from '@/data/restaurants';
 
 interface SwipeInterfaceProps {
+  restaurants: Restaurant[];
   roomState?: any;
   onSwipe?: (restaurantId: string, direction: 'left' | 'right') => void;
   onMatch?: (restaurant: any) => void;
 }
 
-const SwipeInterface: React.FC<SwipeInterfaceProps> = ({ roomState, onSwipe, onMatch }) => {
+const SwipeInterface: React.FC<SwipeInterfaceProps> = ({ 
+  restaurants, 
+  roomState, 
+  onSwipe, 
+  onMatch 
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userSwipes, setUserSwipes] = useState<Record<string, 'left' | 'right'>>({});
   const [partnerSwipes] = useState<Record<string, 'left' | 'right'>>({
@@ -84,11 +90,20 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({ roomState, onSwipe, onM
     transition: isDragging ? 'none' : 'all 0.3s ease-out'
   };
 
+  if (restaurants.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">No restaurants found!</h2>
+        <p className="text-gray-600">Try adjusting your filters to see more options.</p>
+      </div>
+    );
+  }
+
   if (currentIndex >= restaurants.length) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">No more restaurants!</h2>
-        <p className="text-gray-600">You've seen all available options in your area.</p>
+        <p className="text-gray-600">You've seen all available options matching your filters.</p>
         <button 
           onClick={() => setCurrentIndex(0)}
           className="mt-6 px-6 py-3 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
