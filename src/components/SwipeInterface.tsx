@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import RestaurantCard from './RestaurantCard';
 import MatchModal from './MatchModal';
@@ -7,6 +6,8 @@ import { Restaurant } from '@/data/restaurants';
 
 interface SwipeInterfaceProps {
   restaurants: Restaurant[];
+  hasMore?: boolean;
+  onGenerateMore?: () => void;
   roomState?: any;
   onSwipe?: (restaurantId: string, direction: 'left' | 'right') => void;
   onMatch?: (restaurant: any) => void;
@@ -15,6 +16,8 @@ interface SwipeInterfaceProps {
 
 const SwipeInterface: React.FC<SwipeInterfaceProps> = ({ 
   restaurants, 
+  hasMore = false,
+  onGenerateMore,
   roomState, 
   onSwipe, 
   onMatch,
@@ -110,6 +113,14 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         <h2 className="text-2xl font-bold text-gray-800 mb-4">No more restaurants!</h2>
         <p className="text-gray-600 mb-4">You've seen all available options matching your filters.</p>
         <div className="space-y-3">
+          {hasMore && onGenerateMore && (
+            <button 
+              onClick={onGenerateMore}
+              className="px-6 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
+            >
+              Generate More Options
+            </button>
+          )}
           <button 
             onClick={() => setShowHistory(true)}
             className="px-6 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"

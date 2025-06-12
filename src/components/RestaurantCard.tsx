@@ -33,15 +33,17 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
     >
       {/* Main Image */}
       <div className="relative h-80 overflow-hidden bg-gradient-to-br from-orange-100 to-pink-100">
-        <img 
-          src={restaurant.image} 
-          alt={restaurant.name}
-          className="w-full h-full object-cover"
-          draggable={false}
-          onError={(e) => {
-            e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="50">🍽️</text></svg>';
-          }}
-        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img 
+            src={restaurant.image} 
+            alt={restaurant.name}
+            className="w-full h-full object-cover"
+            draggable={false}
+            onError={(e) => {
+              e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="50">🍽️</text></svg>';
+            }}
+          />
+        </div>
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         

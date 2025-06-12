@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import SwipeInterface from '@/components/SwipeInterface';
 import GeneralSwipeInterface from '@/components/GeneralSwipeInterface';
@@ -40,11 +39,12 @@ const Index = () => {
   } = useRoom();
 
   // Fetch real restaurant data based on location
-  const { data: liveRestaurants, isLoading: restaurantsLoading, error: restaurantsError } = useRestaurants(location);
+  const { data: liveRestaurants, isLoading: restaurantsLoading, error: restaurantsError, refetch: refetchRestaurants } = useRestaurants(location);
 
   // Use live data if available, otherwise fall back to static data
   // Ensure restaurants is always an array to prevent filter errors
   const restaurants = (liveRestaurants?.restaurants || fallbackRestaurants || []);
+  const hasMore = liveRestaurants?.hasMore || false;
 
   // Filter restaurants based on current filter settings
   const filteredRestaurants = useMemo(() => {
@@ -121,6 +121,10 @@ const Index = () => {
 
   const isInRoom = !!roomState;
   const roomPartner = roomState?.participants.find(p => p.id !== roomState.hostId);
+
+  const handleGenerateMore = async () => {
+    await refetchRestaurants();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-red-50">
@@ -251,10 +255,13 @@ const Index = () => {
               </TabsList>
               
               <TabsContent value="specific" className="mt-0">
-                <SwipeInterface 
+                <SwipeInterface
                   restaurants={filteredRestaurants}
+                  hasMore={hasMore}
+                  onGenerateMore={handleGenerateMore}
                   roomState={roomState}
                   onSwipe={handleSwipe}
+                  onMatch={setMatchedRestaurant}
                   checkForMatch={checkForMatch}
                 />
               </TabsContent>
