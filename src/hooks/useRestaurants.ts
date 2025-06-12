@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { Restaurant } from '@/data/restaurants';
 
@@ -28,9 +29,12 @@ const fetchRestaurants = async ({ location, radius = 5000, limit = 20 }: FetchRe
   }
 
   const data = await response.json();
+  console.log('API response:', data);
+  
+  // Ensure we always return an array of restaurants
   return {
-    restaurants: data.restaurants,
-    hasMore: data.hasMore,
+    restaurants: Array.isArray(data.restaurants) ? data.restaurants : [],
+    hasMore: data.hasMore || false,
     message: data.message
   };
 };

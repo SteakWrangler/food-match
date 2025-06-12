@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import SwipeInterface from '@/components/SwipeInterface';
 import GeneralSwipeInterface from '@/components/GeneralSwipeInterface';
@@ -42,10 +43,16 @@ const Index = () => {
   const { data: liveRestaurants, isLoading: restaurantsLoading, error: restaurantsError } = useRestaurants(location);
 
   // Use live data if available, otherwise fall back to static data
-  const restaurants = liveRestaurants || fallbackRestaurants;
+  // Ensure restaurants is always an array to prevent filter errors
+  const restaurants = (liveRestaurants?.restaurants || fallbackRestaurants || []);
 
   // Filter restaurants based on current filter settings
   const filteredRestaurants = useMemo(() => {
+    console.log('Filtering restaurants:', restaurants);
+    if (!Array.isArray(restaurants)) {
+      console.error('Restaurants is not an array:', restaurants);
+      return [];
+    }
     return filterRestaurants(restaurants, filters);
   }, [restaurants, filters]);
 

@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      restaurant_cache: {
+        Row: {
+          created_at: string
+          cuisine: string
+          description: string
+          id: string
+          location: string
+          name: string
+          price_range: string
+          rating: number
+          sample_menu_item: string
+          sample_price: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cuisine: string
+          description: string
+          id: string
+          location: string
+          name: string
+          price_range: string
+          rating: number
+          sample_menu_item: string
+          sample_price: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cuisine?: string
+          description?: string
+          id?: string
+          location?: string
+          name?: string
+          price_range?: string
+          rating?: number
+          sample_menu_item?: string
+          sample_price?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rooms: {
         Row: {
           created_at: string
