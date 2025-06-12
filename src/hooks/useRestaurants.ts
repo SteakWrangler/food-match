@@ -2,8 +2,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Restaurant } from '@/data/restaurants';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-
 interface FetchRestaurantsParams {
   location: string;
   radius?: number;
@@ -11,20 +9,17 @@ interface FetchRestaurantsParams {
 }
 
 const fetchRestaurants = async ({ location, radius = 5000, limit = 20 }: FetchRestaurantsParams): Promise<Restaurant[]> => {
-  if (!SUPABASE_URL) {
-    throw new Error('Supabase URL not configured');
-  }
-
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/fetch-restaurants`, {
+  const response = await fetch(`https://ahfytcfndbnwrabryjnz.supabase.co/functions/v1/fetch-restaurants`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoZnl0Y2ZuZGJud3JhYnJ5am56Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MDg4MzYsImV4cCI6MjA2NTI4NDgzNn0.AqS0Q7EYe6IzXXAnHOKxwkmyV0I_Mrvab2CFLe7W8o8`,
     },
     body: JSON.stringify({ location, radius, limit })
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch restaurants');
+    throw new Error(`Failed to fetch restaurants: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
