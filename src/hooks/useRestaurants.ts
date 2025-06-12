@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { Restaurant } from '@/data/restaurants';
 
@@ -8,7 +7,13 @@ interface FetchRestaurantsParams {
   limit?: number;
 }
 
-const fetchRestaurants = async ({ location, radius = 5000, limit = 20 }: FetchRestaurantsParams): Promise<Restaurant[]> => {
+interface FetchRestaurantsResponse {
+  restaurants: Restaurant[];
+  hasMore: boolean;
+  message?: string;
+}
+
+const fetchRestaurants = async ({ location, radius = 5000, limit = 20 }: FetchRestaurantsParams): Promise<FetchRestaurantsResponse> => {
   const response = await fetch(`https://ahfytcfndbnwrabryjnz.supabase.co/functions/v1/fetch-restaurants`, {
     method: 'POST',
     headers: {
@@ -23,7 +28,11 @@ const fetchRestaurants = async ({ location, radius = 5000, limit = 20 }: FetchRe
   }
 
   const data = await response.json();
-  return data.restaurants;
+  return {
+    restaurants: data.restaurants,
+    hasMore: data.hasMore,
+    message: data.message
+  };
 };
 
 export const useRestaurants = (location: string, enabled: boolean = true) => {

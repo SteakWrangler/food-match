@@ -32,7 +32,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
       style={style}
     >
       {/* Main Image */}
-      <div className="relative h-80 overflow-hidden">
+      <div className="relative h-80 overflow-hidden bg-gradient-to-br from-orange-100 to-pink-100">
         <img 
           src={restaurant.image} 
           alt={restaurant.name}

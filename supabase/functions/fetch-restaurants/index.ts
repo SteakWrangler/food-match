@@ -53,13 +53,19 @@ function getCuisineImage(cuisine: string, amenity: string, name: string) {
     'soup': 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop'
   };
 
-  // Prioritize cuisine tag matching
-  if (cuisine) {
-    const cuisineWords = cuisine.toLowerCase().split(';').map(c => c.trim());
-    for (const word of cuisineWords) {
-      if (cuisineImages[word]) {
-        return cuisineImages[word];
-      }
+  // Normalize cuisine string
+  const normalizedCuisine = cuisine.toLowerCase().trim();
+  
+  // First try exact match
+  if (cuisineImages[normalizedCuisine]) {
+    return cuisineImages[normalizedCuisine];
+  }
+
+  // Then try matching parts of the cuisine string
+  const cuisineParts = normalizedCuisine.split(/[;,]/).map(part => part.trim());
+  for (const part of cuisineParts) {
+    if (cuisineImages[part]) {
+      return cuisineImages[part];
     }
   }
 
@@ -302,13 +308,23 @@ serve(async (req) => {
 
     if (!newRestaurants || newRestaurants.length === 0) {
       return new Response(
-        JSON.stringify({ restaurants: [], message: 'No options available or service is not working right now.' }),
+        JSON.stringify({ 
+          restaurants: [], 
+          hasMore: false,
+          message: 'No options available or service is not working right now.' 
+        }),
         { status: 200, headers: corsHeaders }
       );
     }
 
+    // Check if we have more results available
+    const hasMore = newRestaurants.length >= limit;
+
     return new Response(
-      JSON.stringify({ restaurants: newRestaurants }),
+      JSON.stringify({ 
+        restaurants: newRestaurants,
+        hasMore: hasMore
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
