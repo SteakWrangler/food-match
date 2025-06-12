@@ -30,43 +30,63 @@ function getCuisineImage(cuisine: string, amenity: string, name: string) {
     'mediterranean': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop',
     'greek': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop',
     'korean': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop',
-    'vietnamese': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop'
+    'vietnamese': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop',
+    'lobster': 'https://images.unsplash.com/photo-1565680018434-b513d5573b07?w=400&h=300&fit=crop',
+    'diner': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop',
+    'sandwich': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop',
+    'wings': 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=300&fit=crop',
+    'chicken': 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=300&fit=crop',
+    'tacos': 'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop',
+    'donuts': 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
+    'bakery': 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop'
   };
 
   const lowerName = name.toLowerCase();
   
-  // Check name for specific restaurant chains and keywords first
+  // More specific restaurant chain and keyword matching
+  if (lowerName.includes('red lobster') || lowerName.includes('lobster')) return cuisineImages['lobster'];
   if (lowerName.includes('pizza') || lowerName.includes('domino') || lowerName.includes('papa')) return cuisineImages['pizza'];
-  if (lowerName.includes('burger') || lowerName.includes('mcdonald') || lowerName.includes('burger king') || lowerName.includes('five guys')) return cuisineImages['burger'];
-  if (lowerName.includes('sushi') || lowerName.includes('japanese')) return cuisineImages['sushi'];
-  if (lowerName.includes('coffee') || lowerName.includes('starbucks') || lowerName.includes('cafe')) return cuisineImages['coffee'];
+  if (lowerName.includes('burger') || lowerName.includes('mcdonald') || lowerName.includes('burger king') || lowerName.includes('five guys') || lowerName.includes('shake shack') || lowerName.includes('whataburger')) return cuisineImages['burger'];
+  if (lowerName.includes('sushi') || lowerName.includes('japanese') || lowerName.includes('sake')) return cuisineImages['sushi'];
+  if (lowerName.includes('coffee') || lowerName.includes('starbucks') || lowerName.includes('cafe') || lowerName.includes('dunkin')) return cuisineImages['coffee'];
   if (lowerName.includes('steakhouse') || lowerName.includes('steak') || lowerName.includes('outback')) return cuisineImages['steakhouse'];
-  if (lowerName.includes('bbq') || lowerName.includes('barbecue')) return cuisineImages['bbq'];
-  if (lowerName.includes('seafood') || lowerName.includes('fish')) return cuisineImages['seafood'];
-  if (lowerName.includes('bar') || lowerName.includes('pub') || lowerName.includes('tavern')) return cuisineImages['bar'];
-  if (lowerName.includes('taco') || lowerName.includes('mexican') || lowerName.includes('burrito')) return cuisineImages['mexican'];
-  if (lowerName.includes('chinese') || lowerName.includes('panda')) return cuisineImages['chinese'];
-  if (lowerName.includes('thai')) return cuisineImages['thai'];
-  if (lowerName.includes('indian') || lowerName.includes('curry')) return cuisineImages['indian'];
-  if (lowerName.includes('italian') || lowerName.includes('pasta')) return cuisineImages['italian'];
-  if (lowerName.includes('french')) return cuisineImages['french'];
-  if (lowerName.includes('korean')) return cuisineImages['korean'];
-  if (lowerName.includes('vietnamese') || lowerName.includes('pho')) return cuisineImages['vietnamese'];
+  if (lowerName.includes('bbq') || lowerName.includes('barbecue') || lowerName.includes('smokehouse')) return cuisineImages['bbq'];
+  if (lowerName.includes('seafood') || lowerName.includes('fish') || lowerName.includes('crab') || lowerName.includes('shrimp')) return cuisineImages['seafood'];
+  if (lowerName.includes('bar') || lowerName.includes('pub') || lowerName.includes('tavern') || lowerName.includes('grill')) return cuisineImages['bar'];
+  if (lowerName.includes('taco') || lowerName.includes('mexican') || lowerName.includes('burrito') || lowerName.includes('chipotle')) return cuisineImages['mexican'];
+  if (lowerName.includes('chinese') || lowerName.includes('panda') || lowerName.includes('wok')) return cuisineImages['chinese'];
+  if (lowerName.includes('thai') || lowerName.includes('pad thai')) return cuisineImages['thai'];
+  if (lowerName.includes('indian') || lowerName.includes('curry') || lowerName.includes('tandoori')) return cuisineImages['indian'];
+  if (lowerName.includes('italian') || lowerName.includes('pasta') || lowerName.includes('olive garden')) return cuisineImages['italian'];
+  if (lowerName.includes('french') || lowerName.includes('bistro')) return cuisineImages['french'];
+  if (lowerName.includes('korean') || lowerName.includes('kimchi') || lowerName.includes('bulgogi')) return cuisineImages['korean'];
+  if (lowerName.includes('vietnamese') || lowerName.includes('pho') || lowerName.includes('banh mi')) return cuisineImages['vietnamese'];
+  if (lowerName.includes('diner') || lowerName.includes('denny') || lowerName.includes('ihop')) return cuisineImages['diner'];
+  if (lowerName.includes('sandwich') || lowerName.includes('subway') || lowerName.includes('sub')) return cuisineImages['sandwich'];
+  if (lowerName.includes('wings') || lowerName.includes('buffalo')) return cuisineImages['wings'];
+  if (lowerName.includes('chicken') || lowerName.includes('kfc') || lowerName.includes('popeyes')) return cuisineImages['chicken'];
+  if (lowerName.includes('donuts') || lowerName.includes('krispy') || lowerName.includes('donut')) return cuisineImages['donuts'];
+  if (lowerName.includes('bakery') || lowerName.includes('bread') || lowerName.includes('pastry')) return cuisineImages['bakery'];
 
-  // Check for specific cuisine tags
+  // Check for specific cuisine tags with better fallback logic
   const lowerCuisine = cuisine ? cuisine.toLowerCase() : '';
-  if (lowerCuisine && cuisineImages[lowerCuisine]) {
-    return cuisineImages[lowerCuisine];
+  const cuisineWords = lowerCuisine.split(';').map(c => c.trim());
+  
+  for (const word of cuisineWords) {
+    if (word && cuisineImages[word]) {
+      return cuisineImages[word];
+    }
   }
 
-  // Check for amenity type
+  // Check for amenity type with better matching
   const lowerAmenity = amenity ? amenity.toLowerCase() : '';
-  if (lowerAmenity && cuisineImages[lowerAmenity]) {
-    return cuisineImages[lowerAmenity];
-  }
+  if (lowerAmenity === 'restaurant') return cuisineImages['american']; // Generic restaurant food
+  if (lowerAmenity === 'fast_food') return cuisineImages['fast_food'];
+  if (lowerAmenity === 'cafe') return cuisineImages['cafe'];
+  if (lowerAmenity === 'bar' || lowerAmenity === 'pub') return cuisineImages['bar'];
 
-  // Default restaurant image
-  return 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop';
+  // More generic restaurant image as absolute fallback
+  return cuisineImages['american'];
 }
 
 // Function to format display text (remove underscores, capitalize, handle semicolons)

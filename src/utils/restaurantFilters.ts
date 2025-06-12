@@ -10,7 +10,7 @@ export interface FilterState {
 
 export const defaultFilters: FilterState = {
   distance: [5],
-  priceRange: [2],
+  priceRange: [4], // Changed to 4 ($$$$) to include all price ranges by default
   selectedCuisines: [],
   openNow: true,
 };
