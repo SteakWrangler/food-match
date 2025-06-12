@@ -69,7 +69,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
       </div>
 
       {/* Description */}
-      <div className="p-6">
+      <div className="p-6 pb-20">
         <p className="text-gray-600 text-sm leading-relaxed mb-4">
           {restaurant.description}
         </p>
@@ -83,7 +83,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
       </div>
 
       {/* Swipe Action Buttons */}
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-4">
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4">
         <button
           onClick={() => onSwipe('left')}
           className="w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
