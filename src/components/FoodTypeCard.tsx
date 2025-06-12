@@ -18,16 +18,17 @@ interface FoodTypeCardProps {
 
 const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style }) => {
   const [imageError, setImageError] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
 
   const handleImageError = () => {
     console.log(`Image failed to load for ${foodType.name}: ${foodType.image}`);
     setImageError(true);
+    setImageLoading(false);
   };
 
   const handleImageLoad = () => {
     console.log(`Image loaded successfully for ${foodType.name}`);
-    setImageLoaded(true);
+    setImageLoading(false);
   };
 
   return (
@@ -37,7 +38,7 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style })
     >
       {/* Main Image */}
       <div className="relative h-80 overflow-hidden">
-        {!imageError ? (
+        {!imageError && (
           <img 
             src={foodType.image} 
             alt={foodType.name}
@@ -45,23 +46,22 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style })
             draggable={false}
             onError={handleImageError}
             onLoad={handleImageLoad}
-            style={{ display: imageLoaded ? 'block' : 'none' }}
+            style={{ 
+              display: imageLoading ? 'none' : 'block',
+              opacity: imageLoading ? 0 : 1,
+              transition: 'opacity 0.3s ease-in-out'
+            }}
           />
-        ) : (
+        )}
+        
+        {/* Fallback for failed images or loading state */}
+        {(imageError || imageLoading) && (
           <div className="w-full h-full bg-gradient-to-br from-orange-100 to-pink-100 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4">{foodType.emoji}</div>
-              <div className="text-xl font-semibold text-gray-700">{foodType.name}</div>
-            </div>
-          </div>
-        )}
-        
-        {/* Loading placeholder */}
-        {!imageLoaded && !imageError && (
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-100 to-pink-100 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">{foodType.emoji}</div>
-              <div className="text-xl font-semibold text-gray-700">Loading...</div>
+              <div className="text-xl font-semibold text-gray-700">
+                {imageLoading ? 'Loading...' : foodType.name}
+              </div>
             </div>
           </div>
         )}

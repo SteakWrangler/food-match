@@ -1,3 +1,4 @@
+
 export interface FoodType {
   id: string;
   name: string;
@@ -32,7 +33,7 @@ export const foodTypes: FoodType[] = [
     id: '4',
     name: 'Tacos',
     description: 'Fresh Mexican flavors wrapped in soft or crispy tortillas.',
-    image: 'https://images.unsplash.com/photo-1565299585323-38174c4a6c07?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=400&h=300&fit=crop',
     emoji: '🌮'
   },
   {
@@ -46,7 +47,7 @@ export const foodTypes: FoodType[] = [
     id: '6',
     name: 'Chinese',
     description: 'Authentic Chinese dishes with bold flavors and fresh ingredients.',
-    image: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=400&h=300&fit=crop',
     emoji: '🥡'
   },
   {
@@ -60,7 +61,7 @@ export const foodTypes: FoodType[] = [
     id: '8',
     name: 'Thai',
     description: 'Sweet, spicy, and savory Thai cuisine with fresh herbs and bold flavors.',
-    image: 'https://images.unsplash.com/photo-1559314809-0f31657def5e?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=400&h=300&fit=crop',
     emoji: '🍜'
   },
   {
