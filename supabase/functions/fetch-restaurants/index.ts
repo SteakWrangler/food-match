@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -27,21 +26,34 @@ function getCuisineImage(cuisine: string, amenity: string, name: string) {
     'pub': 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop',
     'bbq': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop',
     'seafood': 'https://images.unsplash.com/photo-1565680018434-b513d5573b07?w=400&h=300&fit=crop',
-    'steakhouse': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop'
+    'steakhouse': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
+    'mediterranean': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop',
+    'greek': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop',
+    'korean': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop',
+    'vietnamese': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop'
   };
 
-  // Check name for specific keywords
   const lowerName = name.toLowerCase();
-  if (lowerName.includes('pizza')) return cuisineImages['pizza'];
-  if (lowerName.includes('burger')) return cuisineImages['burger'];
-  if (lowerName.includes('sushi')) return cuisineImages['sushi'];
-  if (lowerName.includes('coffee') || lowerName.includes('starbucks')) return cuisineImages['coffee'];
-  if (lowerName.includes('bar') || lowerName.includes('pub')) return cuisineImages['bar'];
-  if (lowerName.includes('bbq')) return cuisineImages['bbq'];
-  if (lowerName.includes('seafood')) return cuisineImages['seafood'];
-  if (lowerName.includes('steak')) return cuisineImages['steakhouse'];
+  
+  // Check name for specific restaurant chains and keywords first
+  if (lowerName.includes('pizza') || lowerName.includes('domino') || lowerName.includes('papa')) return cuisineImages['pizza'];
+  if (lowerName.includes('burger') || lowerName.includes('mcdonald') || lowerName.includes('burger king') || lowerName.includes('five guys')) return cuisineImages['burger'];
+  if (lowerName.includes('sushi') || lowerName.includes('japanese')) return cuisineImages['sushi'];
+  if (lowerName.includes('coffee') || lowerName.includes('starbucks') || lowerName.includes('cafe')) return cuisineImages['coffee'];
+  if (lowerName.includes('steakhouse') || lowerName.includes('steak') || lowerName.includes('outback')) return cuisineImages['steakhouse'];
+  if (lowerName.includes('bbq') || lowerName.includes('barbecue')) return cuisineImages['bbq'];
+  if (lowerName.includes('seafood') || lowerName.includes('fish')) return cuisineImages['seafood'];
+  if (lowerName.includes('bar') || lowerName.includes('pub') || lowerName.includes('tavern')) return cuisineImages['bar'];
+  if (lowerName.includes('taco') || lowerName.includes('mexican') || lowerName.includes('burrito')) return cuisineImages['mexican'];
+  if (lowerName.includes('chinese') || lowerName.includes('panda')) return cuisineImages['chinese'];
+  if (lowerName.includes('thai')) return cuisineImages['thai'];
+  if (lowerName.includes('indian') || lowerName.includes('curry')) return cuisineImages['indian'];
+  if (lowerName.includes('italian') || lowerName.includes('pasta')) return cuisineImages['italian'];
+  if (lowerName.includes('french')) return cuisineImages['french'];
+  if (lowerName.includes('korean')) return cuisineImages['korean'];
+  if (lowerName.includes('vietnamese') || lowerName.includes('pho')) return cuisineImages['vietnamese'];
 
-  // Check for specific cuisine first
+  // Check for specific cuisine tags
   const lowerCuisine = cuisine ? cuisine.toLowerCase() : '';
   if (lowerCuisine && cuisineImages[lowerCuisine]) {
     return cuisineImages[lowerCuisine];
@@ -57,15 +69,29 @@ function getCuisineImage(cuisine: string, amenity: string, name: string) {
   return 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop';
 }
 
-// Function to format display text (remove underscores, capitalize)
+// Function to format display text (remove underscores, capitalize, handle semicolons)
 function formatDisplayText(text: string): string {
   if (!text) return 'Restaurant';
   
-  return text
+  // Handle semicolon-separated values by taking the first one
+  const firstValue = text.split(';')[0].trim();
+  
+  return firstValue
     .replace(/_/g, ' ')
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
+}
+
+// Function to parse and clean cuisine tags
+function parseCuisineTags(cuisineString: string): string[] {
+  if (!cuisineString) return [];
+  
+  return cuisineString
+    .split(';')
+    .map(tag => formatDisplayText(tag.trim()))
+    .filter(tag => tag && tag !== 'Restaurant')
+    .slice(0, 3); // Limit to 3 tags max for UI cleanliness
 }
 
 // Function to determine price range based on amenity and cuisine
@@ -79,20 +105,26 @@ function determinePriceRange(amenity: string, cuisine: string, name: string): st
       lowerName.includes('mcdonald') || 
       lowerName.includes('burger king') ||
       lowerName.includes('subway') ||
-      lowerName.includes('taco bell')) {
+      lowerName.includes('taco bell') ||
+      lowerName.includes('kfc') ||
+      lowerName.includes('domino') ||
+      lowerName.includes('papa johns')) {
     return '$';
   }
 
-  // Coffee shops and cafes
+  // Coffee shops and casual cafes
   if (lowerAmenity === 'cafe' || 
       lowerName.includes('starbucks') ||
+      lowerName.includes('dunkin') ||
       lowerName.includes('coffee') ||
       lowerName.includes('cafe')) {
     return '$';
   }
 
-  // Fine dining cuisines tend to be more expensive
-  if (lowerCuisine === 'french' || 
+  // Steakhouses and fine dining are more expensive
+  if (lowerName.includes('steakhouse') ||
+      lowerName.includes('outback') ||
+      lowerCuisine === 'french' || 
       lowerCuisine === 'fine_dining' ||
       lowerName.includes('fine dining') ||
       lowerName.includes('michelin')) {
@@ -112,26 +144,31 @@ function calculatePriority(tags: any, name: string): number {
 
   // Prioritize actual restaurants over cafes/fast food
   if (amenity === 'restaurant') score += 100;
-  if (amenity === 'fast_food') score += 20;
-  if (amenity === 'cafe') score += 10;
+  if (amenity === 'fast_food') score += 30;
+  if (amenity === 'cafe') score += 20;
 
-  // Deprioritize chains that shouldn't be first options
+  // Significantly deprioritize chains that shouldn't be first options
   if (lowerName.includes('starbucks') || 
       lowerName.includes('mcdonald') ||
       lowerName.includes('subway') ||
-      lowerName.includes('burger king')) {
-    score -= 50;
+      lowerName.includes('burger king') ||
+      lowerName.includes('dunkin') ||
+      lowerName.includes('taco bell') ||
+      lowerName.includes('kfc')) {
+    score -= 80;
   }
 
   // Boost score for diverse cuisines
-  if (cuisine && cuisine !== 'regional') score += 30;
+  if (cuisine && cuisine !== 'regional' && cuisine !== 'fast_food') score += 40;
 
   // Boost score for restaurants with good keywords
   if (lowerName.includes('restaurant') || 
       lowerName.includes('bistro') ||
       lowerName.includes('grill') ||
-      lowerName.includes('kitchen')) {
-    score += 20;
+      lowerName.includes('kitchen') ||
+      lowerName.includes('house') ||
+      lowerName.includes('tavern')) {
+    score += 30;
   }
 
   return score;
@@ -231,11 +268,11 @@ serve(async (req) => {
     console.log(`Geocoded to: ${coords.lat}, ${coords.lon}`)
     
     // Fetch restaurants from OpenStreetMap
-    const osmData = await fetchRestaurantsFromOSM(coords.lat, coords.lon, radius, limit * 3) // Fetch more to filter later
+    const osmData = await fetchRestaurantsFromOSM(coords.lat, coords.lon, radius, limit * 3)
     
     // Transform OSM data to match our Restaurant interface
     const restaurants = osmData
-      .filter((element: any) => element.tags && element.tags.name) // Only include places with names
+      .filter((element: any) => element.tags && element.tags.name)
       .map((element: any) => {
         const tags = element.tags
         const lat = element.lat || element.center?.lat
@@ -246,10 +283,18 @@ serve(async (req) => {
         const distance = calculateDistance(coords.lat, coords.lon, lat, lon)
         const rawCuisine = tags.cuisine || tags.amenity || 'restaurant'
         const cuisine = formatDisplayText(rawCuisine)
-        const rating = parseFloat((4.0 + Math.random() * 1).toFixed(1)) // Format to 1 decimal place
+        const rating = parseFloat((4.0 + Math.random() * 1).toFixed(1))
         const priceRange = determinePriceRange(tags.amenity || '', tags.cuisine || '', tags.name)
         const priority = calculatePriority(tags, tags.name)
         
+        // Parse cuisine tags properly
+        const cuisineTags = parseCuisineTags(tags.cuisine || '');
+        const finalTags = [
+          cuisine,
+          priceRange,
+          'Local Favorite'
+        ].filter(Boolean);
+
         return {
           id: element.id.toString(),
           name: tags.name,
@@ -259,26 +304,21 @@ serve(async (req) => {
           priceRange: priceRange,
           distance: `${distance.toFixed(1)} mi`,
           estimatedTime: `${Math.ceil(distance * 3)} min`,
-          description: `${tags.cuisine ? `Delicious ${formatDisplayText(tags.cuisine)} cuisine` : 'Great local restaurant'} located in ${location}`,
-          tags: [
-            cuisine,
-            priceRange,
-            'Local Favorite'
-          ].filter(Boolean),
+          description: `${cuisine} restaurant located in ${location}`,
+          tags: finalTags,
           priority: priority
         }
       })
-      .filter(Boolean) // Remove null entries
+      .filter(Boolean)
       .sort((a: any, b: any) => {
-        // First sort by priority (high to low), then by distance (low to high)
+        // Sort by priority (high to low), then by distance (low to high)
         if (b.priority !== a.priority) {
           return b.priority - a.priority;
         }
         return parseFloat(a.distance) - parseFloat(b.distance);
       })
-      .slice(0, limit) // Limit results
+      .slice(0, limit)
       .map((restaurant: any) => {
-        // Remove priority from final result
         const { priority, ...finalRestaurant } = restaurant;
         return finalRestaurant;
       });
