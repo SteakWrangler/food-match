@@ -1,8 +1,9 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import FoodTypeCard from './FoodTypeCard';
 import MatchModal from './MatchModal';
+import SwipeHistory from './SwipeHistory';
 import { FoodType } from '@/data/foodTypes';
+import { randomizeFoodTypesByTiers } from '@/utils/foodTypeRandomizer';
 
 interface GeneralSwipeInterfaceProps {
   foodTypes: FoodType[];
@@ -19,15 +20,28 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMatch, setShowMatch] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [matchedFoodType, setMatchedFoodType] = useState<any>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [userSwipes, setUserSwipes] = useState<Record<string, 'left' | 'right'>>({});
 
-  const currentFoodType = foodTypes[currentIndex];
+  // Randomize food types once when component mounts
+  const randomizedFoodTypes = useMemo(() => {
+    return randomizeFoodTypesByTiers(foodTypes);
+  }, [foodTypes]);
+
+  const currentFoodType = randomizedFoodTypes[currentIndex];
 
   const handleSwipe = (direction: 'left' | 'right') => {
     if (!currentFoodType) return;
+
+    // Track user's swipe
+    setUserSwipes(prev => ({
+      ...prev,
+      [currentFoodType.id]: direction
+    }));
 
     // Call the onSwipe callback if provided (for room mode)
     if (onSwipe) {
@@ -93,7 +107,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
     transition: isDragging ? 'none' : 'all 0.3s ease-out'
   };
 
-  if (foodTypes.length === 0) {
+  if (randomizedFoodTypes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">No food types available!</h2>
@@ -101,71 +115,91 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
     );
   }
 
-  if (currentIndex >= foodTypes.length) {
+  if (currentIndex >= randomizedFoodTypes.length) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">No more food types!</h2>
-        <p className="text-gray-600">You've seen all available food options.</p>
-        <button 
-          onClick={() => setCurrentIndex(0)}
-          className="mt-6 px-6 py-3 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
-        >
-          Start Over
-        </button>
+        <p className="text-gray-600 mb-4">You've seen all available food options.</p>
+        <div className="space-y-3">
+          <button 
+            onClick={() => setShowHistory(true)}
+            className="px-6 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+          >
+            View Your Likes
+          </button>
+          <button 
+            onClick={() => setCurrentIndex(0)}
+            className="block px-6 py-3 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
+          >
+            Start Over
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="relative flex items-center justify-center min-h-[600px] p-4">
-      {/* Background Cards */}
-      {foodTypes.slice(currentIndex + 1, currentIndex + 3).map((foodType, index) => (
-        <div
-          key={foodType.id}
-          className="absolute"
-          style={{
-            zIndex: 10 - index,
-            transform: `scale(${0.95 - index * 0.02}) translateY(${index * 8}px)`,
-            opacity: 0.8 - index * 0.2
-          }}
+    <div className="relative">
+      {/* History Button */}
+      <div className="absolute top-0 right-0 z-50">
+        <button
+          onClick={() => setShowHistory(true)}
+          className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full p-2 shadow-sm hover:bg-white transition-colors"
         >
-          <FoodTypeCard
-            foodType={foodType}
-            onSwipe={() => {}}
-          />
-        </div>
-      ))}
-
-      {/* Current Card */}
-      <div
-        className="relative z-20"
-        style={cardStyle}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        <FoodTypeCard
-          foodType={currentFoodType}
-          onSwipe={handleSwipe}
-        />
+          <span className="text-sm">❤️ {Object.values(userSwipes).filter(s => s === 'right').length}</span>
+        </button>
       </div>
 
-      {/* Swipe Indicators */}
-      {isDragging && (
-        <>
-          {dragOffset.x > 50 && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-green-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold rotate-12 opacity-80">
-              LIKE!
-            </div>
-          )}
-          {dragOffset.x < -50 && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-red-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold -rotate-12 opacity-80">
-              NOPE!
-            </div>
-          )}
-        </>
-      )}
+      <div className="flex items-center justify-center min-h-[600px] p-4">
+        {/* Background Cards */}
+        {randomizedFoodTypes.slice(currentIndex + 1, currentIndex + 3).map((foodType, index) => (
+          <div
+            key={foodType.id}
+            className="absolute"
+            style={{
+              zIndex: 10 - index,
+              transform: `scale(${0.95 - index * 0.02}) translateY(${index * 8}px)`,
+              opacity: 0.8 - index * 0.2
+            }}
+          >
+            <FoodTypeCard
+              foodType={foodType}
+              onSwipe={() => {}}
+            />
+          </div>
+        ))}
+
+        {/* Current Card */}
+        <div
+          className="relative z-20"
+          style={cardStyle}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          <FoodTypeCard
+            foodType={currentFoodType}
+            onSwipe={handleSwipe}
+          />
+        </div>
+
+        {/* Swipe Indicators */}
+        {isDragging && (
+          <>
+            {dragOffset.x > 50 && (
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-green-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold rotate-12 opacity-80">
+                LIKE!
+              </div>
+            )}
+            {dragOffset.x < -50 && (
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-red-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold -rotate-12 opacity-80">
+                NOPE!
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Match Modal */}
       {showMatch && matchedFoodType && (
@@ -174,6 +208,16 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
           onClose={() => setShowMatch(false)}
         />
       )}
+
+      {/* History Modal */}
+      <SwipeHistory
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        userSwipes={userSwipes}
+        roomState={roomState}
+        items={randomizedFoodTypes}
+        type="foodTypes"
+      />
     </div>
   );
 };

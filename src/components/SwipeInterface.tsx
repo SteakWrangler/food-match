@@ -2,6 +2,7 @@
 import React, { useState, useRef } from 'react';
 import RestaurantCard from './RestaurantCard';
 import MatchModal from './MatchModal';
+import SwipeHistory from './SwipeHistory';
 import { Restaurant } from '@/data/restaurants';
 
 interface SwipeInterfaceProps {
@@ -21,16 +22,24 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMatch, setShowMatch] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [matchedRestaurant, setMatchedRestaurant] = useState<any>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [userSwipes, setUserSwipes] = useState<Record<string, 'left' | 'right'>>({});
   const cardRef = useRef<HTMLDivElement>(null);
 
   const currentRestaurant = restaurants[currentIndex];
 
   const handleSwipe = (direction: 'left' | 'right') => {
     if (!currentRestaurant) return;
+
+    // Track user's swipe
+    setUserSwipes(prev => ({
+      ...prev,
+      [currentRestaurant.id]: direction
+    }));
 
     // Call the onSwipe callback if provided (for room mode)
     if (onSwipe) {
@@ -99,68 +108,88 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">No more restaurants!</h2>
-        <p className="text-gray-600">You've seen all available options matching your filters.</p>
-        <button 
-          onClick={() => setCurrentIndex(0)}
-          className="mt-6 px-6 py-3 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
-        >
-          Start Over
-        </button>
+        <p className="text-gray-600 mb-4">You've seen all available options matching your filters.</p>
+        <div className="space-y-3">
+          <button 
+            onClick={() => setShowHistory(true)}
+            className="px-6 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+          >
+            View Your Likes
+          </button>
+          <button 
+            onClick={() => setCurrentIndex(0)}
+            className="block px-6 py-3 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
+          >
+            Start Over
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="relative flex items-center justify-center min-h-[600px] p-4">
-      {/* Background Cards */}
-      {restaurants.slice(currentIndex + 1, currentIndex + 3).map((restaurant, index) => (
-        <div
-          key={restaurant.id}
-          className="absolute"
-          style={{
-            zIndex: 10 - index,
-            transform: `scale(${0.95 - index * 0.02}) translateY(${index * 8}px)`,
-            opacity: 0.8 - index * 0.2
-          }}
+    <div className="relative">
+      {/* History Button */}
+      <div className="absolute top-0 right-0 z-50">
+        <button
+          onClick={() => setShowHistory(true)}
+          className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full p-2 shadow-sm hover:bg-white transition-colors"
         >
-          <RestaurantCard
-            restaurant={restaurant}
-            onSwipe={() => {}}
-          />
-        </div>
-      ))}
-
-      {/* Current Card */}
-      <div
-        ref={cardRef}
-        className="relative z-20"
-        style={cardStyle}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        <RestaurantCard
-          restaurant={currentRestaurant}
-          onSwipe={handleSwipe}
-        />
+          <span className="text-sm">❤️ {Object.values(userSwipes).filter(s => s === 'right').length}</span>
+        </button>
       </div>
 
-      {/* Swipe Indicators */}
-      {isDragging && (
-        <>
-          {dragOffset.x > 50 && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-green-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold rotate-12 opacity-80">
-              LIKE!
-            </div>
-          )}
-          {dragOffset.x < -50 && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-red-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold -rotate-12 opacity-80">
-              NOPE!
-            </div>
-          )}
-        </>
-      )}
+      <div className="flex items-center justify-center min-h-[600px] p-4">
+        {/* Background Cards */}
+        {restaurants.slice(currentIndex + 1, currentIndex + 3).map((restaurant, index) => (
+          <div
+            key={restaurant.id}
+            className="absolute"
+            style={{
+              zIndex: 10 - index,
+              transform: `scale(${0.95 - index * 0.02}) translateY(${index * 8}px)`,
+              opacity: 0.8 - index * 0.2
+            }}
+          >
+            <RestaurantCard
+              restaurant={restaurant}
+              onSwipe={() => {}}
+            />
+          </div>
+        ))}
+
+        {/* Current Card */}
+        <div
+          ref={cardRef}
+          className="relative z-20"
+          style={cardStyle}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          <RestaurantCard
+            restaurant={currentRestaurant}
+            onSwipe={handleSwipe}
+          />
+        </div>
+
+        {/* Swipe Indicators */}
+        {isDragging && (
+          <>
+            {dragOffset.x > 50 && (
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-green-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold rotate-12 opacity-80">
+                LIKE!
+              </div>
+            )}
+            {dragOffset.x < -50 && (
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-red-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold -rotate-12 opacity-80">
+                NOPE!
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Match Modal */}
       {showMatch && matchedRestaurant && (
@@ -169,6 +198,16 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           onClose={() => setShowMatch(false)}
         />
       )}
+
+      {/* History Modal */}
+      <SwipeHistory
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        userSwipes={userSwipes}
+        roomState={roomState}
+        items={restaurants}
+        type="restaurants"
+      />
     </div>
   );
 };

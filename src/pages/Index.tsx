@@ -248,6 +248,7 @@ const Index = () => {
                   restaurants={filteredRestaurants}
                   roomState={roomState}
                   onSwipe={handleSwipe}
+                  checkForMatch={checkForMatch}
                 />
               </TabsContent>
               
@@ -256,6 +257,7 @@ const Index = () => {
                   foodTypes={foodTypes}
                   roomState={roomState}
                   onSwipe={handleSwipe}
+                  checkForMatch={checkForMatch}
                 />
               </TabsContent>
             </Tabs>
