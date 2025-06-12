@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 
 interface FoodType {
@@ -17,6 +17,19 @@ interface FoodTypeCardProps {
 }
 
 const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  const handleImageError = () => {
+    console.log(`Image failed to load for ${foodType.name}: ${foodType.image}`);
+    setImageError(true);
+  };
+
+  const handleImageLoad = () => {
+    console.log(`Image loaded successfully for ${foodType.name}`);
+    setImageLoaded(true);
+  };
+
   return (
     <Card 
       className="w-full max-w-sm mx-auto bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none"
@@ -24,12 +37,35 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style })
     >
       {/* Main Image */}
       <div className="relative h-80 overflow-hidden">
-        <img 
-          src={foodType.image} 
-          alt={foodType.name}
-          className="w-full h-full object-cover"
-          draggable={false}
-        />
+        {!imageError ? (
+          <img 
+            src={foodType.image} 
+            alt={foodType.name}
+            className="w-full h-full object-cover"
+            draggable={false}
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+            style={{ display: imageLoaded ? 'block' : 'none' }}
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-orange-100 to-pink-100 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-6xl mb-4">{foodType.emoji}</div>
+              <div className="text-xl font-semibold text-gray-700">{foodType.name}</div>
+            </div>
+          </div>
+        )}
+        
+        {/* Loading placeholder */}
+        {!imageLoaded && !imageError && (
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-100 to-pink-100 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-6xl mb-4">{foodType.emoji}</div>
+              <div className="text-xl font-semibold text-gray-700">Loading...</div>
+            </div>
+          </div>
+        )}
+        
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         

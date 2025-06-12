@@ -1,4 +1,3 @@
-
 export interface FoodType {
   id: string;
   name: string;
@@ -12,21 +11,21 @@ export const foodTypes: FoodType[] = [
     id: '1',
     name: 'Pizza',
     description: 'Delicious cheesy goodness with your favorite toppings on a crispy crust.',
-    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=300&fit=crop',
     emoji: '🍕'
   },
   {
     id: '2',
     name: 'Burgers',
     description: 'Juicy beef patties with fresh toppings between soft buns.',
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop',
     emoji: '🍔'
   },
   {
     id: '3',
     name: 'Pasta',
     description: 'Comforting Italian pasta dishes with rich sauces and fresh ingredients.',
-    image: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=300&fit=crop',
     emoji: '🍝'
   },
   {
