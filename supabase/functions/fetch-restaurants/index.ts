@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Function to get cuisine-specific images
+// Function to get cuisine-specific images with better fallbacks
 function getCuisineImage(cuisine: string, amenity: string, name: string) {
   const cuisineImages: { [key: string]: string } = {
     'italian': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
@@ -38,38 +38,16 @@ function getCuisineImage(cuisine: string, amenity: string, name: string) {
     'chicken': 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=300&fit=crop',
     'tacos': 'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop',
     'donuts': 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
-    'bakery': 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop'
+    'bakery': 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
+    'noodles': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop',
+    'pasta': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+    'salad': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
+    'soup': 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop'
   };
 
   const lowerName = name.toLowerCase();
   
-  // First check the actual cuisine tags from the restaurant data
-  if (cuisine) {
-    const cuisineWords = cuisine.toLowerCase().split(';').map(c => c.trim());
-    
-    for (const word of cuisineWords) {
-      // Direct matches for cuisine types
-      if (cuisineImages[word]) {
-        return cuisineImages[word];
-      }
-      
-      // Check for partial matches in cuisine names
-      if (word.includes('mexican') || word.includes('taco')) return cuisineImages['mexican'];
-      if (word.includes('italian') || word.includes('pizza')) return cuisineImages['italian'];
-      if (word.includes('chinese') || word.includes('asian')) return cuisineImages['chinese'];
-      if (word.includes('japanese') || word.includes('sushi')) return cuisineImages['japanese'];
-      if (word.includes('indian') || word.includes('curry')) return cuisineImages['indian'];
-      if (word.includes('thai')) return cuisineImages['thai'];
-      if (word.includes('french')) return cuisineImages['french'];
-      if (word.includes('american')) return cuisineImages['american'];
-      if (word.includes('mediterranean') || word.includes('greek')) return cuisineImages['mediterranean'];
-      if (word.includes('korean')) return cuisineImages['korean'];
-      if (word.includes('vietnamese')) return cuisineImages['vietnamese'];
-      if (word.includes('seafood') || word.includes('fish')) return cuisineImages['seafood'];
-    }
-  }
-
-  // Fallback to restaurant name analysis
+  // Enhanced restaurant name matching for specific chains
   if (lowerName.includes('red lobster') || lowerName.includes('lobster')) return cuisineImages['lobster'];
   if (lowerName.includes('pizza') || lowerName.includes('domino') || lowerName.includes('papa')) return cuisineImages['pizza'];
   if (lowerName.includes('burger') || lowerName.includes('mcdonald') || lowerName.includes('burger king') || lowerName.includes('five guys') || lowerName.includes('shake shack') || lowerName.includes('whataburger')) return cuisineImages['burger'];
@@ -80,8 +58,41 @@ function getCuisineImage(cuisine: string, amenity: string, name: string) {
   if (lowerName.includes('seafood') || lowerName.includes('fish') || lowerName.includes('crab') || lowerName.includes('shrimp')) return cuisineImages['seafood'];
   if (lowerName.includes('taco') || lowerName.includes('mexican') || lowerName.includes('burrito') || lowerName.includes('chipotle')) return cuisineImages['mexican'];
   if (lowerName.includes('chinese') || lowerName.includes('panda') || lowerName.includes('wok')) return cuisineImages['chinese'];
+  if (lowerName.includes('thai')) return cuisineImages['thai'];
+  if (lowerName.includes('indian')) return cuisineImages['indian'];
+  if (lowerName.includes('italian')) return cuisineImages['italian'];
+  if (lowerName.includes('noodle') || lowerName.includes('ramen') || lowerName.includes('pho')) return cuisineImages['noodles'];
 
-  // Check for amenity type
+  // Enhanced cuisine tag matching
+  if (cuisine) {
+    const cuisineWords = cuisine.toLowerCase().split(';').map(c => c.trim());
+    
+    for (const word of cuisineWords) {
+      // Direct matches first
+      if (cuisineImages[word]) {
+        return cuisineImages[word];
+      }
+      
+      // Partial matches
+      if (word.includes('mexican') || word.includes('taco')) return cuisineImages['mexican'];
+      if (word.includes('italian') || word.includes('pizza')) return cuisineImages['pizza'];
+      if (word.includes('chinese') || word.includes('asian')) return cuisineImages['chinese'];
+      if (word.includes('japanese') || word.includes('sushi')) return cuisineImages['japanese'];
+      if (word.includes('indian') || word.includes('curry')) return cuisineImages['indian'];
+      if (word.includes('thai')) return cuisineImages['thai'];
+      if (word.includes('french')) return cuisineImages['french'];
+      if (word.includes('american')) return cuisineImages['american'];
+      if (word.includes('mediterranean') || word.includes('greek')) return cuisineImages['mediterranean'];
+      if (word.includes('korean')) return cuisineImages['korean'];
+      if (word.includes('vietnamese')) return cuisineImages['vietnamese'];
+      if (word.includes('seafood') || word.includes('fish')) return cuisineImages['seafood'];
+      if (word.includes('pasta')) return cuisineImages['pasta'];
+      if (word.includes('noodle')) return cuisineImages['noodles'];
+      if (word.includes('sandwich')) return cuisineImages['sandwich'];
+    }
+  }
+
+  // Check amenity type
   const lowerAmenity = amenity ? amenity.toLowerCase() : '';
   if (lowerAmenity === 'fast_food') return cuisineImages['fast_food'];
   if (lowerAmenity === 'cafe') return cuisineImages['cafe'];
@@ -105,15 +116,15 @@ function formatDisplayText(text: string): string {
     .join(' ');
 }
 
-// Function to parse and clean cuisine tags
+// Function to parse and clean cuisine tags - now returns multiple tags
 function parseCuisineTags(cuisineString: string): string[] {
-  if (!cuisineString) return [];
+  if (!cuisineString) return ['Restaurant'];
   
   return cuisineString
     .split(';')
     .map(tag => formatDisplayText(tag.trim()))
     .filter(tag => tag && tag !== 'Restaurant')
-    .slice(0, 3); // Limit to 3 tags max for UI cleanliness
+    .slice(0, 4); // Allow up to 4 tags
 }
 
 // Function to determine price range based on amenity and cuisine
@@ -282,15 +293,15 @@ serve(async (req) => {
   }
 
   try {
-    const { location, radius = 5000, limit = 20 } = await req.json()
+    const { location, radius = 5000, limit = 50 } = await req.json() // Increased default limit
     console.log(`Processing request for location: ${location}, radius: ${radius}, limit: ${limit}`)
     
     // Geocode the location
     const coords = await geocodeLocation(location)
     console.log(`Geocoded to: ${coords.lat}, ${coords.lon}`)
     
-    // Fetch restaurants from OpenStreetMap
-    const osmData = await fetchRestaurantsFromOSM(coords.lat, coords.lon, radius, limit * 3)
+    // Fetch restaurants from OpenStreetMap with higher multiplier to get more data
+    const osmData = await fetchRestaurantsFromOSM(coords.lat, coords.lon, radius, limit * 5)
     
     // Transform OSM data to match our Restaurant interface
     const restaurants = osmData
@@ -309,16 +320,14 @@ serve(async (req) => {
         const priceRange = determinePriceRange(tags.amenity || '', tags.cuisine || '', tags.name)
         const priority = calculatePriority(tags, tags.name)
         
-        // Use the actual cuisine data for image selection
+        // Use the actual cuisine data for image selection - always ensure we have an image
         const image = getCuisineImage(tags.cuisine || '', tags.amenity || '', tags.name)
         
-        // Parse cuisine tags properly
+        // Parse cuisine tags properly to return multiple individual tags
         const cuisineTags = parseCuisineTags(tags.cuisine || '');
-        const finalTags = [
-          cuisine,
-          priceRange,
-          'Local Favorite'
-        ].filter(Boolean);
+        const finalTags = cuisineTags.length > 0 ? cuisineTags : [cuisine];
+
+        console.log(`Restaurant: ${tags.name}, Cuisine: ${tags.cuisine}, Image: ${image}, Tags: ${finalTags.join(', ')}`)
 
         return {
           id: element.id.toString(),

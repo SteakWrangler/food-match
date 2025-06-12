@@ -24,6 +24,9 @@ interface RestaurantCardProps {
 }
 
 const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, style }) => {
+  // Take the first tag as the main cuisine for the top badge
+  const mainCuisine = restaurant.tags[0] || restaurant.cuisine;
+  
   return (
     <Card 
       className="w-full max-w-sm mx-auto bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none"
@@ -43,7 +46,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
         {/* Top Info */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
           <Badge variant="secondary" className="bg-white/90 text-gray-800">
-            {restaurant.cuisine}
+            {mainCuisine}
           </Badge>
           <div className="flex items-center gap-1 bg-white/90 px-2 py-1 rounded-full">
             <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
