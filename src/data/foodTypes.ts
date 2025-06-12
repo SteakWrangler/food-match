@@ -77,5 +77,40 @@ export const foodTypes: FoodType[] = [
     description: 'Smoky grilled meats and barbecue favorites with tangy sauces.',
     image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop',
     emoji: '🍖'
+  },
+  {
+    id: '11',
+    name: 'Desserts',
+    description: 'Sweet treats and decadent desserts to satisfy your sweet tooth.',
+    image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400&h=300&fit=crop',
+    emoji: '🍰'
+  },
+  {
+    id: '12',
+    name: 'Coffee & Cafés',
+    description: 'Artisan coffee, pastries, and cozy café atmosphere.',
+    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
+    emoji: '☕'
+  },
+  {
+    id: '13',
+    name: 'Sandwiches',
+    description: 'Fresh deli sandwiches and subs with quality ingredients.',
+    image: 'https://images.unsplash.com/photo-1539252554453-80ab65ce3586?w=400&h=300&fit=crop',
+    emoji: '🥪'
+  },
+  {
+    id: '14',
+    name: 'Seafood',
+    description: 'Fresh catch of the day and ocean delicacies.',
+    image: 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=400&h=300&fit=crop',
+    emoji: '🦐'
+  },
+  {
+    id: '15',
+    name: 'Breakfast',
+    description: 'Start your day right with hearty breakfast favorites.',
+    image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=300&fit=crop',
+    emoji: '🥞'
   }
 ];
