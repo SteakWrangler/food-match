@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 // Function to get cuisine-specific images
-function getCuisineImage(cuisine: string, amenity: string) {
+function getCuisineImage(cuisine: string, amenity: string, name: string) {
   const cuisineImages: { [key: string]: string } = {
     'italian': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
     'chinese': 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=400&h=300&fit=crop',
@@ -21,22 +21,120 @@ function getCuisineImage(cuisine: string, amenity: string) {
     'burger': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop',
     'sushi': 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&h=300&fit=crop',
     'cafe': 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
-    'fast_food': 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=300&fit=crop'
+    'coffee': 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
+    'fast_food': 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=300&fit=crop',
+    'bar': 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop',
+    'pub': 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop',
+    'bbq': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop',
+    'seafood': 'https://images.unsplash.com/photo-1565680018434-b513d5573b07?w=400&h=300&fit=crop',
+    'steakhouse': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop'
   };
 
+  // Check name for specific keywords
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('pizza')) return cuisineImages['pizza'];
+  if (lowerName.includes('burger')) return cuisineImages['burger'];
+  if (lowerName.includes('sushi')) return cuisineImages['sushi'];
+  if (lowerName.includes('coffee') || lowerName.includes('starbucks')) return cuisineImages['coffee'];
+  if (lowerName.includes('bar') || lowerName.includes('pub')) return cuisineImages['bar'];
+  if (lowerName.includes('bbq')) return cuisineImages['bbq'];
+  if (lowerName.includes('seafood')) return cuisineImages['seafood'];
+  if (lowerName.includes('steak')) return cuisineImages['steakhouse'];
+
   // Check for specific cuisine first
-  const lowerCuisine = cuisine.toLowerCase();
-  if (cuisineImages[lowerCuisine]) {
+  const lowerCuisine = cuisine ? cuisine.toLowerCase() : '';
+  if (lowerCuisine && cuisineImages[lowerCuisine]) {
     return cuisineImages[lowerCuisine];
   }
 
   // Check for amenity type
-  if (cuisineImages[amenity]) {
-    return cuisineImages[amenity];
+  const lowerAmenity = amenity ? amenity.toLowerCase() : '';
+  if (lowerAmenity && cuisineImages[lowerAmenity]) {
+    return cuisineImages[lowerAmenity];
   }
 
   // Default restaurant image
   return 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop';
+}
+
+// Function to format display text (remove underscores, capitalize)
+function formatDisplayText(text: string): string {
+  if (!text) return 'Restaurant';
+  
+  return text
+    .replace(/_/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+// Function to determine price range based on amenity and cuisine
+function determinePriceRange(amenity: string, cuisine: string, name: string): string {
+  const lowerName = name.toLowerCase();
+  const lowerAmenity = amenity ? amenity.toLowerCase() : '';
+  const lowerCuisine = cuisine ? cuisine.toLowerCase() : '';
+
+  // Fast food and cafes are typically cheaper
+  if (lowerAmenity === 'fast_food' || 
+      lowerName.includes('mcdonald') || 
+      lowerName.includes('burger king') ||
+      lowerName.includes('subway') ||
+      lowerName.includes('taco bell')) {
+    return '$';
+  }
+
+  // Coffee shops and cafes
+  if (lowerAmenity === 'cafe' || 
+      lowerName.includes('starbucks') ||
+      lowerName.includes('coffee') ||
+      lowerName.includes('cafe')) {
+    return '$';
+  }
+
+  // Fine dining cuisines tend to be more expensive
+  if (lowerCuisine === 'french' || 
+      lowerCuisine === 'fine_dining' ||
+      lowerName.includes('fine dining') ||
+      lowerName.includes('michelin')) {
+    return '$$$';
+  }
+
+  // Most regular restaurants fall in the middle
+  return '$$';
+}
+
+// Function to calculate restaurant priority score
+function calculatePriority(tags: any, name: string): number {
+  let score = 0;
+  const lowerName = name.toLowerCase();
+  const amenity = tags.amenity || '';
+  const cuisine = tags.cuisine || '';
+
+  // Prioritize actual restaurants over cafes/fast food
+  if (amenity === 'restaurant') score += 100;
+  if (amenity === 'fast_food') score += 20;
+  if (amenity === 'cafe') score += 10;
+
+  // Deprioritize chains that shouldn't be first options
+  if (lowerName.includes('starbucks') || 
+      lowerName.includes('mcdonald') ||
+      lowerName.includes('subway') ||
+      lowerName.includes('burger king')) {
+    score -= 50;
+  }
+
+  // Boost score for diverse cuisines
+  if (cuisine && cuisine !== 'regional') score += 30;
+
+  // Boost score for restaurants with good keywords
+  if (lowerName.includes('restaurant') || 
+      lowerName.includes('bistro') ||
+      lowerName.includes('grill') ||
+      lowerName.includes('kitchen')) {
+    score += 20;
+  }
+
+  return score;
 }
 
 // Function to geocode location using Nominatim (free)
@@ -146,29 +244,44 @@ serve(async (req) => {
         if (!lat || !lon) return null
         
         const distance = calculateDistance(coords.lat, coords.lon, lat, lon)
-        const cuisine = tags.cuisine || tags.amenity || 'Restaurant'
+        const rawCuisine = tags.cuisine || tags.amenity || 'restaurant'
+        const cuisine = formatDisplayText(rawCuisine)
         const rating = parseFloat((4.0 + Math.random() * 1).toFixed(1)) // Format to 1 decimal place
+        const priceRange = determinePriceRange(tags.amenity || '', tags.cuisine || '', tags.name)
+        const priority = calculatePriority(tags, tags.name)
         
         return {
           id: element.id.toString(),
           name: tags.name,
-          cuisine: cuisine.charAt(0).toUpperCase() + cuisine.slice(1),
-          image: getCuisineImage(tags.cuisine || '', tags.amenity || ''),
+          cuisine: cuisine,
+          image: getCuisineImage(tags.cuisine || '', tags.amenity || '', tags.name),
           rating: rating,
-          priceRange: ['$', '$$', '$$$'][Math.floor(Math.random() * 3)],
+          priceRange: priceRange,
           distance: `${distance.toFixed(1)} mi`,
           estimatedTime: `${Math.ceil(distance * 3)} min`,
-          description: `${tags.cuisine ? `Delicious ${tags.cuisine} cuisine` : 'Great local restaurant'} located in ${location}`,
+          description: `${tags.cuisine ? `Delicious ${formatDisplayText(tags.cuisine)} cuisine` : 'Great local restaurant'} located in ${location}`,
           tags: [
-            cuisine.charAt(0).toUpperCase() + cuisine.slice(1),
-            ['$', '$$', '$$$'][Math.floor(Math.random() * 3)],
+            cuisine,
+            priceRange,
             'Local Favorite'
-          ].filter(Boolean)
+          ].filter(Boolean),
+          priority: priority
         }
       })
       .filter(Boolean) // Remove null entries
-      .sort((a: any, b: any) => parseFloat(a.distance) - parseFloat(b.distance)) // Sort by distance
+      .sort((a: any, b: any) => {
+        // First sort by priority (high to low), then by distance (low to high)
+        if (b.priority !== a.priority) {
+          return b.priority - a.priority;
+        }
+        return parseFloat(a.distance) - parseFloat(b.distance);
+      })
       .slice(0, limit) // Limit results
+      .map((restaurant: any) => {
+        // Remove priority from final result
+        const { priority, ...finalRestaurant } = restaurant;
+        return finalRestaurant;
+      });
 
     console.log(`Returning ${restaurants.length} restaurants`)
 
