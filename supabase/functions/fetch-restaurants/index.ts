@@ -6,6 +6,39 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Function to get cuisine-specific images
+function getCuisineImage(cuisine: string, amenity: string) {
+  const cuisineImages: { [key: string]: string } = {
+    'italian': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+    'chinese': 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=400&h=300&fit=crop',
+    'japanese': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop',
+    'mexican': 'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop',
+    'indian': 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&h=300&fit=crop',
+    'french': 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop',
+    'american': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop',
+    'thai': 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&h=300&fit=crop',
+    'pizza': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=300&fit=crop',
+    'burger': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop',
+    'sushi': 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&h=300&fit=crop',
+    'cafe': 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
+    'fast_food': 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=300&fit=crop'
+  };
+
+  // Check for specific cuisine first
+  const lowerCuisine = cuisine.toLowerCase();
+  if (cuisineImages[lowerCuisine]) {
+    return cuisineImages[lowerCuisine];
+  }
+
+  // Check for amenity type
+  if (cuisineImages[amenity]) {
+    return cuisineImages[amenity];
+  }
+
+  // Default restaurant image
+  return 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop';
+}
+
 // Function to geocode location using Nominatim (free)
 async function geocodeLocation(location: string) {
   console.log(`Geocoding location: ${location}`)
@@ -114,13 +147,14 @@ serve(async (req) => {
         
         const distance = calculateDistance(coords.lat, coords.lon, lat, lon)
         const cuisine = tags.cuisine || tags.amenity || 'Restaurant'
+        const rating = parseFloat((4.0 + Math.random() * 1).toFixed(1)) // Format to 1 decimal place
         
         return {
           id: element.id.toString(),
           name: tags.name,
           cuisine: cuisine.charAt(0).toUpperCase() + cuisine.slice(1),
-          image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
-          rating: 4.0 + Math.random() * 1, // Random rating between 4.0-5.0
+          image: getCuisineImage(tags.cuisine || '', tags.amenity || ''),
+          rating: rating,
           priceRange: ['$', '$$', '$$$'][Math.floor(Math.random() * 3)],
           distance: `${distance.toFixed(1)} mi`,
           estimatedTime: `${Math.ceil(distance * 3)} min`,
