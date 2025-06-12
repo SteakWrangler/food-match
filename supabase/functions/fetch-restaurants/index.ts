@@ -1,9 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// TODO: Import OpenAI API client for Deno or use fetch
+// TODO: Import Supabase client for Deno
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+// TODO: Set your OpenAI API key as an environment variable in Supabase
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 // Function to get cuisine-specific images with better fallbacks
 function getCuisineImage(cuisine: string, amenity: string, name: string) {
@@ -207,178 +215,143 @@ function calculatePriority(tags: any, name: string): number {
   return score;
 }
 
-// Function to geocode location using Nominatim (free)
-async function geocodeLocation(location: string) {
-  console.log(`Geocoding location: ${location}`)
-  
-  const response = await fetch(
-    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`,
-    {
-      headers: {
-        'User-Agent': 'FoodMatch-App/1.0',
-      },
-    }
-  )
-  
-  if (!response.ok) {
-    console.error(`Geocoding failed: ${response.status}`)
-    throw new Error('Geocoding failed')
-  }
-  
-  const data = await response.json()
-  console.log(`Geocoding response:`, data)
-  
-  if (data.length === 0) {
-    throw new Error('Location not found')
-  }
-  
-  return {
-    lat: parseFloat(data[0].lat),
-    lon: parseFloat(data[0].lon)
-  }
-}
+// Helper to call OpenAI Chat API
+async function fetchRestaurantsFromChatGPT(location: string, alreadyShown: string[], limit: number) {
+  const prompt = `List up to ${limit} real, well-known, and verifiable restaurants in the ${location} area that have not already been listed: [${alreadyShown.map(n => `\"${n}\"`).join(', ')}]. For each, provide: name, cuisine, a short description, a plausible average rating (1-5), a sample menu item and price, and a plausible price range ($, $$, $$$, $$$$). Only include restaurants you are certain exist and are well-known. If you are unsure, do not include them. If there are fewer than ${limit}, only list the ones you are certain about. Format as JSON.`;
 
-// Function to fetch restaurants from OpenStreetMap
-async function fetchRestaurantsFromOSM(lat: number, lon: number, radius: number, limit: number) {
-  console.log(`Fetching restaurants around ${lat}, ${lon} within ${radius}m`)
-  
-  const overpassQuery = `
-    [out:json][timeout:25];
-    (
-      node["amenity"="restaurant"](around:${radius},${lat},${lon});
-      way["amenity"="restaurant"](around:${radius},${lat},${lon});
-      node["amenity"="fast_food"](around:${radius},${lat},${lon});
-      way["amenity"="fast_food"](around:${radius},${lat},${lon});
-      node["amenity"="cafe"](around:${radius},${lat},${lon});
-      way["amenity"="cafe"](around:${radius},${lat},${lon});
-    );
-    out center meta;
-  `
-  
-  const response = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${OPENAI_API_KEY}`,
     },
-    body: `data=${encodeURIComponent(overpassQuery)}`
-  })
-  
-  if (!response.ok) {
-    console.error(`Overpass API error: ${response.status}`)
-    throw new Error(`Overpass API error: ${response.status}`)
-  }
-  
-  const data = await response.json()
-  console.log(`Found ${data.elements.length} places from OSM`)
-  return data.elements
-}
+    body: JSON.stringify({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "You are a helpful assistant that only provides real, verifiable restaurant data." },
+        { role: "user", content: prompt }
+      ],
+      max_tokens: 1200,
+      temperature: 0.2
+    })
+  });
 
-// Function to calculate distance between two points
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 3959 // Earth's radius in miles
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-  return R * c
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+  const data = await response.json();
+  let restaurants: any[] = [];
+  try {
+    const text = data.choices[0].message.content;
+    restaurants = JSON.parse(text);
+  } catch (e) {
+    restaurants = [];
+  }
+  return restaurants;
 }
 
 serve(async (req) => {
-  console.log(`${req.method} request received`)
-  
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { location, radius = 5000, limit = 50 } = await req.json() // Increased default limit
-    console.log(`Processing request for location: ${location}, radius: ${radius}, limit: ${limit}`)
-    
-    // Geocode the location
-    const coords = await geocodeLocation(location)
-    console.log(`Geocoded to: ${coords.lat}, ${coords.lon}`)
-    
-    // Fetch restaurants from OpenStreetMap with higher multiplier to get more data
-    const osmData = await fetchRestaurantsFromOSM(coords.lat, coords.lon, radius, limit * 5)
-    
-    // Transform OSM data to match our Restaurant interface
-    const restaurants = osmData
-      .filter((element: any) => element.tags && element.tags.name)
-      .map((element: any) => {
-        const tags = element.tags
-        const lat = element.lat || element.center?.lat
-        const lon = element.lon || element.center?.lon
-        
-        if (!lat || !lon) return null
-        
-        const distance = calculateDistance(coords.lat, coords.lon, lat, lon)
-        const rawCuisine = tags.cuisine || tags.amenity || 'restaurant'
-        const cuisine = formatDisplayText(rawCuisine)
-        const rating = parseFloat((4.0 + Math.random() * 1).toFixed(1))
-        const priceRange = determinePriceRange(tags.amenity || '', tags.cuisine || '', tags.name)
-        const priority = calculatePriority(tags, tags.name)
-        
-        // Use the actual cuisine data for image selection - always ensure we have an image
-        const image = getCuisineImage(tags.cuisine || '', tags.amenity || '', tags.name)
-        
-        // Parse cuisine tags properly to return multiple individual tags
-        const cuisineTags = parseCuisineTags(tags.cuisine || '');
-        const finalTags = cuisineTags.length > 0 ? cuisineTags : [cuisine];
+    const { location, alreadyShown = [], limit = 10 } = await req.json();
+    if (!location) {
+      return new Response(JSON.stringify({ error: 'Missing location' }), { status: 400, headers: corsHeaders });
+    }
 
-        console.log(`Restaurant: ${tags.name}, Cuisine: ${tags.cuisine}, Image: ${image}, Tags: ${finalTags.join(', ')}`)
+    // Create Supabase client
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_KEY!);
 
-        return {
-          id: element.id.toString(),
-          name: tags.name,
-          cuisine: cuisine,
-          image: image,
-          rating: rating,
-          priceRange: priceRange,
-          distance: `${distance.toFixed(1)} mi`,
-          estimatedTime: `${Math.ceil(distance * 3)} min`,
-          description: `${cuisine} restaurant located in ${location}`,
-          tags: finalTags,
-          priority: priority
+    // Get cached restaurants for this location
+    const { data: cachedRestaurants, error: cacheError } = await supabase
+      .from('restaurant_cache')
+      .select('*')
+      .eq('location', location)
+      .not('name', 'in', `(${alreadyShown.map(n => `'${n}'`).join(',')})`)
+      .limit(limit);
+
+    if (cacheError) {
+      console.error('Error fetching from cache:', cacheError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch from cache' }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    let newRestaurants = [];
+    if (cachedRestaurants && cachedRestaurants.length > 0) {
+      // Transform cached restaurants to match the expected format
+      newRestaurants = cachedRestaurants.map(restaurant => ({
+        name: restaurant.name,
+        cuisine: restaurant.cuisine,
+        description: restaurant.description,
+        rating: restaurant.rating,
+        priceRange: restaurant.price_range,
+        sampleMenuItem: restaurant.sample_menu_item,
+        samplePrice: restaurant.sample_price,
+        image: getCuisineImage(restaurant.cuisine, '', restaurant.name)
+      }));
+    }
+
+    // If we need more restaurants, fetch from ChatGPT
+    if (newRestaurants.length < limit) {
+      const needed = limit - newRestaurants.length;
+      const chatRestaurants = await fetchRestaurantsFromChatGPT(
+        location,
+        [...alreadyShown, ...newRestaurants.map(r => r.name)],
+        needed
+      );
+
+      if (chatRestaurants && chatRestaurants.length > 0) {
+        // Store new restaurants in cache
+        const { error: insertError } = await supabase
+          .from('restaurant_cache')
+          .insert(
+            chatRestaurants.map(restaurant => ({
+              id: Math.random().toString(36).substr(2, 9),
+              location,
+              name: restaurant.name,
+              cuisine: restaurant.cuisine,
+              description: restaurant.description,
+              rating: restaurant.rating,
+              price_range: restaurant.priceRange,
+              sample_menu_item: restaurant.sampleMenuItem,
+              sample_price: restaurant.samplePrice
+            }))
+          );
+
+        if (insertError) {
+          console.error('Error storing in cache:', insertError);
         }
-      })
-      .filter(Boolean)
-      .sort((a: any, b: any) => {
-        // Sort by priority (high to low), then by distance (low to high)
-        if (b.priority !== a.priority) {
-          return b.priority - a.priority;
-        }
-        return parseFloat(a.distance) - parseFloat(b.distance);
-      })
-      .slice(0, limit)
-      .map((restaurant: any) => {
-        const { priority, ...finalRestaurant } = restaurant;
-        return finalRestaurant;
-      });
 
-    console.log(`Returning ${restaurants.length} restaurants`)
+        // Add new restaurants to the response
+        newRestaurants = [
+          ...newRestaurants,
+          ...chatRestaurants.map(restaurant => ({
+            ...restaurant,
+            image: getCuisineImage(restaurant.cuisine, '', restaurant.name)
+          }))
+        ];
+      }
+    }
+
+    if (!newRestaurants || newRestaurants.length === 0) {
+      return new Response(
+        JSON.stringify({ restaurants: [], message: 'No options available or service is not working right now.' }),
+        { status: 200, headers: corsHeaders }
+      );
+    }
 
     return new Response(
-      JSON.stringify({ restaurants }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
+      JSON.stringify({ restaurants: newRestaurants }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Error fetching restaurants:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
+      { status: 500, headers: corsHeaders }
+    );
   }
-})
+});
