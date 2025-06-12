@@ -59,14 +59,14 @@ const Index = () => {
     }
   }, [roomState]);
 
-  const handleCreateRoom = (name: string) => {
-    const roomId = createRoom(name);
+  const handleCreateRoom = async (name: string) => {
+    const roomId = await createRoom(name);
     setShowCreateRoom(false);
     setShowQRCode(true);
   };
 
-  const handleJoinRoom = (roomId: string, name: string) => {
-    const success = joinRoom(roomId, name);
+  const handleJoinRoom = async (roomId: string, name: string) => {
+    const success = await joinRoom(roomId, name);
     if (success) {
       setShowJoinRoom(false);
       // Clear URL parameter

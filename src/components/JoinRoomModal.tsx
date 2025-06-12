@@ -8,7 +8,7 @@ import { X } from 'lucide-react';
 
 interface JoinRoomModalProps {
   roomId?: string;
-  onJoinRoom: (roomId: string, name: string) => boolean;
+  onJoinRoom: (roomId: string, name: string) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -16,13 +16,22 @@ const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ roomId: initialRoomId, on
   const [roomId, setRoomId] = useState(initialRoomId || '');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim() && roomId.trim()) {
-      const success = onJoinRoom(roomId.trim().toUpperCase(), name.trim());
-      if (!success) {
-        setError('Room not found. Please check the room ID.');
+      setIsLoading(true);
+      setError('');
+      try {
+        const success = await onJoinRoom(roomId.trim().toUpperCase(), name.trim());
+        if (!success) {
+          setError('Room not found. Please check the room ID.');
+        }
+      } catch (error) {
+        setError('Failed to join room. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -54,6 +63,7 @@ const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ roomId: initialRoomId, on
                 placeholder="Enter your name"
                 className="mt-1"
                 autoFocus={!initialRoomId}
+                disabled={isLoading}
               />
             </div>
 
@@ -67,7 +77,7 @@ const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ roomId: initialRoomId, on
                 placeholder="Enter room ID"
                 className="mt-1"
                 autoFocus={!!initialRoomId}
-                disabled={!!initialRoomId}
+                disabled={!!initialRoomId || isLoading}
               />
             </div>
 
@@ -81,15 +91,16 @@ const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ roomId: initialRoomId, on
                 variant="outline" 
                 className="flex-1"
                 onClick={onClose}
+                disabled={isLoading}
               >
                 Cancel
               </Button>
               <Button 
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
-                disabled={!name.trim() || !roomId.trim()}
+                disabled={!name.trim() || !roomId.trim() || isLoading}
               >
-                Join Room
+                {isLoading ? 'Joining...' : 'Join Room'}
               </Button>
             </div>
           </form>
