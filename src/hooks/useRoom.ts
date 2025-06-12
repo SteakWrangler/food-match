@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -163,11 +164,23 @@ const useRoom = () => {
     if (!roomState) return false;
 
     const allParticipants = roomState.participants;
-    const rightSwipes = allParticipants.filter(participant => 
+    
+    // Check that ALL participants have swiped right on this specific restaurant
+    const participantsWhoSwipedRight = allParticipants.filter(participant => 
       roomState.swipes[participant.id]?.[restaurantId] === 'right'
     );
 
-    return rightSwipes.length === allParticipants.length;
+    // Only return true if the number of right swipes equals the total number of participants
+    // AND there are at least 2 participants (no matches with just 1 person)
+    const hasMatch = participantsWhoSwipedRight.length === allParticipants.length && 
+                     allParticipants.length >= 2;
+
+    console.log(`Checking match for restaurant ${restaurantId}:`);
+    console.log(`Total participants: ${allParticipants.length}`);
+    console.log(`Participants who swiped right: ${participantsWhoSwipedRight.length}`);
+    console.log(`Has match: ${hasMatch}`);
+
+    return hasMatch;
   };
 
   const getParticipantSwipe = (participantId: string, restaurantId: string) => {
