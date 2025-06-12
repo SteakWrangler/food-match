@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import SwipeInterface from '@/components/SwipeInterface';
+import GeneralSwipeInterface from '@/components/GeneralSwipeInterface';
 import FilterPanel from '@/components/FilterPanel';
 import CreateRoomModal from '@/components/CreateRoomModal';
 import JoinRoomModal from '@/components/JoinRoomModal';
@@ -7,12 +9,15 @@ import QRCodeModal from '@/components/QRCodeModal';
 import MatchModal from '@/components/MatchModal';
 import LocationModal from '@/components/LocationModal';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Filter, Users, MapPin, QrCode, UserPlus } from 'lucide-react';
 import useRoom from '@/hooks/useRoom';
 import { restaurants } from '@/data/restaurants';
+import { foodTypes } from '@/data/foodTypes';
 import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState('specific');
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showJoinRoom, setShowJoinRoom] = useState(false);
@@ -64,13 +69,34 @@ const Index = () => {
     return success;
   };
 
-  const handleSwipe = (restaurantId: string, direction: 'left' | 'right') => {
-    addSwipe(restaurantId, direction);
+  const handleSwipe = (itemId: string, direction: 'left' | 'right') => {
+    addSwipe(itemId, direction);
     
-    if (direction === 'right' && checkForMatch(restaurantId)) {
-      const restaurant = filteredRestaurants.find(r => r.id === restaurantId);
-      if (restaurant) {
-        setMatchedRestaurant(restaurant);
+    if (direction === 'right' && checkForMatch(itemId)) {
+      let matchedItem;
+      if (activeTab === 'specific') {
+        matchedItem = filteredRestaurants.find(r => r.id === itemId);
+      } else {
+        const foodType = foodTypes.find(f => f.id === itemId);
+        if (foodType) {
+          // Convert food type to restaurant-like object for the match modal
+          matchedItem = {
+            id: foodType.id,
+            name: foodType.name,
+            cuisine: foodType.name,
+            image: foodType.image,
+            rating: 4.5,
+            priceRange: '$$',
+            distance: 'Food Type Match',
+            estimatedTime: 'Ready to explore!',
+            description: `You both want ${foodType.name}! Time to find a great place nearby.`,
+            tags: ['Match', 'Food Type']
+          };
+        }
+      }
+      
+      if (matchedItem) {
+        setMatchedRestaurant(matchedItem);
         setShowMatch(true);
       }
     }
@@ -105,14 +131,16 @@ const Index = () => {
               <MapPin className="w-4 h-4" />
               <span>{location}</span>
             </button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters(true)}
-              className="border-orange-200 hover:bg-orange-50"
-            >
-              <Filter className="w-4 h-4" />
-            </Button>
+            {activeTab === 'specific' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(true)}
+                className="border-orange-200 hover:bg-orange-50"
+              >
+                <Filter className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -189,17 +217,41 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Swipe Interface */}
-            <SwipeInterface 
-              restaurants={filteredRestaurants}
-              roomState={roomState}
-              onSwipe={handleSwipe}
-            />
+            {/* Tab System */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+              <TabsList className="grid w-full grid-cols-2 bg-white/80 backdrop-blur-sm">
+                <TabsTrigger value="specific" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+                  Specific Places
+                </TabsTrigger>
+                <TabsTrigger value="general" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+                  Food Types
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="specific" className="mt-0">
+                <SwipeInterface 
+                  restaurants={filteredRestaurants}
+                  roomState={roomState}
+                  onSwipe={handleSwipe}
+                />
+              </TabsContent>
+              
+              <TabsContent value="general" className="mt-0">
+                <GeneralSwipeInterface 
+                  foodTypes={foodTypes}
+                  roomState={roomState}
+                  onSwipe={handleSwipe}
+                />
+              </TabsContent>
+            </Tabs>
 
             {/* Instructions */}
             <div className="text-center mt-8 space-y-2">
               <p className="text-gray-600 text-sm">
-                Swipe right if you want to eat there, left if you don't
+                {activeTab === 'specific' 
+                  ? 'Swipe right if you want to eat there, left if you don\'t'
+                  : 'Swipe right on food types you\'re craving, left if you don\'t want them'
+                }
               </p>
               <p className="text-orange-600 text-sm font-medium">
                 When everyone swipes right, it's a match! 🎉
