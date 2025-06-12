@@ -8,22 +8,16 @@ interface GeneralSwipeInterfaceProps {
   foodTypes: FoodType[];
   roomState?: any;
   onSwipe?: (foodTypeId: string, direction: 'left' | 'right') => void;
+  checkForMatch?: (foodTypeId: string) => boolean;
 }
 
 const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({ 
   foodTypes, 
   roomState, 
-  onSwipe
+  onSwipe,
+  checkForMatch
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [partnerSwipes] = useState<Record<string, 'left' | 'right'>>({
-    // Simulated partner swipes for demo
-    '1': 'right',
-    '3': 'right',
-    '5': 'right',
-    '7': 'left',
-    '2': 'left'
-  });
   const [showMatch, setShowMatch] = useState(false);
   const [matchedFoodType, setMatchedFoodType] = useState<any>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
@@ -40,8 +34,8 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
       onSwipe(currentFoodType.id, direction);
     }
 
-    // Check for match
-    if (direction === 'right' && partnerSwipes[currentFoodType.id] === 'right') {
+    // Check for match using the real room data
+    if (direction === 'right' && checkForMatch && checkForMatch(currentFoodType.id)) {
       // Convert food type to restaurant-like object for the match modal
       const mockRestaurant = {
         id: currentFoodType.id,

@@ -9,24 +9,17 @@ interface SwipeInterfaceProps {
   roomState?: any;
   onSwipe?: (restaurantId: string, direction: 'left' | 'right') => void;
   onMatch?: (restaurant: any) => void;
+  checkForMatch?: (restaurantId: string) => boolean;
 }
 
 const SwipeInterface: React.FC<SwipeInterfaceProps> = ({ 
   restaurants, 
   roomState, 
   onSwipe, 
-  onMatch 
+  onMatch,
+  checkForMatch
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userSwipes, setUserSwipes] = useState<Record<string, 'left' | 'right'>>({});
-  const [partnerSwipes] = useState<Record<string, 'left' | 'right'>>({
-    // Simulated partner swipes for demo
-    '1': 'right',
-    '3': 'right',
-    '5': 'right',
-    '7': 'left',
-    '2': 'left'
-  });
   const [showMatch, setShowMatch] = useState(false);
   const [matchedRestaurant, setMatchedRestaurant] = useState<any>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
@@ -44,10 +37,13 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       onSwipe(currentRestaurant.id, direction);
     }
 
-    // Check for match
-    if (direction === 'right' && partnerSwipes[currentRestaurant.id] === 'right') {
+    // Check for match using the real room data
+    if (direction === 'right' && checkForMatch && checkForMatch(currentRestaurant.id)) {
       setMatchedRestaurant(currentRestaurant);
       setShowMatch(true);
+      if (onMatch) {
+        onMatch(currentRestaurant);
+      }
     }
 
     // Move to next restaurant after a short delay
