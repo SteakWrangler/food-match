@@ -43,7 +43,33 @@ function getCuisineImage(cuisine: string, amenity: string, name: string) {
 
   const lowerName = name.toLowerCase();
   
-  // More specific restaurant chain and keyword matching
+  // First check the actual cuisine tags from the restaurant data
+  if (cuisine) {
+    const cuisineWords = cuisine.toLowerCase().split(';').map(c => c.trim());
+    
+    for (const word of cuisineWords) {
+      // Direct matches for cuisine types
+      if (cuisineImages[word]) {
+        return cuisineImages[word];
+      }
+      
+      // Check for partial matches in cuisine names
+      if (word.includes('mexican') || word.includes('taco')) return cuisineImages['mexican'];
+      if (word.includes('italian') || word.includes('pizza')) return cuisineImages['italian'];
+      if (word.includes('chinese') || word.includes('asian')) return cuisineImages['chinese'];
+      if (word.includes('japanese') || word.includes('sushi')) return cuisineImages['japanese'];
+      if (word.includes('indian') || word.includes('curry')) return cuisineImages['indian'];
+      if (word.includes('thai')) return cuisineImages['thai'];
+      if (word.includes('french')) return cuisineImages['french'];
+      if (word.includes('american')) return cuisineImages['american'];
+      if (word.includes('mediterranean') || word.includes('greek')) return cuisineImages['mediterranean'];
+      if (word.includes('korean')) return cuisineImages['korean'];
+      if (word.includes('vietnamese')) return cuisineImages['vietnamese'];
+      if (word.includes('seafood') || word.includes('fish')) return cuisineImages['seafood'];
+    }
+  }
+
+  // Fallback to restaurant name analysis
   if (lowerName.includes('red lobster') || lowerName.includes('lobster')) return cuisineImages['lobster'];
   if (lowerName.includes('pizza') || lowerName.includes('domino') || lowerName.includes('papa')) return cuisineImages['pizza'];
   if (lowerName.includes('burger') || lowerName.includes('mcdonald') || lowerName.includes('burger king') || lowerName.includes('five guys') || lowerName.includes('shake shack') || lowerName.includes('whataburger')) return cuisineImages['burger'];
@@ -52,40 +78,16 @@ function getCuisineImage(cuisine: string, amenity: string, name: string) {
   if (lowerName.includes('steakhouse') || lowerName.includes('steak') || lowerName.includes('outback')) return cuisineImages['steakhouse'];
   if (lowerName.includes('bbq') || lowerName.includes('barbecue') || lowerName.includes('smokehouse')) return cuisineImages['bbq'];
   if (lowerName.includes('seafood') || lowerName.includes('fish') || lowerName.includes('crab') || lowerName.includes('shrimp')) return cuisineImages['seafood'];
-  if (lowerName.includes('bar') || lowerName.includes('pub') || lowerName.includes('tavern') || lowerName.includes('grill')) return cuisineImages['bar'];
   if (lowerName.includes('taco') || lowerName.includes('mexican') || lowerName.includes('burrito') || lowerName.includes('chipotle')) return cuisineImages['mexican'];
   if (lowerName.includes('chinese') || lowerName.includes('panda') || lowerName.includes('wok')) return cuisineImages['chinese'];
-  if (lowerName.includes('thai') || lowerName.includes('pad thai')) return cuisineImages['thai'];
-  if (lowerName.includes('indian') || lowerName.includes('curry') || lowerName.includes('tandoori')) return cuisineImages['indian'];
-  if (lowerName.includes('italian') || lowerName.includes('pasta') || lowerName.includes('olive garden')) return cuisineImages['italian'];
-  if (lowerName.includes('french') || lowerName.includes('bistro')) return cuisineImages['french'];
-  if (lowerName.includes('korean') || lowerName.includes('kimchi') || lowerName.includes('bulgogi')) return cuisineImages['korean'];
-  if (lowerName.includes('vietnamese') || lowerName.includes('pho') || lowerName.includes('banh mi')) return cuisineImages['vietnamese'];
-  if (lowerName.includes('diner') || lowerName.includes('denny') || lowerName.includes('ihop')) return cuisineImages['diner'];
-  if (lowerName.includes('sandwich') || lowerName.includes('subway') || lowerName.includes('sub')) return cuisineImages['sandwich'];
-  if (lowerName.includes('wings') || lowerName.includes('buffalo')) return cuisineImages['wings'];
-  if (lowerName.includes('chicken') || lowerName.includes('kfc') || lowerName.includes('popeyes')) return cuisineImages['chicken'];
-  if (lowerName.includes('donuts') || lowerName.includes('krispy') || lowerName.includes('donut')) return cuisineImages['donuts'];
-  if (lowerName.includes('bakery') || lowerName.includes('bread') || lowerName.includes('pastry')) return cuisineImages['bakery'];
 
-  // Check for specific cuisine tags with better fallback logic
-  const lowerCuisine = cuisine ? cuisine.toLowerCase() : '';
-  const cuisineWords = lowerCuisine.split(';').map(c => c.trim());
-  
-  for (const word of cuisineWords) {
-    if (word && cuisineImages[word]) {
-      return cuisineImages[word];
-    }
-  }
-
-  // Check for amenity type with better matching
+  // Check for amenity type
   const lowerAmenity = amenity ? amenity.toLowerCase() : '';
-  if (lowerAmenity === 'restaurant') return cuisineImages['american']; // Generic restaurant food
   if (lowerAmenity === 'fast_food') return cuisineImages['fast_food'];
   if (lowerAmenity === 'cafe') return cuisineImages['cafe'];
   if (lowerAmenity === 'bar' || lowerAmenity === 'pub') return cuisineImages['bar'];
 
-  // More generic restaurant image as absolute fallback
+  // Final fallback to american food
   return cuisineImages['american'];
 }
 
@@ -307,6 +309,9 @@ serve(async (req) => {
         const priceRange = determinePriceRange(tags.amenity || '', tags.cuisine || '', tags.name)
         const priority = calculatePriority(tags, tags.name)
         
+        // Use the actual cuisine data for image selection
+        const image = getCuisineImage(tags.cuisine || '', tags.amenity || '', tags.name)
+        
         // Parse cuisine tags properly
         const cuisineTags = parseCuisineTags(tags.cuisine || '');
         const finalTags = [
@@ -319,7 +324,7 @@ serve(async (req) => {
           id: element.id.toString(),
           name: tags.name,
           cuisine: cuisine,
-          image: getCuisineImage(tags.cuisine || '', tags.amenity || '', tags.name),
+          image: image,
           rating: rating,
           priceRange: priceRange,
           distance: `${distance.toFixed(1)} mi`,

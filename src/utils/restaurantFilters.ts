@@ -10,7 +10,7 @@ export interface FilterState {
 
 export const defaultFilters: FilterState = {
   distance: [5],
-  priceRange: [4], // Changed to 4 ($$$$) to include all price ranges by default
+  priceRange: [], // No default price filter - show all restaurants
   selectedCuisines: [],
   openNow: true,
 };
@@ -23,10 +23,13 @@ export const filterRestaurants = (restaurants: Restaurant[], filters: FilterStat
       return false;
     }
 
-    // Price range filter
-    const priceLevel = restaurant.priceRange.length; // $ = 1, $$ = 2, $$$ = 3, $$$$ = 4
-    if (priceLevel > filters.priceRange[0]) {
-      return false;
+    // Price range filter - only filter if a price range is selected
+    if (filters.priceRange.length > 0) {
+      const priceLevel = restaurant.priceRange.length; // $ = 1, $$ = 2, $$$ = 3, $$$$ = 4
+      // If user selects $$, only show $$ restaurants, not $ and $$
+      if (priceLevel !== filters.priceRange[0]) {
+        return false;
+      }
     }
 
     // Cuisine filter

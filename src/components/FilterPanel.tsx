@@ -82,13 +82,17 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           {/* Price Range */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Price Range
+              Price Range {filters.priceRange.length === 0 && <span className="text-gray-500">(All)</span>}
             </label>
             <div className="flex gap-2">
               {priceLabels.map((label, index) => (
                 <button
                   key={index}
-                  onClick={() => updateFilters({ priceRange: [index + 1] })}
+                  onClick={() => {
+                    // Toggle the price range - if already selected, clear it; otherwise set it
+                    const newPriceRange = filters.priceRange[0] === index + 1 ? [] : [index + 1];
+                    updateFilters({ priceRange: newPriceRange });
+                  }}
                   className={`flex-1 py-2 px-3 rounded-lg border transition-colors ${
                     filters.priceRange[0] === index + 1
                       ? 'bg-orange-500 text-white border-orange-500'
@@ -99,6 +103,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
                 </button>
               ))}
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Select a specific price range or leave unselected to see all prices
+            </p>
           </div>
 
           {/* Open Now */}
