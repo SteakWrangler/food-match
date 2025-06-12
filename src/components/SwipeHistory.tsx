@@ -32,14 +32,13 @@ const SwipeHistory: React.FC<SwipeHistoryProps> = ({
   // Get only the items the user swiped right on
   const likedItems = items.filter(item => userSwipes[item.id] === 'right');
 
-  // Calculate how many others liked each item
-  const getOtherLikesCount = (itemId: string): number => {
-    if (!roomState?.swipes) return 0;
+  // Calculate how many total participants liked each item (including yourself)
+  const getTotalLikesCount = (itemId: string): number => {
+    if (!roomState?.swipes) return 1; // If no room state, just count yourself
     
     const allParticipants = roomState.participants || [];
-    const otherParticipants = allParticipants.filter((p: any) => p.id !== roomState.hostId);
     
-    return otherParticipants.filter((participant: any) => 
+    return allParticipants.filter((participant: any) => 
       roomState.swipes[participant.id]?.[itemId] === 'right'
     ).length;
   };
@@ -53,8 +52,8 @@ const SwipeHistory: React.FC<SwipeHistoryProps> = ({
         // Since we don't track timestamps, we'll use the order in the original array
         return items.indexOf(b) - items.indexOf(a);
       case 'popularity':
-        const aLikes = getOtherLikesCount(a.id);
-        const bLikes = getOtherLikesCount(b.id);
+        const aLikes = getTotalLikesCount(a.id);
+        const bLikes = getTotalLikesCount(b.id);
         return bLikes - aLikes;
       default:
         return 0;
@@ -115,7 +114,7 @@ const SwipeHistory: React.FC<SwipeHistoryProps> = ({
             {/* History List */}
             <div className="flex-1 overflow-y-auto space-y-3">
               {sortedLikedItems.map((item) => {
-                const otherLikes = getOtherLikesCount(item.id);
+                const totalLikes = getTotalLikesCount(item.id);
                 const isRestaurant = 'cuisine' in item;
                 
                 return (
@@ -143,14 +142,14 @@ const SwipeHistory: React.FC<SwipeHistoryProps> = ({
                         
                         <div className="flex items-center gap-2 mt-2">
                           <Badge 
-                            variant={otherLikes > 0 ? 'default' : 'secondary'}
+                            variant={totalLikes > 1 ? 'default' : 'secondary'}
                             className="text-xs"
                           >
                             <Users className="w-3 h-3 mr-1" />
-                            {otherLikes}/{totalParticipants - 1} others
+                            {totalLikes}/{totalParticipants} people
                           </Badge>
                           
-                          {otherLikes === totalParticipants - 1 && totalParticipants > 1 && (
+                          {totalLikes === totalParticipants && totalParticipants > 1 && (
                             <Badge variant="destructive" className="text-xs">
                               🎉 Everyone!
                             </Badge>
