@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import SwipeInterface from '@/components/SwipeInterface';
 import GeneralSwipeInterface from '@/components/GeneralSwipeInterface';
@@ -10,9 +9,10 @@ import MatchModal from '@/components/MatchModal';
 import LocationModal from '@/components/LocationModal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Filter, Users, MapPin, QrCode, UserPlus } from 'lucide-react';
+import { Filter, Users, MapPin, QrCode, UserPlus, Loader2 } from 'lucide-react';
 import useRoom from '@/hooks/useRoom';
-import { restaurants } from '@/data/restaurants';
+import { useRestaurants } from '@/hooks/useRestaurants';
+import { restaurants as fallbackRestaurants } from '@/data/restaurants';
 import { foodTypes } from '@/data/foodTypes';
 import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
 
@@ -38,10 +38,16 @@ const Index = () => {
     leaveRoom
   } = useRoom();
 
+  // Fetch real restaurant data based on location
+  const { data: liveRestaurants, isLoading: restaurantsLoading, error: restaurantsError } = useRestaurants(location);
+
+  // Use live data if available, otherwise fall back to static data
+  const restaurants = liveRestaurants || fallbackRestaurants;
+
   // Filter restaurants based on current filter settings
   const filteredRestaurants = useMemo(() => {
     return filterRestaurants(restaurants, filters);
-  }, [filters]);
+  }, [restaurants, filters]);
 
   // Check for room parameter in URL
   useEffect(() => {
@@ -130,6 +136,7 @@ const Index = () => {
             >
               <MapPin className="w-4 h-4" />
               <span>{location}</span>
+              {restaurantsLoading && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
             </button>
             {activeTab === 'specific' && (
               <Button
@@ -147,6 +154,14 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="max-w-md mx-auto px-4 py-6">
+        {restaurantsError && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <p className="text-yellow-800 text-sm">
+              Unable to load local restaurants. Showing sample data instead.
+            </p>
+          </div>
+        )}
+
         {!isInRoom ? (
           /* Welcome Screen */
           <div className="text-center space-y-6">
