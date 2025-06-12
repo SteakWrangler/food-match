@@ -8,6 +8,8 @@ const corsHeaders = {
 
 // Function to geocode location using Nominatim (free)
 async function geocodeLocation(location: string) {
+  console.log(`Geocoding location: ${location}`)
+  
   const response = await fetch(
     `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`,
     {
@@ -18,10 +20,13 @@ async function geocodeLocation(location: string) {
   )
   
   if (!response.ok) {
+    console.error(`Geocoding failed: ${response.status}`)
     throw new Error('Geocoding failed')
   }
   
   const data = await response.json()
+  console.log(`Geocoding response:`, data)
+  
   if (data.length === 0) {
     throw new Error('Location not found')
   }
@@ -34,7 +39,7 @@ async function geocodeLocation(location: string) {
 
 // Function to fetch restaurants from OpenStreetMap
 async function fetchRestaurantsFromOSM(lat: number, lon: number, radius: number, limit: number) {
-  const radiusInDegrees = radius / 111000 // Rough conversion from meters to degrees
+  console.log(`Fetching restaurants around ${lat}, ${lon} within ${radius}m`)
   
   const overpassQuery = `
     [out:json][timeout:25];
@@ -58,10 +63,12 @@ async function fetchRestaurantsFromOSM(lat: number, lon: number, radius: number,
   })
   
   if (!response.ok) {
+    console.error(`Overpass API error: ${response.status}`)
     throw new Error(`Overpass API error: ${response.status}`)
   }
   
   const data = await response.json()
+  console.log(`Found ${data.elements.length} places from OSM`)
   return data.elements
 }
 
@@ -78,15 +85,19 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 serve(async (req) => {
+  console.log(`${req.method} request received`)
+  
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const { location, radius = 5000, limit = 20 } = await req.json()
+    console.log(`Processing request for location: ${location}, radius: ${radius}, limit: ${limit}`)
     
     // Geocode the location
     const coords = await geocodeLocation(location)
+    console.log(`Geocoded to: ${coords.lat}, ${coords.lon}`)
     
     // Fetch restaurants from OpenStreetMap
     const osmData = await fetchRestaurantsFromOSM(coords.lat, coords.lon, radius, limit * 3) // Fetch more to filter later
@@ -124,6 +135,8 @@ serve(async (req) => {
       .filter(Boolean) // Remove null entries
       .sort((a: any, b: any) => parseFloat(a.distance) - parseFloat(b.distance)) // Sort by distance
       .slice(0, limit) // Limit results
+
+    console.log(`Returning ${restaurants.length} restaurants`)
 
     return new Response(
       JSON.stringify({ restaurants }),
