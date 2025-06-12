@@ -77,7 +77,7 @@ const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ roomId: initialRoomId, on
                 placeholder="Enter room ID"
                 className="mt-1"
                 autoFocus={!!initialRoomId}
-                disabled={!!initialRoomId || isLoading}
+                disabled={isLoading}
               />
             </div>
 
