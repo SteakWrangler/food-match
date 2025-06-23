@@ -51,6 +51,30 @@ export type Database = {
         }
         Relationships: []
       }
+      image_cache: {
+        Row: {
+          id: string
+          cuisine: string
+          image_url: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          cuisine: string
+          image_url: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          cuisine?: string
+          image_url?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rooms: {
         Row: {
           created_at: string

@@ -76,6 +76,20 @@ function getCuisineImage(cuisine: string, amenity: string, name: string) {
   if (lowerAmenity === 'cafe') return cuisineImages['cafe'];
   if (lowerAmenity === 'bar' || lowerAmenity === 'pub') return cuisineImages['bar'];
 
+  // Check for specific keywords in the name
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('steak') || lowerName.includes('steakhouse')) return cuisineImages['steakhouse'];
+  if (lowerName.includes('burger')) return cuisineImages['burger'];
+  if (lowerName.includes('sushi')) return cuisineImages['sushi'];
+  if (lowerName.includes('pizza')) return cuisineImages['pizza'];
+  if (lowerName.includes('taco')) return cuisineImages['tacos'];
+  if (lowerName.includes('noodle')) return cuisineImages['noodles'];
+  if (lowerName.includes('pasta')) return cuisineImages['pasta'];
+  if (lowerName.includes('salad')) return cuisineImages['salad'];
+  if (lowerName.includes('soup')) return cuisineImages['soup'];
+  if (lowerName.includes('seafood') || lowerName.includes('fish')) return cuisineImages['seafood'];
+  if (lowerName.includes('bbq') || lowerName.includes('barbecue')) return cuisineImages['bbq'];
+
   // Final fallback to american food
   return cuisineImages['american'];
 }
@@ -220,6 +234,59 @@ async function fetchRestaurantsFromChatGPT(location: string, alreadyShown: strin
   return restaurants;
 }
 
+// New function to get an image URL from ChatGPT
+async function getImageFromChatGPT(name: string, cuisine: string, description: string): Promise<string> {
+  const prompt = `Given the following restaurant details, which Unsplash image URL would best represent it?
+Name: ${name}
+Cuisine: ${cuisine}
+Description: ${description}
+Please return only a direct Unsplash image URL that best fits.`;
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "You are a helpful assistant that returns only a direct Unsplash image URL." },
+        { role: "user", content: prompt }
+      ],
+      max_tokens: 100,
+      temperature: 0.2
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+  const data = await response.json();
+  return data.choices[0].message.content.trim();
+}
+
+// New function to get or cache the image URL
+async function getOrCacheImage(supabase: any, name: string, cuisine: string, description: string): Promise<string> {
+  // Check if the image is already cached
+  const { data: cachedImage, error: cacheError } = await supabase
+    .from('image_cache')
+    .select('image_url')
+    .eq('cuisine', cuisine)
+    .single();
+
+  if (cacheError || !cachedImage) {
+    // If not cached, get a new image from ChatGPT
+    const imageUrl = await getImageFromChatGPT(name, cuisine, description);
+    // Cache the new image
+    await supabase
+      .from('image_cache')
+      .insert({ cuisine, image_url: imageUrl });
+    return imageUrl;
+  }
+  return cachedImage.image_url;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -253,15 +320,18 @@ serve(async (req) => {
     let newRestaurants = [];
     if (cachedRestaurants && cachedRestaurants.length > 0) {
       // Transform cached restaurants to match the expected format
-      newRestaurants = cachedRestaurants.map(restaurant => ({
-        name: restaurant.name,
-        cuisine: restaurant.cuisine,
-        description: restaurant.description,
-        rating: restaurant.rating,
-        priceRange: restaurant.price_range,
-        sampleMenuItem: restaurant.sample_menu_item,
-        samplePrice: restaurant.sample_price,
-        image: getCuisineImage(restaurant.cuisine, '', restaurant.name)
+      newRestaurants = await Promise.all(cachedRestaurants.map(async (restaurant) => {
+        const imageUrl = await getOrCacheImage(supabase, restaurant.name, restaurant.cuisine, restaurant.description);
+        return {
+          name: restaurant.name,
+          cuisine: restaurant.cuisine,
+          description: restaurant.description,
+          rating: restaurant.rating,
+          priceRange: restaurant.price_range,
+          sampleMenuItem: restaurant.sample_menu_item,
+          samplePrice: restaurant.sample_price,
+          image: imageUrl
+        };
       }));
     }
 
@@ -297,13 +367,14 @@ serve(async (req) => {
         }
 
         // Add new restaurants to the response
-        newRestaurants = [
-          ...newRestaurants,
-          ...chatRestaurants.map(restaurant => ({
+        const newRestaurantsWithImages = await Promise.all(chatRestaurants.map(async (restaurant) => {
+          const imageUrl = await getOrCacheImage(supabase, restaurant.name, restaurant.cuisine, restaurant.description);
+          return {
             ...restaurant,
-            image: getCuisineImage(restaurant.cuisine, '', restaurant.name)
-          }))
-        ];
+            image: imageUrl
+          };
+        }));
+        newRestaurants = [...newRestaurants, ...newRestaurantsWithImages];
       }
     }
 
