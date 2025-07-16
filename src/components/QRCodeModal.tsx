@@ -9,9 +9,10 @@ interface QRCodeModalProps {
   roomId: string;
   participants: Array<{ id: string; name: string; isOnline: boolean }>;
   onClose: () => void;
+  onContinue?: () => void;
 }
 
-const QRCodeModal: React.FC<QRCodeModalProps> = ({ roomId, participants, onClose }) => {
+const QRCodeModal: React.FC<QRCodeModalProps> = ({ roomId, participants, onClose, onContinue }) => {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -78,6 +79,16 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ roomId, participants, onClose
               <Copy className="w-4 h-4 mr-2" />
               {copied ? 'Copied!' : 'Copy Link'}
             </Button>
+
+            {onContinue && (
+              <Button
+                onClick={onContinue}
+                variant="outline"
+                className="w-full border-orange-200 hover:bg-orange-50"
+              >
+                Continue to Room
+              </Button>
+            )}
 
             <div className="border-t pt-4">
               <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">

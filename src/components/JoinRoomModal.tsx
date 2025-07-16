@@ -24,7 +24,7 @@ const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ roomId: initialRoomId, on
       setIsLoading(true);
       setError('');
       try {
-        const success = await onJoinRoom(roomId.trim().toUpperCase(), name.trim());
+        const success = await onJoinRoom(roomId.trim(), name.trim());
         if (!success) {
           setError('Room not found. Please check the room ID.');
         }
@@ -73,7 +73,7 @@ const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ roomId: initialRoomId, on
                 id="roomId"
                 type="text"
                 value={roomId}
-                onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+                onChange={(e) => setRoomId(e.target.value)}
                 placeholder="Enter room ID"
                 className="mt-1"
                 autoFocus={!!initialRoomId}

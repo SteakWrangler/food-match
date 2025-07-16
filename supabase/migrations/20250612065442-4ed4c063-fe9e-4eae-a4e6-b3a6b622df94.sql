@@ -6,6 +6,8 @@ CREATE TABLE public.rooms (
   participants JSONB NOT NULL DEFAULT '[]'::jsonb,
   current_restaurant_index INTEGER NOT NULL DEFAULT 0,
   swipes JSONB NOT NULL DEFAULT '{}'::jsonb,
+  restaurants JSONB NOT NULL DEFAULT '[]'::jsonb,
+  location TEXT,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );

@@ -1,7 +1,7 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import FoodTypeCard from './FoodTypeCard';
 import MatchModal from './MatchModal';
-import SwipeHistory from './SwipeHistory';
+import EnhancedSwipeHistory from './EnhancedSwipeHistory';
 import { FoodType } from '@/data/foodTypes';
 import { randomizeFoodTypesByTiers } from '@/utils/foodTypeRandomizer';
 
@@ -10,13 +10,19 @@ interface GeneralSwipeInterfaceProps {
   roomState?: any;
   onSwipe?: (foodTypeId: string, direction: 'left' | 'right') => void;
   checkForMatch?: (foodTypeId: string) => boolean;
+  participantId?: string;
+  onBringToFront?: (foodTypeId: string) => void;
+  customOrder?: string[];
 }
 
 const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({ 
   foodTypes, 
   roomState, 
   onSwipe,
-  checkForMatch
+  checkForMatch,
+  participantId,
+  onBringToFront,
+  customOrder
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMatch, setShowMatch] = useState(false);
@@ -27,12 +33,46 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [userSwipes, setUserSwipes] = useState<Record<string, 'left' | 'right'>>({});
 
+  // Reset current index when custom order changes (item brought to front)
+  useEffect(() => {
+    if (customOrder && customOrder.length > 0) {
+      setCurrentIndex(0);
+    }
+  }, [customOrder]);
+
   // Randomize food types once when component mounts
   const randomizedFoodTypes = useMemo(() => {
     return randomizeFoodTypesByTiers(foodTypes);
   }, [foodTypes]);
 
-  const currentFoodType = randomizedFoodTypes[currentIndex];
+  // Use custom order if available, otherwise use randomized order
+  const orderedFoodTypes = useMemo(() => {
+    if (customOrder && customOrder.length > 0) {
+      // Create a map for quick lookup
+      const foodTypeMap = new Map(randomizedFoodTypes.map(f => [f.id, f]));
+      const ordered: FoodType[] = [];
+      
+      // Add items in custom order first
+      for (const id of customOrder) {
+        const foodType = foodTypeMap.get(id);
+        if (foodType) {
+          ordered.push(foodType);
+        }
+      }
+      
+      // Add any remaining food types that weren't in the custom order
+      for (const foodType of randomizedFoodTypes) {
+        if (!customOrder.includes(foodType.id)) {
+          ordered.push(foodType);
+        }
+      }
+      
+      return ordered;
+    }
+    return randomizedFoodTypes;
+  }, [randomizedFoodTypes, customOrder]);
+
+  const currentFoodType = orderedFoodTypes[currentIndex];
 
   const handleSwipe = (direction: 'left' | 'right') => {
     if (!currentFoodType) return;
@@ -107,7 +147,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
     transition: isDragging ? 'none' : 'all 0.3s ease-out'
   };
 
-  if (randomizedFoodTypes.length === 0) {
+  if (orderedFoodTypes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">No food types available!</h2>
@@ -115,7 +155,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
     );
   }
 
-  if (currentIndex >= randomizedFoodTypes.length) {
+  if (currentIndex >= orderedFoodTypes.length) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">No more food types!</h2>
@@ -152,7 +192,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
 
       <div className="flex items-center justify-center min-h-[600px] p-4">
         {/* Background Cards */}
-        {randomizedFoodTypes.slice(currentIndex + 1, currentIndex + 3).map((foodType, index) => (
+        {orderedFoodTypes.slice(currentIndex + 1, currentIndex + 3).map((foodType, index) => (
           <div
             key={foodType.id}
             className="absolute"
@@ -210,13 +250,15 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
       )}
 
       {/* History Modal */}
-      <SwipeHistory
+      <EnhancedSwipeHistory
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
         userSwipes={userSwipes}
         roomState={roomState}
-        items={randomizedFoodTypes}
+        items={orderedFoodTypes}
         type="foodTypes"
+        participantId={participantId || 'user'}
+        onBringToFront={onBringToFront}
       />
     </div>
   );

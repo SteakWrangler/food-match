@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import RestaurantCard from './RestaurantCard';
 import MatchModal from './MatchModal';
-import SwipeHistory from './SwipeHistory';
+import EnhancedSwipeHistory from './EnhancedSwipeHistory';
 import { Restaurant } from '@/data/restaurants';
 
 interface SwipeInterfaceProps {
@@ -12,6 +12,9 @@ interface SwipeInterfaceProps {
   onSwipe?: (restaurantId: string, direction: 'left' | 'right') => void;
   onMatch?: (restaurant: any) => void;
   checkForMatch?: (restaurantId: string) => boolean;
+  participantId?: string;
+  onBringToFront?: (restaurantId: string) => void;
+  customOrder?: string[];
 }
 
 const SwipeInterface: React.FC<SwipeInterfaceProps> = ({ 
@@ -21,7 +24,10 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   roomState, 
   onSwipe, 
   onMatch,
-  checkForMatch
+  checkForMatch,
+  participantId,
+  onBringToFront,
+  customOrder
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMatch, setShowMatch] = useState(false);
@@ -33,7 +39,41 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   const [userSwipes, setUserSwipes] = useState<Record<string, 'left' | 'right'>>({});
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const currentRestaurant = restaurants[currentIndex];
+  // Reset current index when custom order changes (item brought to front)
+  useEffect(() => {
+    if (customOrder && customOrder.length > 0) {
+      setCurrentIndex(0);
+    }
+  }, [customOrder]);
+
+  // Use custom order if available, otherwise use original order
+  const orderedRestaurants = useMemo(() => {
+    if (customOrder && customOrder.length > 0) {
+      // Create a map for quick lookup
+      const restaurantMap = new Map(restaurants.map(r => [r.id, r]));
+      const ordered: Restaurant[] = [];
+      
+      // Add items in custom order first
+      for (const id of customOrder) {
+        const restaurant = restaurantMap.get(id);
+        if (restaurant) {
+          ordered.push(restaurant);
+        }
+      }
+      
+      // Add any remaining restaurants that weren't in the custom order
+      for (const restaurant of restaurants) {
+        if (!customOrder.includes(restaurant.id)) {
+          ordered.push(restaurant);
+        }
+      }
+      
+      return ordered;
+    }
+    return restaurants;
+  }, [restaurants, customOrder]);
+
+  const currentRestaurant = orderedRestaurants[currentIndex];
 
   const handleSwipe = (direction: 'left' | 'right') => {
     if (!currentRestaurant) return;
@@ -98,7 +138,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     transition: isDragging ? 'none' : 'all 0.3s ease-out'
   };
 
-  if (restaurants.length === 0) {
+  if (orderedRestaurants.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">No restaurants found!</h2>
@@ -107,7 +147,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     );
   }
 
-  if (currentIndex >= restaurants.length) {
+  if (currentIndex >= orderedRestaurants.length) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">No more restaurants!</h2>
@@ -152,7 +192,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
       <div className="flex items-center justify-center min-h-[600px] p-4">
         {/* Background Cards */}
-        {restaurants.slice(currentIndex + 1, currentIndex + 3).map((restaurant, index) => (
+        {orderedRestaurants.slice(currentIndex + 1, currentIndex + 3).map((restaurant, index) => (
           <div
             key={restaurant.id}
             className="absolute"
@@ -211,13 +251,15 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       )}
 
       {/* History Modal */}
-      <SwipeHistory
+      <EnhancedSwipeHistory
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
         userSwipes={userSwipes}
         roomState={roomState}
-        items={restaurants}
+        items={orderedRestaurants}
         type="restaurants"
+        participantId={participantId || 'user'}
+        onBringToFront={onBringToFront}
       />
     </div>
   );
