@@ -104,20 +104,32 @@ const Index = () => {
   // Check for matches whenever room state changes (due to syncing)
   useEffect(() => {
     if (roomState && isInRoom) {
-      // Check all restaurants that have been swiped on
-      const allSwipedRestaurants = new Set<string>();
+      // Check all items that have been swiped on
+      const allSwipedItems = new Set<string>();
       Object.values(roomState.swipes).forEach(participantSwipes => {
-        Object.keys(participantSwipes).forEach(restaurantId => {
-          allSwipedRestaurants.add(restaurantId);
+        Object.keys(participantSwipes).forEach(itemId => {
+          allSwipedItems.add(itemId);
         });
       });
 
-              // Check each swiped item for a match
-        allSwipedRestaurants.forEach(itemId => {
-          const type = activeTab === 'specific' ? 'restaurant' : 'foodType';
-          if (checkForMatch(itemId, type)) {
+      // Check each swiped item for a match
+      allSwipedItems.forEach(itemId => {
+        // Check if it's a restaurant or food type based on what's available
+        const isRestaurant = (roomState?.restaurants || filteredRestaurants).some(r => r.id === itemId);
+        const isFoodType = foodTypes.some(f => f.id === itemId);
+        
+        let type: 'restaurant' | 'foodType';
+        if (isRestaurant) {
+          type = 'restaurant';
+        } else if (isFoodType) {
+          type = 'foodType';
+        } else {
+          return; // Skip if we can't determine the type
+        }
+
+        if (checkForMatch(itemId, type)) {
           let matchedItem;
-          if (activeTab === 'specific') {
+          if (type === 'restaurant') {
             // Use room restaurants if available, otherwise fall back to filtered restaurants
             const availableRestaurants = roomState?.restaurants || filteredRestaurants;
             matchedItem = availableRestaurants.find(r => r.id === itemId);
@@ -149,43 +161,54 @@ const Index = () => {
         }
       });
     }
-  }, [roomState, isInRoom, activeTab, checkForMatch, showMatch]);
+  }, [roomState, isInRoom, checkForMatch, showMatch, filteredRestaurants, foodTypes]);
 
-  const handleSwipe = (itemId: string, direction: 'left' | 'right') => {
-    addSwipe(itemId, direction);
+
+
+  const handleRestaurantSwipe = (restaurantId: string, direction: 'left' | 'right') => {
+    addSwipe(restaurantId, direction);
     
-    // Also check for immediate match when current user swipes right
-    const type = activeTab === 'specific' ? 'restaurant' : 'foodType';
-    if (direction === 'right' && checkForMatch(itemId, type)) {
-      let matchedItem;
-      if (activeTab === 'specific') {
-        // Use room restaurants if available, otherwise fall back to filtered restaurants
-        const availableRestaurants = roomState?.restaurants || filteredRestaurants;
-        matchedItem = availableRestaurants.find(r => r.id === itemId);
-      } else {
-        const foodType = foodTypes.find(f => f.id === itemId);
-        if (foodType) {
-          // Convert food type to restaurant-like object for the match modal
-          matchedItem = {
-            id: foodType.id,
-            name: foodType.name,
-            cuisine: foodType.name,
-            image: foodType.image,
-            rating: 4.5,
-            priceRange: '$$',
-            distance: 'Food Type Match',
-            estimatedTime: 'Ready to explore!',
-            description: `You both want ${foodType.name}! Time to find a great place nearby.`,
-            tags: ['Match', 'Food Type']
-          };
-        }
-      }
+    // Check for immediate match when current user swipes right
+    if (direction === 'right' && checkForMatch(restaurantId, 'restaurant')) {
+      const availableRestaurants = roomState?.restaurants || filteredRestaurants;
+      const matchedItem = availableRestaurants.find(r => r.id === restaurantId);
       
-      if (matchedItem && !showMatch && !shownMatches.has(itemId)) {
+      if (matchedItem && !showMatch && !shownMatches.has(restaurantId)) {
         console.log(`🎉 IMMEDIATE MATCH FOUND for ${matchedItem.name}!`);
         setMatchedRestaurant(matchedItem);
         setShowMatch(true);
-        setShownMatches(prev => new Set([...prev, itemId]));
+        setShownMatches(prev => new Set([...prev, restaurantId]));
+      }
+    }
+  };
+
+  const handleFoodTypeSwipe = (foodTypeId: string, direction: 'left' | 'right') => {
+    addSwipe(foodTypeId, direction);
+    
+    // Check for immediate match when current user swipes right
+    if (direction === 'right' && checkForMatch(foodTypeId, 'foodType')) {
+      const foodType = foodTypes.find(f => f.id === foodTypeId);
+      if (foodType) {
+        // Convert food type to restaurant-like object for the match modal
+        const matchedItem = {
+          id: foodType.id,
+          name: foodType.name,
+          cuisine: foodType.name,
+          image: foodType.image,
+          rating: 4.5,
+          priceRange: '$$',
+          distance: 'Food Type Match',
+          estimatedTime: 'Ready to explore!',
+          description: `You both want ${foodType.name}! Time to find a great place nearby.`,
+          tags: ['Match', 'Food Type']
+        };
+        
+        if (!showMatch && !shownMatches.has(foodTypeId)) {
+          console.log(`🎉 IMMEDIATE MATCH FOUND for ${matchedItem.name}!`);
+          setMatchedRestaurant(matchedItem);
+          setShowMatch(true);
+          setShownMatches(prev => new Set([...prev, foodTypeId]));
+        }
       }
     }
   };
@@ -349,7 +372,7 @@ const Index = () => {
                   hasMore={hasMore}
                   onGenerateMore={handleGenerateMore}
                   roomState={roomState}
-                  onSwipe={handleSwipe}
+                  onSwipe={handleRestaurantSwipe}
                   onMatch={setMatchedRestaurant}
                   checkForMatch={checkForMatch}
                   participantId={participantId}
@@ -362,7 +385,7 @@ const Index = () => {
                 <GeneralSwipeInterface 
                   foodTypes={foodTypes}
                   roomState={roomState}
-                  onSwipe={handleSwipe}
+                  onSwipe={handleFoodTypeSwipe}
                   checkForMatch={checkForMatch}
                   participantId={participantId}
                   onBringToFront={handleBringFoodTypeToFront}
