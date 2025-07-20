@@ -52,6 +52,9 @@ A real-time collaborative restaurant discovery app that helps groups find dining
 - **PostCSS** - CSS processing
 - **Autoprefixer** - CSS vendor prefixing
 
+### AI-Assisted Development
+This project was developed using modern AI-assisted coding tools, including **Cursor IDE** with integrated AI capabilities. This demonstrates proficiency with current development workflows and the ability to leverage AI tools for efficient, high-quality code production while maintaining best practices and code organization.
+
 ## 📦 Installation & Setup
 
 ### Prerequisites
