@@ -2,435 +2,601 @@
 export interface FoodType {
   id: string;
   name: string;
-  description: string;
-  image: string;
+  category: string;
   emoji: string;
+  image: string;
+  description: string;
 }
 
 export const foodTypes: FoodType[] = [
-  // Most Popular/Common Categories (1-20)
-  {
-    id: '1',
-    name: 'Pizza',
-    description: 'Delicious cheesy goodness with your favorite toppings on a crispy crust.',
-    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=300&fit=crop',
-    emoji: '🍕'
-  },
-  {
-    id: '2',
-    name: 'Burgers',
-    description: 'Juicy beef patties with fresh toppings between soft buns.',
-    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop',
-    emoji: '🍔'
-  },
-  {
-    id: '3',
-    name: 'Mexican',
-    description: 'Tacos, burritos, quesadillas and other Mexican favorites.',
-    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop',
-    emoji: '🌮'
-  },
-  {
-    id: '4',
-    name: 'Chinese',
-    description: 'Authentic Chinese dishes with bold flavors and fresh ingredients.',
+  // Asian Cuisines
+  { 
+    id: 'chinese', 
+    name: 'Chinese', 
+    category: 'Asian', 
+    emoji: '🥢',
     image: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=400&h=300&fit=crop',
-    emoji: '🥡'
+    description: 'Authentic Chinese dishes with bold flavors and fresh ingredients.'
   },
-  {
-    id: '5',
-    name: 'Italian',
-    description: 'Pasta, risotto, and classic Italian comfort food.',
-    image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=300&fit=crop',
-    emoji: '🍝'
-  },
-  {
-    id: '6',
-    name: 'American',
-    description: 'Classic American comfort food, from steaks to mac and cheese.',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
-    emoji: '🇺🇸'
-  },
-  {
-    id: '7',
-    name: 'Sushi',
-    description: 'Fresh Japanese sushi and sashimi with perfectly seasoned rice.',
+  { 
+    id: 'japanese', 
+    name: 'Japanese', 
+    category: 'Asian', 
+    emoji: '🍱',
     image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=300&fit=crop',
-    emoji: '🍣'
+    description: 'Fresh Japanese sushi and sashimi with perfectly seasoned rice.'
   },
-  {
-    id: '8',
-    name: 'Indian',
-    description: 'Aromatic curries and spiced dishes from the Indian subcontinent.',
-    image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop',
-    emoji: '🍛'
-  },
-  {
-    id: '9',
-    name: 'Thai',
-    description: 'Sweet, spicy, and savory Thai cuisine with fresh herbs and bold flavors.',
+  { 
+    id: 'thai', 
+    name: 'Thai', 
+    category: 'Asian', 
+    emoji: '🍜',
     image: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=400&h=300&fit=crop',
-    emoji: '🍜'
+    description: 'Sweet, spicy, and savory Thai cuisine with fresh herbs and bold flavors.'
   },
-  {
-    id: '10',
-    name: 'Fried Chicken',
-    description: 'Crispy, juicy fried chicken in all its delicious forms.',
-    image: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=400&h=300&fit=crop',
-    emoji: '🍗'
-  },
-  {
-    id: '11',
-    name: 'BBQ',
-    description: 'Smoky grilled meats and barbecue favorites with tangy sauces.',
-    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop',
-    emoji: '🍖'
-  },
-  {
-    id: '12',
-    name: 'Sandwiches',
-    description: 'Fresh deli sandwiches and subs with quality ingredients.',
-    image: 'https://images.unsplash.com/photo-1539252554453-80ab65ce3586?w=400&h=300&fit=crop',
-    emoji: '🥪'
-  },
-  {
-    id: '13',
-    name: 'Salads',
-    description: 'Fresh, healthy salads with crisp vegetables and flavorful dressings.',
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
-    emoji: '🥗'
-  },
-  {
-    id: '14',
-    name: 'Breakfast',
-    description: 'Start your day right with hearty breakfast favorites.',
-    image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=300&fit=crop',
-    emoji: '🥞'
-  },
-  {
-    id: '15',
-    name: 'Coffee & Cafés',
-    description: 'Artisan coffee, pastries, and cozy café atmosphere.',
-    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
-    emoji: '☕'
-  },
-  {
-    id: '16',
-    name: 'Seafood',
-    description: 'Fresh catch of the day and ocean delicacies.',
-    image: 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=400&h=300&fit=crop',
-    emoji: '🦐'
-  },
-  {
-    id: '17',
-    name: 'Desserts',
-    description: 'Sweet treats and decadent desserts to satisfy your sweet tooth.',
-    image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400&h=300&fit=crop',
-    emoji: '🍰'
-  },
-  {
-    id: '18',
-    name: 'Wings',
-    description: 'Chicken wings with various sauces and seasonings.',
-    image: 'https://images.unsplash.com/photo-1527477396000-e27163b481c2?w=400&h=300&fit=crop',
-    emoji: '🔥'
-  },
-  {
-    id: '19',
-    name: 'Korean',
-    description: 'Spicy, fermented, and flavorful Korean dishes and BBQ.',
-    image: 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=400&h=300&fit=crop',
-    emoji: '🍲'
-  },
-  {
-    id: '20',
-    name: 'Steakhouse',
-    description: 'Premium cuts of beef cooked to perfection.',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
-    emoji: '🥩'
-  },
-
-  // Popular Categories (21-40)
-  {
-    id: '21',
-    name: 'Soul Food',
-    description: 'Comforting Southern cuisine with rich, hearty flavors.',
-    image: 'https://images.unsplash.com/photo-1574484284002-952d92456975?w=400&h=300&fit=crop',
-    emoji: '🍠'
-  },
-  {
-    id: '22',
-    name: 'Bar Food',
-    description: 'Pub grub and bar snacks perfect for casual dining and drinks.',
-    image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=300&fit=crop',
-    emoji: '🍺'
-  },
-  {
-    id: '23',
-    name: 'Ramen',
-    description: 'Rich, flavorful Japanese noodle soups with various toppings.',
-    image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop',
-    emoji: '🍜'
-  },
-  {
-    id: '24',
-    name: 'Vietnamese',
-    description: 'Fresh Vietnamese cuisine with pho, banh mi, and spring rolls.',
+  { 
+    id: 'vietnamese', 
+    name: 'Vietnamese', 
+    category: 'Asian', 
+    emoji: '🍲',
     image: 'https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&h=300&fit=crop',
-    emoji: '🥢'
+    description: 'Fresh Vietnamese cuisine with pho, banh mi, and spring rolls.'
   },
-  {
-    id: '25',
-    name: 'Mediterranean',
-    description: 'Healthy Mediterranean fare with olive oil, herbs, and fresh ingredients.',
-    image: 'https://images.unsplash.com/photo-1544510529-efec0c8c725d?w=400&h=300&fit=crop',
-    emoji: '🫒'
+  { 
+    id: 'korean', 
+    name: 'Korean', 
+    category: 'Asian', 
+    emoji: '🍚',
+    image: 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=400&h=300&fit=crop',
+    description: 'Spicy, fermented, and flavorful Korean dishes and BBQ.'
   },
-  {
-    id: '26',
-    name: 'Poke',
-    description: 'Fresh Hawaiian poke bowls with raw fish and tropical flavors.',
+  { 
+    id: 'indian', 
+    name: 'Indian', 
+    category: 'Asian', 
+    emoji: '🍛',
+    image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop',
+    description: 'Aromatic curries and spiced dishes from the Indian subcontinent.'
+  },
+  { 
+    id: 'sushi', 
+    name: 'Sushi', 
+    category: 'Asian', 
+    emoji: '🍣',
+    image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=300&fit=crop',
+    description: 'Fresh Japanese sushi and sashimi with perfectly seasoned rice.'
+  },
+  { 
+    id: 'ramen', 
+    name: 'Ramen', 
+    category: 'Asian', 
+    emoji: '🍜',
+    image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop',
+    description: 'Rich, flavorful Japanese noodle soups with various toppings.'
+  },
+  { 
+    id: 'asian_fusion', 
+    name: 'Asian Fusion', 
+    category: 'Asian', 
+    emoji: '🥡',
     image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop',
-    emoji: '🐟'
+    description: 'Creative combinations of different Asian culinary traditions.'
   },
-  {
-    id: '27',
-    name: 'Greek',
-    description: 'Traditional Greek dishes with feta, olives, and Mediterranean spices.',
+  
+  // European Cuisines
+  { 
+    id: 'italian', 
+    name: 'Italian', 
+    category: 'European', 
+    emoji: '🍝',
+    image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=300&fit=crop',
+    description: 'Pasta, risotto, and classic Italian comfort food.'
+  },
+  { 
+    id: 'french', 
+    name: 'French', 
+    category: 'European', 
+    emoji: '🥖',
+    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
+    description: 'Elegant French cuisine with rich flavors and classic techniques.'
+  },
+  { 
+    id: 'spanish', 
+    name: 'Spanish', 
+    category: 'European', 
+    emoji: '🥘',
+    image: 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=400&h=300&fit=crop',
+    description: 'Spanish small plates perfect for sharing and wine pairing.'
+  },
+  { 
+    id: 'greek', 
+    name: 'Greek', 
+    category: 'European', 
+    emoji: '🥙',
     image: 'https://images.unsplash.com/photo-1529059997568-3d847b1154f0?w=400&h=300&fit=crop',
-    emoji: '🥙'
+    description: 'Traditional Greek dishes with feta, olives, and Mediterranean spices.'
   },
-  {
-    id: '28',
-    name: 'Bakery',
-    description: 'Fresh baked goods, pastries, and artisanal breads.',
-    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop',
-    emoji: '🥐'
+  { 
+    id: 'mediterranean', 
+    name: 'Mediterranean', 
+    category: 'European', 
+    emoji: '🫔',
+    image: 'https://images.unsplash.com/photo-1544510529-efec0c8c725d?w=400&h=300&fit=crop',
+    description: 'Healthy Mediterranean fare with olive oil, herbs, and fresh ingredients.'
   },
-  {
-    id: '29',
-    name: 'Hot Dogs',
-    description: 'Classic American hot dogs with creative toppings and sides.',
-    image: 'https://images.unsplash.com/photo-1612392061787-2c3fc049ca72?w=400&h=300&fit=crop',
-    emoji: '🌭'
-  },
-  {
-    id: '30',
-    name: 'Brunch',
-    description: 'Late morning favorites combining breakfast and lunch items.',
-    image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop',
-    emoji: '🧇'
-  },
-  {
-    id: '31',
-    name: 'Middle Eastern',
-    description: 'Hummus, kebabs, falafel and fresh Middle Eastern flavors.',
-    image: 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=400&h=300&fit=crop',
-    emoji: '🧆'
-  },
-  {
-    id: '32',
-    name: 'Comfort Food',
-    description: 'Hearty, satisfying dishes that feel like a warm hug.',
-    image: 'https://images.unsplash.com/photo-1574163164894-75e5ba4c5739?w=400&h=300&fit=crop',
-    emoji: '🥘'
-  },
-  {
-    id: '33',
-    name: 'Vegan',
-    description: 'Plant-based cuisine that\'s both healthy and delicious.',
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
-    emoji: '🌱'
-  },
-  {
-    id: '34',
-    name: 'Fast Food',
-    description: 'Quick and convenient favorites for when you\'re on the go.',
-    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop',
-    emoji: '🍟'
-  },
-  {
-    id: '35',
-    name: 'Healthy',
-    description: 'Nutritious and wholesome meals that make you feel good.',
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
-    emoji: '🥬'
-  },
-  {
-    id: '36',
-    name: 'Tapas',
-    description: 'Spanish small plates perfect for sharing and wine pairing.',
-    image: 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=400&h=300&fit=crop',
-    emoji: '🍷'
-  },
-  {
-    id: '37',
-    name: 'French',
-    description: 'Elegant French cuisine with rich flavors and classic techniques.',
-    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
-    emoji: '🥖'
-  },
-  {
-    id: '38',
-    name: 'Deli',
-    description: 'Classic deli meats, cheese, and fresh sandwiches.',
-    image: 'https://images.unsplash.com/photo-1539252554453-80ab65ce3586?w=400&h=300&fit=crop',
-    emoji: '🥖'
-  },
-  {
-    id: '39',
-    name: 'Food Trucks',
-    description: 'Creative street food and mobile kitchen favorites.',
-    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop',
-    emoji: '🚚'
-  },
-  {
-    id: '40',
-    name: 'Sports Bar',
-    description: 'Game day favorites with big screens and cold drinks.',
-    image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=300&fit=crop',
-    emoji: '🏈'
-  },
-
-  // Less Common but Still Popular (41-60)
-  {
-    id: '41',
-    name: 'Gastropub',
-    description: 'Elevated pub food with craft beer and creative dishes.',
-    image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=300&fit=crop',
-    emoji: '🍻'
-  },
-  {
-    id: '42',
-    name: 'Fine Dining',
-    description: 'Upscale restaurant experience with expertly crafted dishes.',
-    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
-    emoji: '🍽️'
-  },
-  {
-    id: '43',
-    name: 'Buffet',
-    description: 'All-you-can-eat variety with something for everyone.',
-    image: 'https://images.unsplash.com/photo-1574163164894-75e5ba4c5739?w=400&h=300&fit=crop',
-    emoji: '🍱'
-  },
-  {
-    id: '44',
-    name: 'Dim Sum',
-    description: 'Traditional Chinese small plates and tea service.',
-    image: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=400&h=300&fit=crop',
-    emoji: '🥟'
-  },
-  {
-    id: '45',
-    name: 'Ice Cream',
-    description: 'Cool treats and frozen desserts for any time of day.',
-    image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400&h=300&fit=crop',
-    emoji: '🍦'
-  },
-  {
-    id: '46',
-    name: 'Juice Bar',
-    description: 'Fresh pressed juices, smoothies, and healthy drinks.',
-    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
-    emoji: '🧃'
-  },
-  {
-    id: '47',
-    name: 'Late Night',
-    description: 'Open late for when those midnight cravings hit.',
-    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop',
-    emoji: '🌙'
-  },
-  {
-    id: '48',
-    name: 'Family Style',
-    description: 'Large portions meant for sharing with the whole family.',
-    image: 'https://images.unsplash.com/photo-1574163164894-75e5ba4c5739?w=400&h=300&fit=crop',
-    emoji: '👨‍👩‍👧‍👦'
-  },
-  {
-    id: '49',
-    name: 'Casual Dining',
-    description: 'Relaxed atmosphere with table service and moderate prices.',
-    image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop',
-    emoji: '🍽️'
-  },
-  {
-    id: '50',
-    name: 'Farm to Table',
-    description: 'Fresh, locally sourced ingredients and seasonal menus.',
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
-    emoji: '🚜'
-  },
-  {
-    id: '51',
-    name: 'Fusion',
-    description: 'Creative combinations of different culinary traditions.',
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop',
-    emoji: '🌍'
-  },
-  {
-    id: '52',
-    name: 'Ethiopian',
-    description: 'Spiced stews and injera bread from East Africa.',
-    image: 'https://images.unsplash.com/photo-1544982503-9f984c14501a?w=400&h=300&fit=crop',
-    emoji: '🫓'
-  },
-  {
-    id: '53',
-    name: 'Cuban',
-    description: 'Caribbean-influenced Cuban sandwiches and tropical flavors.',
-    image: 'https://images.unsplash.com/photo-1626200419199-391ae4be7a41?w=400&h=300&fit=crop',
-    emoji: '🥪'
-  },
-  {
-    id: '54',
-    name: 'German',
-    description: 'Hearty German fare with sausages, pretzels, and beer.',
+  { 
+    id: 'german', 
+    name: 'German', 
+    category: 'European', 
+    emoji: '🍖',
     image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop',
-    emoji: '🥨'
+    description: 'Hearty German fare with sausages, pretzels, and beer.'
   },
-  {
-    id: '55',
-    name: 'Turkish',
-    description: 'Rich Turkish cuisine with kebabs, baklava, and Turkish coffee.',
-    image: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=400&h=300&fit=crop',
-    emoji: '🥙'
+  { 
+    id: 'british', 
+    name: 'British', 
+    category: 'European', 
+    emoji: '🍽️',
+    image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop',
+    description: 'Classic British comfort food and traditional pub fare.'
   },
-  {
-    id: '56',
-    name: 'Brazilian',
-    description: 'Vibrant Brazilian flavors with grilled meats and tropical fruits.',
+  
+  // American Cuisines
+  { 
+    id: 'american', 
+    name: 'American', 
+    category: 'American', 
+    emoji: '🍔',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
+    description: 'Classic American comfort food, from steaks to mac and cheese.'
+  },
+  { 
+    id: 'mexican', 
+    name: 'Mexican', 
+    category: 'American', 
+    emoji: '🌮',
+    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop',
+    description: 'Tacos, burritos, quesadillas and other Mexican favorites.'
+  },
+  { 
+    id: 'tex_mex', 
+    name: 'Tex-Mex', 
+    category: 'American', 
+    emoji: '🌯',
+    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop',
+    description: 'Texas-style Mexican cuisine with bold flavors and hearty portions.'
+  },
+  { 
+    id: 'southern', 
+    name: 'Southern', 
+    category: 'American', 
+    emoji: '🍗',
+    image: 'https://images.unsplash.com/photo-1574484284002-952d92456975?w=400&h=300&fit=crop',
+    description: 'Comforting Southern cuisine with rich, hearty flavors.'
+  },
+  { 
+    id: 'bbq', 
+    name: 'BBQ', 
+    category: 'American', 
+    emoji: '🍖',
+    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop',
+    description: 'Smoky grilled meats and barbecue favorites with tangy sauces.'
+  },
+  { 
+    id: 'cajun', 
+    name: 'Cajun', 
+    category: 'American', 
+    emoji: '🦐',
     image: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=400&h=300&fit=crop',
-    emoji: '🥭'
+    description: 'Spicy Louisiana-style cuisine with bold Creole flavors.'
   },
-  {
-    id: '57',
-    name: 'Jamaican',
-    description: 'Spicy Caribbean cuisine with jerk seasonings and tropical flavors.',
+  { 
+    id: 'creole', 
+    name: 'Creole', 
+    category: 'American', 
+    emoji: '🍤',
+    image: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=400&h=300&fit=crop',
+    description: 'New Orleans-style cuisine with French, Spanish, and African influences.'
+  },
+  
+  // Fast Food & Quick Service
+  { 
+    id: 'fast_food', 
+    name: 'Fast Food', 
+    category: 'Quick Service', 
+    emoji: '🍟',
+    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop',
+    description: 'Quick and convenient favorites for when you\'re on the go.'
+  },
+  { 
+    id: 'pizza', 
+    name: 'Pizza', 
+    category: 'Quick Service', 
+    emoji: '🍕',
+    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=300&fit=crop',
+    description: 'Delicious cheesy goodness with your favorite toppings on a crispy crust.'
+  },
+  { 
+    id: 'burger', 
+    name: 'Burgers', 
+    category: 'Quick Service', 
+    emoji: '🍔',
+    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop',
+    description: 'Juicy beef patties with fresh toppings between soft buns.'
+  },
+  { 
+    id: 'sandwich', 
+    name: 'Sandwiches', 
+    category: 'Quick Service', 
+    emoji: '🥪',
+    image: 'https://images.unsplash.com/photo-1539252554453-80ab65ce3586?w=400&h=300&fit=crop',
+    description: 'Fresh deli sandwiches and subs with quality ingredients.'
+  },
+  { 
+    id: 'deli', 
+    name: 'Deli', 
+    category: 'Quick Service', 
+    emoji: '🥪',
+    image: 'https://images.unsplash.com/photo-1539252554453-80ab65ce3586?w=400&h=300&fit=crop',
+    description: 'Classic deli meats, cheese, and fresh sandwiches.'
+  },
+  { 
+    id: 'subway', 
+    name: 'Subs', 
+    category: 'Quick Service', 
+    emoji: '🥖',
+    image: 'https://images.unsplash.com/photo-1539252554453-80ab65ce3586?w=400&h=300&fit=crop',
+    description: 'Fresh submarine sandwiches with your choice of toppings.'
+  },
+  
+  // Seafood
+  { 
+    id: 'seafood', 
+    name: 'Seafood', 
+    category: 'Seafood', 
+    emoji: '🐟',
+    image: 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=400&h=300&fit=crop',
+    description: 'Fresh catch of the day and ocean delicacies.'
+  },
+  { 
+    id: 'sushi_bar', 
+    name: 'Sushi Bar', 
+    category: 'Seafood', 
+    emoji: '🍣',
+    image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=300&fit=crop',
+    description: 'Fresh Japanese sushi and sashimi with perfectly seasoned rice.'
+  },
+  { 
+    id: 'oyster_bar', 
+    name: 'Oyster Bar', 
+    category: 'Seafood', 
+    emoji: '🦪',
+    image: 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=400&h=300&fit=crop',
+    description: 'Fresh oysters and premium seafood selections.'
+  },
+  
+  // Desserts & Sweets
+  { 
+    id: 'ice_cream', 
+    name: 'Ice Cream', 
+    category: 'Desserts', 
+    emoji: '🍦',
+    image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400&h=300&fit=crop',
+    description: 'Cool treats and frozen desserts for any time of day.'
+  },
+  { 
+    id: 'bakery', 
+    name: 'Bakery', 
+    category: 'Desserts', 
+    emoji: '🥐',
+    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop',
+    description: 'Fresh baked goods, pastries, and artisanal breads.'
+  },
+  { 
+    id: 'dessert', 
+    name: 'Desserts', 
+    category: 'Desserts', 
+    emoji: '🍰',
+    image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400&h=300&fit=crop',
+    description: 'Sweet treats and decadent desserts to satisfy your sweet tooth.'
+  },
+  { 
+    id: 'cafe', 
+    name: 'Cafe', 
+    category: 'Desserts', 
+    emoji: '☕',
+    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
+    description: 'Artisan coffee, pastries, and cozy café atmosphere.'
+  },
+  { 
+    id: 'coffee_shop', 
+    name: 'Coffee Shop', 
+    category: 'Desserts', 
+    emoji: '☕',
+    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
+    description: 'Specialty coffee drinks and light fare in a relaxed setting.'
+  },
+  
+  // Vegetarian & Health
+  { 
+    id: 'vegetarian', 
+    name: 'Vegetarian', 
+    category: 'Health', 
+    emoji: '🥬',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
+    description: 'Plant-based cuisine that\'s both healthy and delicious.'
+  },
+  { 
+    id: 'vegan', 
+    name: 'Vegan', 
+    category: 'Health', 
+    emoji: '🌱',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
+    description: 'Plant-based cuisine that\'s both healthy and delicious.'
+  },
+  { 
+    id: 'healthy', 
+    name: 'Healthy', 
+    category: 'Health', 
+    emoji: '🥗',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
+    description: 'Nutritious and wholesome meals that make you feel good.'
+  },
+  { 
+    id: 'salad', 
+    name: 'Salads', 
+    category: 'Health', 
+    emoji: '🥗',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
+    description: 'Fresh, healthy salads with crisp vegetables and flavorful dressings.'
+  },
+  { 
+    id: 'smoothie', 
+    name: 'Smoothies', 
+    category: 'Health', 
+    emoji: '🥤',
+    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&h=300&fit=crop',
+    description: 'Fresh pressed juices, smoothies, and healthy drinks.'
+  },
+  
+  // Other Cuisines
+  { 
+    id: 'middle_eastern', 
+    name: 'Middle Eastern', 
+    category: 'Other', 
+    emoji: '🥙',
+    image: 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=400&h=300&fit=crop',
+    description: 'Hummus, kebabs, falafel and fresh Middle Eastern flavors.'
+  },
+  { 
+    id: 'african', 
+    name: 'African', 
+    category: 'Other', 
+    emoji: '🍖',
+    image: 'https://images.unsplash.com/photo-1544982503-9f984c14501a?w=400&h=300&fit=crop',
+    description: 'Spiced stews and injera bread from East Africa.'
+  },
+  { 
+    id: 'caribbean', 
+    name: 'Caribbean', 
+    category: 'Other', 
+    emoji: '🍹',
     image: 'https://images.unsplash.com/photo-1606491956689-2ea866880c84?w=400&h=300&fit=crop',
-    emoji: '🌶️'
+    description: 'Spicy Caribbean cuisine with jerk seasonings and tropical flavors.'
   },
-  {
-    id: '58',
-    name: 'Polish',
-    description: 'Comforting Polish dishes with pierogi and hearty stews.',
-    image: 'https://images.unsplash.com/photo-1625395005224-0e67cbb47b59?w=400&h=300&fit=crop',
-    emoji: '🥟'
+  { 
+    id: 'latin_american', 
+    name: 'Latin American', 
+    category: 'Other', 
+    emoji: '🌮',
+    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop',
+    description: 'Vibrant Latin American flavors with tropical fruits and spices.'
   },
-  {
-    id: '59',
-    name: 'Argentinian',
-    description: 'Grilled meats and empanadas from South America.',
+  { 
+    id: 'brazilian', 
+    name: 'Brazilian', 
+    category: 'Other', 
+    emoji: '🍖',
+    image: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=400&h=300&fit=crop',
+    description: 'Vibrant Brazilian flavors with grilled meats and tropical fruits.'
+  },
+  { 
+    id: 'peruvian', 
+    name: 'Peruvian', 
+    category: 'Other', 
+    emoji: '🍲',
+    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop',
+    description: 'Fresh Peruvian cuisine with ceviche and Andean flavors.'
+  },
+  { 
+    id: 'argentine', 
+    name: 'Argentine', 
+    category: 'Other', 
+    emoji: '🥩',
     image: 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=400&h=300&fit=crop',
-    emoji: '🥟'
+    description: 'Grilled meats and empanadas from South America.'
   },
-  {
-    id: '60',
-    name: 'Moroccan',
-    description: 'Exotic North African spices, tagines, and couscous dishes.',
-    image: 'https://images.unsplash.com/photo-1539367628448-4bc5c9d171c8?w=400&h=300&fit=crop',
-    emoji: '🍯'
-  }
+  
+  // Steakhouse & Fine Dining
+  { 
+    id: 'steakhouse', 
+    name: 'Steakhouse', 
+    category: 'Fine Dining', 
+    emoji: '🥩',
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
+    description: 'Premium cuts of beef cooked to perfection.'
+  },
+  { 
+    id: 'fine_dining', 
+    name: 'Fine Dining', 
+    category: 'Fine Dining', 
+    emoji: '🍽️',
+    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
+    description: 'Upscale restaurant experience with expertly crafted dishes.'
+  },
+  { 
+    id: 'wine_bar', 
+    name: 'Wine Bar', 
+    category: 'Fine Dining', 
+    emoji: '🍷',
+    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
+    description: 'Curated wine selections with small plates and elegant atmosphere.'
+  },
+  { 
+    id: 'cocktail_bar', 
+    name: 'Cocktail Bar', 
+    category: 'Fine Dining', 
+    emoji: '🍸',
+    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
+    description: 'Craft cocktails and sophisticated bar fare.'
+  },
+  
+  // Casual & Family
+  { 
+    id: 'casual_dining', 
+    name: 'Casual Dining', 
+    category: 'Casual', 
+    emoji: '🍽️',
+    image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop',
+    description: 'Relaxed atmosphere with table service and moderate prices.'
+  },
+  { 
+    id: 'family_style', 
+    name: 'Family Style', 
+    category: 'Casual', 
+    emoji: '👨‍👩‍👧‍👦',
+    image: 'https://images.unsplash.com/photo-1574163164894-75e5ba4c5739?w=400&h=300&fit=crop',
+    description: 'Large portions meant for sharing with the whole family.'
+  },
+  { 
+    id: 'diner', 
+    name: 'Diner', 
+    category: 'Casual', 
+    emoji: '🍳',
+    image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop',
+    description: 'Classic American diner fare with all-day breakfast options.'
+  },
+  { 
+    id: 'breakfast', 
+    name: 'Breakfast', 
+    category: 'Casual', 
+    emoji: '🍳',
+    image: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=300&fit=crop',
+    description: 'Start your day right with hearty breakfast favorites.'
+  },
+  { 
+    id: 'brunch', 
+    name: 'Brunch', 
+    category: 'Casual', 
+    emoji: '🥞',
+    image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop',
+    description: 'Late morning favorites combining breakfast and lunch items.'
+  },
+  
+  // Bars & Pubs
+  { 
+    id: 'bar', 
+    name: 'Bar', 
+    category: 'Bars', 
+    emoji: '🍺',
+    image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=300&fit=crop',
+    description: 'Pub grub and bar snacks perfect for casual dining and drinks.'
+  },
+  { 
+    id: 'pub', 
+    name: 'Pub', 
+    category: 'Bars', 
+    emoji: '🍺',
+    image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=300&fit=crop',
+    description: 'Traditional pub atmosphere with hearty British and Irish fare.'
+  },
+  { 
+    id: 'brewery', 
+    name: 'Brewery', 
+    category: 'Bars', 
+    emoji: '🍺',
+    image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=300&fit=crop',
+    description: 'Craft beer and brewery fare in a relaxed setting.'
+  },
+  { 
+    id: 'sports_bar', 
+    name: 'Sports Bar', 
+    category: 'Bars', 
+    emoji: '🏈',
+    image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=300&fit=crop',
+    description: 'Game day favorites with big screens and cold drinks.'
+  },
+  
+  // Specialized
+  { 
+    id: 'food_truck', 
+    name: 'Food Truck', 
+    category: 'Specialized', 
+    emoji: '🚚',
+    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop',
+    description: 'Creative street food and mobile kitchen favorites.'
+  },
+  { 
+    id: 'farm_to_table', 
+    name: 'Farm to Table', 
+    category: 'Specialized', 
+    emoji: '🌾',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
+    description: 'Fresh, locally sourced ingredients and seasonal menus.'
+  },
+  { 
+    id: 'organic', 
+    name: 'Organic', 
+    category: 'Specialized', 
+    emoji: '🌱',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
+    description: 'Certified organic ingredients and sustainable dining options.'
+  },
+  { 
+    id: 'gluten_free', 
+    name: 'Gluten Free', 
+    category: 'Specialized', 
+    emoji: '🌾',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
+    description: 'Gluten-free options for those with dietary restrictions.'
+  },
+  { 
+    id: 'halal', 
+    name: 'Halal', 
+    category: 'Specialized', 
+    emoji: '🕌',
+    image: 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=400&h=300&fit=crop',
+    description: 'Halal-certified cuisine following Islamic dietary guidelines.'
+  },
+  { 
+    id: 'kosher', 
+    name: 'Kosher', 
+    category: 'Specialized', 
+    emoji: '✡️',
+    image: 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=400&h=300&fit=crop',
+    description: 'Kosher-certified cuisine following Jewish dietary laws.'
+  },
 ];
+
+export const foodTypeCategories = [
+  'Asian',
+  'European', 
+  'American',
+  'Quick Service',
+  'Seafood',
+  'Desserts',
+  'Health',
+  'Other',
+  'Fine Dining',
+  'Casual',
+  'Bars',
+  'Specialized'
+];
+
+export const getFoodTypeById = (id: string): FoodType | undefined => {
+  return foodTypes.find(type => type.id === id);
+};
+
+export const getFoodTypesByCategory = (category: string): FoodType[] => {
+  return foodTypes.filter(type => type.category === category);
+};

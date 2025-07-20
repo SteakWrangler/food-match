@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Filter, Users, MapPin, QrCode, UserPlus, Loader2 } from 'lucide-react';
 import useRoom from '@/hooks/useRoom';
-import { restaurants as fallbackRestaurants } from '@/data/restaurants';
 import { foodTypes } from '@/data/foodTypes';
 import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
 
@@ -29,6 +28,10 @@ const Index = () => {
   const [shownMatches, setShownMatches] = useState<Set<string>>(new Set());
   const [restaurantOrder, setRestaurantOrder] = useState<string[]>([]);
   const [foodTypeOrder, setFoodTypeOrder] = useState<string[]>([]);
+  const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
+  const [restaurantError, setRestaurantError] = useState<string | null>(null);
+  const [pendingRoomCreation, setPendingRoomCreation] = useState<{ name: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
   const {
     roomState,
@@ -38,34 +41,40 @@ const Index = () => {
     joinRoom,
     addSwipe,
     checkForMatch,
+    loadMoreRestaurants,
     leaveRoom
   } = useRoom();
 
   const isInRoom = !!roomState;
 
-  // Use room restaurants if in a room, otherwise use static data
+  // Use room restaurants if in a room, otherwise show empty state
   const restaurants = isInRoom 
     ? (roomState?.restaurants || [])
-    : fallbackRestaurants;
-  const hasMore = false; // Static data doesn't have pagination
+    : [];
 
   // Filter restaurants based on current filter settings (only when not in a room)
   const filteredRestaurants = useMemo(() => {
-    console.log('Filtering restaurants:', restaurants);
-    console.log('Is in room:', isInRoom);
-    console.log('Filters:', filters);
-    if (!Array.isArray(restaurants)) {
-      console.error('Restaurants is not an array:', restaurants);
+    try {
+      console.log('Filtering restaurants:', restaurants);
+      console.log('Is in room:', isInRoom);
+      console.log('Filters:', filters);
+      if (!Array.isArray(restaurants)) {
+        console.error('Restaurants is not an array:', restaurants);
+        return [];
+      }
+      // Don't filter when in a room - show all room restaurants
+      if (isInRoom) {
+        console.log('In room, returning all restaurants:', restaurants.length);
+        return restaurants;
+      }
+      const filtered = filterRestaurants(restaurants, filters);
+      console.log('Filtered restaurants:', filtered.length);
+      return filtered;
+    } catch (err) {
+      console.error('Error filtering restaurants:', err);
+      setError('Error filtering restaurants');
       return [];
     }
-    // Don't filter when in a room - show all room restaurants
-    if (isInRoom) {
-      console.log('In room, returning all restaurants:', restaurants.length);
-      return restaurants;
-    }
-    const filtered = filterRestaurants(restaurants, filters);
-    console.log('Filtered restaurants:', filtered.length);
-    return filtered;
   }, [restaurants, filters, isInRoom]);
 
   // Check for room parameter in URL
@@ -80,13 +89,31 @@ const Index = () => {
 
   const handleCreateRoom = async (name: string) => {
     if (!location) {
-      // Show location modal first
+      // Store the pending room creation and show location modal
+      setPendingRoomCreation({ name });
       setShowLocation(true);
       return;
     }
-    const roomId = await createRoom(name, location);
-    setShowCreateRoom(false);
-    setShowQRCode(true);
+    
+    await createRoomWithLocation(name, location);
+  };
+
+  const createRoomWithLocation = async (name: string, location: string) => {
+    setIsLoadingRestaurants(true);
+    setRestaurantError(null);
+    setError(null);
+    
+    try {
+      const roomId = await createRoom(name, location);
+      setShowCreateRoom(false);
+      setShowQRCode(true);
+    } catch (error) {
+      console.error('Failed to create room:', error);
+      setRestaurantError('Failed to load restaurants. Please try again.');
+      setError('Failed to create room');
+    } finally {
+      setIsLoadingRestaurants(false);
+    }
   };
 
   const handleJoinRoom = async (roomId: string, name: string) => {
@@ -99,6 +126,39 @@ const Index = () => {
       setShownMatches(new Set());
     }
     return success;
+  };
+
+  const handleLocationChange = (newLocation: string) => {
+    setLocation(newLocation);
+    setShowLocation(false);
+    
+    // If there's a pending room creation, create the room now
+    if (pendingRoomCreation) {
+      createRoomWithLocation(pendingRoomCreation.name, newLocation);
+      setPendingRoomCreation(null);
+    }
+  };
+
+
+
+  const handleBringRestaurantToFront = (restaurantId: string) => {
+    setRestaurantOrder(prev => [restaurantId, ...prev.filter(id => id !== restaurantId)]);
+  };
+
+  const handleBringFoodTypeToFront = (foodTypeId: string) => {
+    setFoodTypeOrder(prev => [foodTypeId, ...prev.filter(id => id !== foodTypeId)]);
+  };
+
+  const handleGenerateMore = async () => {
+    if (!roomState || !location) return false;
+    
+    try {
+      const success = await loadMoreRestaurants();
+      return success;
+    } catch (error) {
+      console.error('Failed to load more restaurants:', error);
+      return false;
+    }
   };
 
   // Check for matches whenever room state changes (due to syncing)
@@ -163,8 +223,6 @@ const Index = () => {
     }
   }, [roomState, isInRoom, checkForMatch, showMatch, filteredRestaurants, foodTypes]);
 
-
-
   const handleRestaurantSwipe = (restaurantId: string, direction: 'left' | 'right') => {
     addSwipe(restaurantId, direction);
     
@@ -213,32 +271,27 @@ const Index = () => {
     }
   };
 
-  const handleLocationChange = (newLocation: string) => {
-    setLocation(newLocation);
-  };
-
-  const host = roomState?.participants.find(p => p.id === roomState.hostId);
-
-  const handleGenerateMore = async () => {
-    // No-op for static data
-  };
-
-  const handleBringRestaurantToFront = (restaurantId: string) => {
-    setRestaurantOrder(prev => {
-      const newOrder = prev.filter(id => id !== restaurantId);
-      return [restaurantId, ...newOrder];
-    });
-  };
-
-  const handleBringFoodTypeToFront = (foodTypeId: string) => {
-    setFoodTypeOrder(prev => {
-      const newOrder = prev.filter(id => id !== foodTypeId);
-      return [foodTypeId, ...newOrder];
-    });
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-red-50">
+      {/* Error Fallback */}
+      {error && (
+        <div className="fixed inset-0 bg-red-500 text-white flex items-center justify-center z-50">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
+            <p className="mb-4">{error}</p>
+            <button 
+              onClick={() => {
+                setError(null);
+                window.location.reload();
+              }}
+              className="bg-white text-red-500 px-4 py-2 rounded-lg"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-orange-100 sticky top-0 z-40">
         <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
@@ -325,10 +378,10 @@ const Index = () => {
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-orange-500" />
                   <span className="text-gray-700">Room: {roomState.id}</span>
-                  {host && (
+                  {roomState.participants && roomState.participants.find(p => p.id === roomState.hostId) && (
                     <>
                       <span className="text-gray-400">•</span>
-                      <span className="font-medium text-gray-900">Host: {host.name}</span>
+                      <span className="font-medium text-gray-900">Host: {roomState.participants.find(p => p.id === roomState.hostId)?.name}</span>
                     </>
                   )}
                 </div>
@@ -367,18 +420,40 @@ const Index = () => {
               </TabsList>
               
               <TabsContent value="specific" className="mt-0">
-                <SwipeInterface
-                  restaurants={filteredRestaurants}
-                  hasMore={hasMore}
-                  onGenerateMore={handleGenerateMore}
-                  roomState={roomState}
-                  onSwipe={handleRestaurantSwipe}
-                  onMatch={setMatchedRestaurant}
-                  checkForMatch={checkForMatch}
-                  participantId={participantId}
-                  onBringToFront={handleBringRestaurantToFront}
-                  customOrder={restaurantOrder}
-                />
+                {filteredRestaurants.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">🍽️</div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">No restaurants found</h3>
+                    <p className="text-gray-600 mb-4">
+                      {isInRoom 
+                        ? "No restaurants available in your area. Try changing your location."
+                        : "Join a room to start swiping on restaurants!"
+                      }
+                    </p>
+                    {isInRoom && (
+                      <Button
+                        onClick={() => setShowLocation(true)}
+                        variant="outline"
+                        className="border-orange-200 hover:bg-orange-50"
+                      >
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Change Location
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <SwipeInterface
+                    restaurants={filteredRestaurants}
+                    roomState={roomState}
+                    onSwipe={handleRestaurantSwipe}
+                    onMatch={setMatchedRestaurant}
+                    checkForMatch={checkForMatch}
+                    participantId={participantId}
+                    onBringToFront={handleBringRestaurantToFront}
+                    customOrder={restaurantOrder}
+                    onGenerateMore={handleGenerateMore}
+                  />
+                )}
               </TabsContent>
               
               <TabsContent value="general" className="mt-0">
@@ -406,11 +481,33 @@ const Index = () => {
                 When everyone swipes right, it's a match! 🎉
               </p>
             </div>
-
-
           </>
         )}
       </main>
+
+      {/* Loading Overlay */}
+      {isLoadingRestaurants && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl p-8 text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading restaurants near you...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {restaurantError && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg z-50">
+          {restaurantError}
+        </div>
+      )}
+
+      {/* General Error Message */}
+      {error && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg z-50">
+          {error}
+        </div>
+      )}
 
       {/* Modals */}
       {showCreateRoom && (

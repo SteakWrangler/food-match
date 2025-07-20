@@ -6,8 +6,6 @@ import { Restaurant } from '@/data/restaurants';
 
 interface SwipeInterfaceProps {
   restaurants: Restaurant[];
-  hasMore?: boolean;
-  onGenerateMore?: () => void;
   roomState?: any;
   onSwipe?: (restaurantId: string, direction: 'left' | 'right') => void;
   onMatch?: (restaurant: any) => void;
@@ -15,19 +13,19 @@ interface SwipeInterfaceProps {
   participantId?: string;
   onBringToFront?: (restaurantId: string) => void;
   customOrder?: string[];
+  onGenerateMore?: () => Promise<boolean>;
 }
 
 const SwipeInterface: React.FC<SwipeInterfaceProps> = ({ 
   restaurants, 
-  hasMore = false,
-  onGenerateMore,
   roomState, 
   onSwipe, 
   onMatch,
   checkForMatch,
   participantId,
   onBringToFront,
-  customOrder
+  customOrder,
+  onGenerateMore
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMatch, setShowMatch] = useState(false);
@@ -37,6 +35,8 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [userSwipes, setUserSwipes] = useState<Record<string, 'left' | 'right'>>({});
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadMoreAttempts, setLoadMoreAttempts] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Reset current index when custom order changes (item brought to front)
@@ -74,6 +74,38 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   }, [restaurants, customOrder]);
 
   const currentRestaurant = orderedRestaurants[currentIndex];
+
+  // Reset load more attempts when restaurant list changes (indicating successful load)
+  useEffect(() => {
+    setLoadMoreAttempts(0);
+  }, [orderedRestaurants.length]);
+
+  // Auto-load more restaurants when getting close to the end
+  useEffect(() => {
+    const remainingRestaurants = orderedRestaurants.length - currentIndex;
+    const maxAttempts = 3; // Maximum number of attempts to load more restaurants
+    
+    if (remainingRestaurants <= 5 && onGenerateMore && !isLoadingMore && loadMoreAttempts < maxAttempts) {
+      console.log(`Auto-loading more restaurants (${remainingRestaurants} left, attempt ${loadMoreAttempts + 1}/${maxAttempts})`);
+      setIsLoadingMore(true);
+      onGenerateMore().then(success => {
+        if (success) {
+          console.log('Successfully loaded more restaurants');
+          setLoadMoreAttempts(0); // Reset attempts on success
+        } else {
+          console.log('Failed to load more restaurants');
+          setLoadMoreAttempts(prev => prev + 1);
+        }
+      }).catch(error => {
+        console.error('onGenerateMore error:', error);
+        setLoadMoreAttempts(prev => prev + 1);
+      }).finally(() => {
+        setIsLoadingMore(false);
+      });
+    } else if (loadMoreAttempts >= maxAttempts) {
+      console.log('Max attempts reached for loading more restaurants');
+    }
+  }, [currentIndex, orderedRestaurants.length, onGenerateMore, isLoadingMore, loadMoreAttempts]);
 
   const handleSwipe = (direction: 'left' | 'right') => {
     if (!currentRestaurant) return;
@@ -150,15 +182,35 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   if (currentIndex >= orderedRestaurants.length) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">No more restaurants!</h2>
-        <p className="text-gray-600 mb-4">You've seen all available options matching your filters.</p>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          No more restaurants!
+        </h2>
+        <p className="text-gray-600 mb-4">
+          {loadMoreAttempts >= 3 
+            ? "We tried to load more restaurants but couldn't find any additional options in your area."
+            : "You've seen all available options matching your filters."
+          }
+        </p>
         <div className="space-y-3">
-          {hasMore && onGenerateMore && (
+          {loadMoreAttempts >= 3 && onGenerateMore && (
             <button 
-              onClick={onGenerateMore}
-              className="px-6 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
+              onClick={() => {
+                setLoadMoreAttempts(0);
+                setIsLoadingMore(true);
+                onGenerateMore().then(success => {
+                  if (success) {
+                    console.log('Successfully loaded more restaurants via manual retry');
+                  } else {
+                    console.log('Failed to load more restaurants via manual retry');
+                  }
+                }).finally(() => {
+                  setIsLoadingMore(false);
+                });
+              }}
+              disabled={isLoadingMore}
+              className="px-6 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors disabled:opacity-50"
             >
-              Generate More Options
+              {isLoadingMore ? 'Loading...' : 'Try Loading More'}
             </button>
           )}
           <button 
@@ -181,7 +233,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   return (
     <div className="relative">
       {/* History Button */}
-      <div className="absolute top-0 right-0 z-50">
+      <div className="absolute -top-2 -right-2 z-50">
         <button
           onClick={() => setShowHistory(true)}
           className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full p-2 shadow-sm hover:bg-white transition-colors"
@@ -190,24 +242,38 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         </button>
       </div>
 
-      <div className="flex items-center justify-center min-h-[600px] p-4">
+      <div className="flex items-center justify-center min-h-[700px] p-4 relative">
+        {/* Loading indicator */}
+        {isLoadingMore && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-2 rounded-lg z-50">
+            Loading more restaurants...
+          </div>
+        )}
+        
         {/* Background Cards */}
         {orderedRestaurants.slice(currentIndex + 1, currentIndex + 3).map((restaurant, index) => (
           <div
             key={restaurant.id}
-            className="absolute"
+            className="absolute inset-0 flex items-center justify-center"
             style={{
               zIndex: 10 - index,
-              transform: `scale(${0.95 - index * 0.02}) translateY(${index * 8}px)`,
-              opacity: 0.8 - index * 0.2
+              transform: `scale(${0.85 - index * 0.05})`,
+              opacity: 0.6 - index * 0.2,
+              pointerEvents: 'none' // Prevent interaction with background cards
             }}
           >
-            <RestaurantCard
-              restaurant={restaurant}
-              onSwipe={() => {}}
-            />
+            <div className="relative">
+              <RestaurantCard
+                key={`background-${restaurant.id}`}
+                restaurant={restaurant}
+                onSwipe={() => {}}
+                showButtons={false}
+              />
+            </div>
           </div>
         ))}
+        
+
 
         {/* Current Card */}
         <div
@@ -220,6 +286,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           onMouseLeave={handleMouseUp}
         >
           <RestaurantCard
+            key={`current-${currentRestaurant.id}`}
             restaurant={currentRestaurant}
             onSwipe={handleSwipe}
           />

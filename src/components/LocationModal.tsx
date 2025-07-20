@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X, MapPin, Navigation } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LocationModalProps {
   currentLocation: string;
@@ -28,7 +29,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
     }
   };
 
-  const handleUseCurrentLocation = () => {
+  const handleUseCurrentLocation = async () => {
     setIsDetecting(true);
     
     if (!navigator.geolocation) {
@@ -37,21 +38,35 @@ const LocationModal: React.FC<LocationModalProps> = ({
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        // In a real app, you'd reverse geocode these coordinates
-        // For now, we'll just use a placeholder
-        const { latitude, longitude } = position.coords;
-        const detectedLocation = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
-        setLocation(detectedLocation);
-        setIsDetecting(false);
-      },
-      (error) => {
-        console.error('Error getting location:', error);
-        alert('Unable to detect your location. Please enter it manually.');
-        setIsDetecting(false);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+      });
+      
+      const { latitude, longitude } = position.coords;
+      
+      // Use our Supabase function for reverse geocoding
+      const { data, error } = await supabase.functions.invoke('worldwide-restaurants', {
+        body: {
+          action: 'reverse-geocode',
+          lat: latitude,
+          lng: longitude
+        },
+      });
+
+      if (error || !data?.address) {
+        console.error('Reverse geocoding failed:', error);
+        // Fallback to coordinates if reverse geocoding fails
+        setLocation(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`);
+      } else {
+        setLocation(data.address);
       }
-    );
+    } catch (error) {
+      console.error('Error getting location:', error);
+      alert('Unable to detect your location. Please enter it manually.');
+    } finally {
+      setIsDetecting(false);
+    }
   };
 
   return (

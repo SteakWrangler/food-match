@@ -4,6 +4,7 @@ export interface Restaurant {
   name: string;
   cuisine: string;
   image: string;
+  images?: string[]; // Array of additional images for carousel
   rating: number;
   priceRange: string;
   distance: string;
@@ -57,6 +58,11 @@ export const restaurants: Restaurant[] = [
     name: 'Chili\'s Grill & Bar',
     cuisine: 'American',
     image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop',
+    images: [
+      'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=400&h=300&fit=crop'
+    ],
     rating: 4.1,
     priceRange: '$$',
     distance: '1.2 mi',
