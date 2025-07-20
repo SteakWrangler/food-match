@@ -1,4 +1,4 @@
-# 🍽️ Foodie Find Match
+# 🍽️ Food Match
 
 A real-time collaborative restaurant discovery app that helps groups find dining spots together through an intuitive swipe interface.
 
@@ -48,6 +48,7 @@ A real-time collaborative restaurant discovery app that helps groups find dining
 - **Edge Functions** - Serverless API endpoints
 
 ### Development Tools
+- **Cursor IDE** - AI-assisted development environment
 - **ESLint** - Code linting and formatting
 - **PostCSS** - CSS processing
 - **Autoprefixer** - CSS vendor prefixing
