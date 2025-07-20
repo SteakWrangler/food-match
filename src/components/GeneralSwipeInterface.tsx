@@ -207,8 +207,6 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
                 foodType={foodType}
                 onSwipe={() => {}}
               />
-              {/* Hide buttons for background cards */}
-              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-orange-50 via-orange-50/90 to-transparent pointer-events-none z-10"></div>
             </div>
           </div>
         ))}

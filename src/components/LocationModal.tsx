@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { X, MapPin, Navigation } from 'lucide-react';
+import { MapPin, X, Navigation } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface LocationModalProps {
@@ -31,12 +31,6 @@ const LocationModal: React.FC<LocationModalProps> = ({
 
   const handleUseCurrentLocation = async () => {
     setIsDetecting(true);
-    
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by this browser');
-      setIsDetecting(false);
-      return;
-    }
 
     try {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -45,8 +39,8 @@ const LocationModal: React.FC<LocationModalProps> = ({
       
       const { latitude, longitude } = position.coords;
       
-      // Use our Supabase function for reverse geocoding
-      const { data, error } = await supabase.functions.invoke('worldwide-restaurants', {
+      // Use Google Places API for reverse geocoding
+      const { data, error } = await supabase.functions.invoke('google-places', {
         body: {
           action: 'reverse-geocode',
           lat: latitude,

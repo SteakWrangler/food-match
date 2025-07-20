@@ -43,6 +43,8 @@ const Index = () => {
     addSwipe,
     checkForMatch,
     loadMoreRestaurants,
+    reloadRestaurantsWithFilters,
+    testDuplicateAPI, // Add test function
     leaveRoom
   } = useRoom();
 
@@ -105,7 +107,11 @@ const Index = () => {
     setError(null);
     
     try {
-      const roomId = await createRoom(name, location);
+      // Reset filters to default when creating a new room (without reloading)
+      resetFiltersWithoutReload();
+      
+      // Pass default filters when creating room
+      const roomId = await createRoom(name, location, defaultFilters);
       setShowCreateRoom(false);
       setShowQRCode(true);
     } catch (error) {
@@ -125,13 +131,27 @@ const Index = () => {
       window.history.replaceState({}, document.title, window.location.pathname);
       // Reset shown matches for new room
       setShownMatches(new Set());
+      // Reset filters to default when joining a room (without reloading)
+      resetFiltersWithoutReload();
     }
     return success;
+  };
+
+  const handleLeaveRoom = () => {
+    // Reset filters to default when leaving a room (without reloading)
+    resetFiltersWithoutReload();
+    // Call the original leaveRoom function
+    leaveRoom();
   };
 
   const handleLocationChange = (newLocation: string) => {
     setLocation(newLocation);
     setShowLocation(false);
+    
+    // If we're in a room, reset filters when changing location (without reloading)
+    if (isInRoom) {
+      resetFiltersWithoutReload();
+    }
     
     // If there's a pending room creation, create the room now
     if (pendingRoomCreation) {
@@ -151,15 +171,50 @@ const Index = () => {
   };
 
   const handleGenerateMore = async () => {
-    if (!roomState || !location) return false;
-    
-    try {
-      const success = await loadMoreRestaurants();
-      return success;
-    } catch (error) {
-      console.error('Failed to load more restaurants:', error);
+    console.log('🔄 handleGenerateMore called');
+    if (!roomState || !location) {
+      console.log('❌ handleGenerateMore: No room state or location');
       return false;
     }
+    
+    try {
+      console.log('🔄 handleGenerateMore: Calling loadMoreRestaurants with filters:', filters);
+      // Pass current filters when loading more restaurants
+      const success = await loadMoreRestaurants(filters);
+      console.log('✅ handleGenerateMore: Result:', success);
+      return success;
+    } catch (error) {
+      console.error('💥 handleGenerateMore: Failed to load more restaurants:', error);
+      return false;
+    }
+  };
+
+  // Add function to handle filter changes
+  const handleFiltersChange = async (newFilters: FilterState) => {
+    setFilters(newFilters);
+    
+    // If we're in a room, reload restaurants with new filters
+    if (isInRoom && roomState) {
+      setIsLoadingRestaurants(true);
+      setRestaurantError(null);
+      
+      try {
+        const success = await reloadRestaurantsWithFilters(newFilters);
+        if (!success) {
+          setRestaurantError('Failed to reload restaurants with new filters. Please try again.');
+        }
+      } catch (error) {
+        console.error('Failed to reload restaurants with filters:', error);
+        setRestaurantError('Failed to reload restaurants with new filters.');
+      } finally {
+        setIsLoadingRestaurants(false);
+      }
+    }
+  };
+
+  // Add function to reset filters without reloading restaurants
+  const resetFiltersWithoutReload = () => {
+    setFilters({ ...defaultFilters });
   };
 
   // Check for matches whenever room state changes (due to syncing)
@@ -400,7 +455,7 @@ const Index = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={leaveRoom}
+                    onClick={handleLeaveRoom}
                     className="text-red-600 hover:bg-red-50"
                   >
                     Leave
@@ -444,6 +499,7 @@ const Index = () => {
                   </div>
                 ) : (
                   <SwipeInterface
+                    key={roomState?.id || 'no-room'}
                     restaurants={filteredRestaurants}
                     roomState={roomState}
                     onSwipe={handleRestaurantSwipe}
@@ -550,12 +606,15 @@ const Index = () => {
         />
       )}
 
-      <FilterPanel
-        isOpen={showFilters}
-        onClose={() => setShowFilters(false)}
-        filters={filters}
-        onFiltersChange={setFilters}
-      />
+      {/* Filter Panel */}
+      {isInRoom && (
+        <FilterPanel
+          isOpen={showFilters}
+          onClose={() => setShowFilters(false)}
+          filters={filters}
+          onFiltersChange={handleFiltersChange} // Use new handler
+        />
+      )}
     </div>
   );
 };

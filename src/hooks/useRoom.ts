@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { getSupabaseWorldwideRestaurantsAPI } from '@/integrations/supabase/worldwideRestaurants';
+import { getHybridRestaurantsAPI } from '@/integrations/supabase/hybridRestaurants';
+import { FilterState } from '@/utils/restaurantFilters';
 
 export interface RoomState {
   id: string;
@@ -15,6 +16,8 @@ export interface RoomState {
   restaurants: any[];
   location: string;
   lastUpdated: number; // Add timestamp for sync
+  filters?: FilterState; // Add filters to room state
+  nextPageToken?: string; // Add nextPageToken for pagination
 }
 
 // In-memory storage for active rooms
@@ -29,10 +32,10 @@ const useRoom = () => {
   // Polling mechanism to sync room state
   useEffect(() => {
     if (roomState) {
-      // Start polling every 2 seconds
-      pollingIntervalRef.current = setInterval(() => {
-        syncRoomState();
-      }, 2000);
+      // Temporarily disable polling for debugging
+      // pollingIntervalRef.current = setInterval(() => {
+      //   syncRoomState();
+      // }, 2000);
 
       return () => {
         if (pollingIntervalRef.current) {
@@ -59,7 +62,7 @@ const useRoom = () => {
     }
   };
 
-  const createRoom = async (hostName: string, location: string) => {
+  const createRoom = async (hostName: string, location: string, filters?: FilterState) => {
     try {
       const roomId = Math.random().toString(36).substr(2, 9).toUpperCase();
       
@@ -76,6 +79,7 @@ const useRoom = () => {
         swipes: {},
         restaurants: [], // Start with empty restaurants
         location,
+        filters, // Store filters in room state
         lastUpdated: Date.now()
       };
 
@@ -88,8 +92,8 @@ const useRoom = () => {
       
       console.log(`Created room ${roomId} from ${location}`);
       
-      // Now load initial restaurants
-      const success = await loadInitialRestaurants(roomId, location);
+      // Now load initial restaurants with hybrid system and filters
+      const success = await loadInitialRestaurants(roomId, location, filters);
       
       return roomId;
     } catch (error) {
@@ -101,19 +105,34 @@ const useRoom = () => {
     }
   };
 
-  const loadInitialRestaurants = async (roomId: string, location: string) => {
+  const loadInitialRestaurants = async (roomId: string, location: string, filters?: FilterState) => {
     try {
-      console.log('Loading initial restaurants...');
-      const worldwideRestaurantsAPI = getSupabaseWorldwideRestaurantsAPI();
+      console.log('Loading initial restaurants with Google Places + ChatGPT system...');
+      console.log('Applied filters:', filters);
+      const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
-      const restaurants = await worldwideRestaurantsAPI.searchRestaurants({
+      // Convert filters to API parameters
+      const apiParams: any = {
         location,
-        radius: 5000,
-        openNow: true,
+        radius: filters?.distance?.[0] ? filters.distance[0] * 1609 : 5000, // Convert miles to meters
+        openNow: filters?.openNow ?? true,
         limit: 20
-      });
+      };
+
+      // Add price range filter - use "or-less" logic
+      if (filters?.priceRange && filters.priceRange.length > 0) {
+        apiParams.minPrice = 0; // Start from lowest price (Google uses 0-4)
+        apiParams.maxPrice = filters.priceRange[0] - 1; // Up to selected price level
+      }
+
+      // Add cuisine keyword if specified
+      if (filters?.selectedCuisines && filters.selectedCuisines.length > 0) {
+        apiParams.keyword = filters.selectedCuisines.join(' ');
+      }
       
-      console.log(`Fetched ${restaurants.length} initial restaurants from Worldwide Restaurants API`);
+      const result = await hybridRestaurantsAPI.searchRestaurants(apiParams);
+      
+      console.log(`Fetched ${result.restaurants.length} initial restaurants from Google Places + ChatGPT API`);
       
       // Get the current room from memory or localStorage
       let currentRoom = activeRooms.get(roomId);
@@ -129,10 +148,12 @@ const useRoom = () => {
         return false;
       }
       
-      // Update the room with restaurants
+      // Update the room with restaurants and filters
       const updatedRoom: RoomState = {
         ...currentRoom,
-        restaurants,
+        restaurants: result.restaurants,
+        filters, // Store the filters that were used
+        nextPageToken: result.nextPageToken, // Store the nextPageToken for pagination
         lastUpdated: Date.now()
       };
       
@@ -140,7 +161,7 @@ const useRoom = () => {
       activeRooms.set(roomId, updatedRoom);
       localStorage.setItem(`room_${roomId}`, JSON.stringify(updatedRoom));
       
-      console.log(`Updated room ${roomId} with ${restaurants.length} restaurants`);
+      console.log(`Updated room ${roomId} with ${result.restaurants.length} restaurants`);
       return true;
     } catch (error) {
       console.error('Failed to load initial restaurants:', error);
@@ -253,37 +274,67 @@ const useRoom = () => {
     return roomState.swipes[participantId]?.[restaurantId] || null;
   };
 
-  const loadMoreRestaurants = async () => {
+  const loadMoreRestaurants = async (filters?: FilterState) => {
+    console.log('🔍 loadMoreRestaurants called with filters:', filters);
+    console.log('🔍 Current room state:', roomState);
+    console.log('🔍 Current room location:', roomState?.location);
+    
     if (!roomState || !roomState.location) {
-      console.log('loadMoreRestaurants: No room state or location');
+      console.log('❌ loadMoreRestaurants: No room state or location');
       return false;
     }
     
     try {
-      console.log('Loading more restaurants in background...');
+      console.log('🚀 Starting to load more restaurants with Google Places + ChatGPT system...');
+      console.log('🔍 Applied filters:', filters);
       
-      const worldwideRestaurantsAPI = getSupabaseWorldwideRestaurantsAPI();
+      const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
-      // Request 50 restaurants (more than the initial 20)
-      const moreRestaurants = await worldwideRestaurantsAPI.searchRestaurants({
+      // Use filters from room state if not provided
+      const appliedFilters = filters || roomState.filters;
+      console.log('🔍 Applied filters after fallback:', appliedFilters);
+      
+      // Convert filters to API parameters
+      const apiParams: any = {
         location: roomState.location,
-        radius: 5000,
-        openNow: true,
-        limit: 50 // Request more than initial load
-      });
+        radius: appliedFilters?.distance?.[0] ? appliedFilters.distance[0] * 1609 : 5000, // Convert miles to meters
+        openNow: appliedFilters?.openNow ?? true,
+        limit: 20 // Request 20 more restaurants
+      };
+
+      // Add price range filter - use "or-less" logic
+      if (appliedFilters?.priceRange && appliedFilters.priceRange.length > 0) {
+        apiParams.minPrice = 0; // Start from lowest price (Google uses 0-4)
+        apiParams.maxPrice = appliedFilters.priceRange[0] - 1; // Up to selected price level
+      }
+
+      // Add cuisine keyword if specified
+      if (appliedFilters?.selectedCuisines && appliedFilters.selectedCuisines.length > 0) {
+        apiParams.keyword = appliedFilters.selectedCuisines.join(' ');
+      }
+
+      // Add pageToken if we have one for pagination
+      if (roomState.nextPageToken) {
+        apiParams.pageToken = roomState.nextPageToken;
+        console.log('🔍 Using pageToken for pagination:', roomState.nextPageToken);
+      } else {
+        console.log('🔍 No pageToken available, this will be a fresh search');
+      }
       
-      console.log(`Received ${moreRestaurants.length} restaurants from API`);
+      console.log('🔍 API parameters being sent:', apiParams);
       
-      // Filter out duplicates by restaurant ID to ensure we don't add the same restaurants
-      const existingIds = new Set(roomState.restaurants.map(r => r.id));
-      const newRestaurants = moreRestaurants.filter(r => !existingIds.has(r.id));
+      const result = await hybridRestaurantsAPI.searchRestaurants(apiParams);
       
-      console.log(`After filtering duplicates: ${newRestaurants.length} new restaurants`);
+      console.log(`📊 Received ${result.restaurants.length} restaurants from API`);
+      console.log('🔍 Sample new restaurant:', result.restaurants[0]);
       
-      if (newRestaurants.length > 0) {
+      if (result.restaurants.length > 0) {
+        console.log('✅ Adding new restaurants to room state');
         const updatedRoom: RoomState = {
           ...roomState,
-          restaurants: [...roomState.restaurants, ...newRestaurants],
+          restaurants: [...roomState.restaurants, ...result.restaurants], // Append the new restaurants
+          filters: appliedFilters,
+          nextPageToken: result.nextPageToken, // Store the nextPageToken for future pagination
           lastUpdated: Date.now()
         };
         
@@ -291,15 +342,103 @@ const useRoom = () => {
         activeRooms.set(roomState.id, updatedRoom);
         localStorage.setItem(`room_${roomState.id}`, JSON.stringify(updatedRoom));
         
-        console.log(`Added ${newRestaurants.length} more restaurants in background`);
+        console.log(`✅ Successfully added ${result.restaurants.length} new restaurants (total: ${updatedRoom.restaurants.length})`);
         return true;
       } else {
-        console.log('No more unique restaurants available in the area');
+        console.log('⚠️ No restaurants returned from API');
         return false;
       }
     } catch (error) {
-      console.error('Failed to load more restaurants:', error);
+      console.error('💥 Failed to load more restaurants:', error);
       return false;
+    }
+  };
+
+  // Add a new function to reload restaurants with new filters
+  const reloadRestaurantsWithFilters = async (filters: FilterState) => {
+    if (!roomState || !roomState.location) {
+      console.log('reloadRestaurantsWithFilters: No room state or location');
+      return false;
+    }
+    
+    try {
+      console.log('Reloading restaurants with new filters:', filters);
+      
+      // Clear existing restaurants and load new ones with filters
+      const updatedRoom: RoomState = {
+        ...roomState,
+        restaurants: [], // Clear existing restaurants
+        filters, // Update filters
+        lastUpdated: Date.now()
+      };
+      
+      setRoomState(updatedRoom);
+      activeRooms.set(roomState.id, updatedRoom);
+      localStorage.setItem(`room_${roomState.id}`, JSON.stringify(updatedRoom));
+      
+      // Load new restaurants with filters
+      const success = await loadInitialRestaurants(roomState.id, roomState.location, filters);
+      return success;
+    } catch (error) {
+      console.error('Failed to reload restaurants with filters:', error);
+      return false;
+    }
+  };
+
+  // Add a test function to check for duplicates
+  const testDuplicateAPI = async () => {
+    if (!roomState?.location) {
+      console.log('❌ No room location available for testing');
+      return;
+    }
+    
+    try {
+      console.log('🧪 Testing for API duplicates...');
+      const hybridRestaurantsAPI = getHybridRestaurantsAPI();
+      
+      // First call - get 20 restaurants
+      const firstCall = await hybridRestaurantsAPI.searchRestaurants({
+        location: roomState.location,
+        radius: 5000,
+        openNow: true,
+        limit: 20
+      });
+      
+      console.log('🧪 First call returned:', firstCall.restaurants.length, 'restaurants');
+      console.log('🧪 First call sample:', firstCall.restaurants.slice(0, 3).map(r => ({ id: r.id, name: r.name })));
+      
+      // Second call - get 50 restaurants
+      const secondCall = await hybridRestaurantsAPI.searchRestaurants({
+        location: roomState.location,
+        radius: 5000,
+        openNow: true,
+        limit: 50
+      });
+      
+      console.log('🧪 Second call returned:', secondCall.restaurants.length, 'restaurants');
+      console.log('🧪 Second call sample:', secondCall.restaurants.slice(0, 3).map(r => ({ id: r.id, name: r.name })));
+      
+      // Check for duplicates
+      const firstIds = new Set(firstCall.restaurants.map(r => r.id));
+      const duplicates = secondCall.restaurants.filter(r => firstIds.has(r.id));
+      
+      console.log('🧪 Duplicates found:', duplicates.length, 'out of', secondCall.restaurants.length);
+      console.log('🧪 Duplicate restaurants:', duplicates.map(r => ({ id: r.id, name: r.name })));
+      
+      // Check if first 20 of second call are the same as first call
+      const first20OfSecond = secondCall.restaurants.slice(0, 20);
+      const first20Duplicates = first20OfSecond.filter(r => firstIds.has(r.id));
+      console.log('🧪 First 20 of second call duplicates:', first20Duplicates.length, 'out of 20');
+      
+      return {
+        firstCallCount: firstCall.restaurants.length,
+        secondCallCount: secondCall.restaurants.length,
+        totalDuplicates: duplicates.length,
+        first20Duplicates: first20Duplicates.length
+      };
+    } catch (error) {
+      console.error('🧪 Test failed:', error);
+      return null;
     }
   };
 
@@ -324,6 +463,8 @@ const useRoom = () => {
     checkForMatch,
     getParticipantSwipe,
     loadMoreRestaurants,
+    reloadRestaurantsWithFilters,
+    testDuplicateAPI, // Add test function
     leaveRoom
   };
 };

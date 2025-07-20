@@ -11,6 +11,16 @@ export interface Restaurant {
   estimatedTime: string;
   description: string;
   tags: string[];
+  
+  // NEW FIELDS FOR HYBRID SYSTEM
+  address?: string;
+  phone?: string;
+  website?: string;
+  openingHours?: string[];
+  googleTypes?: string[]; // Google Places API types
+  processedByChatGPT?: boolean; // Track if ChatGPT processed this
+  chatGPTConfidence?: number; // Confidence score from ChatGPT
+  tagsWithConfidence?: Array<{tag: string, confidence: number}>; // Tags with confidence scores for filtering
 }
 
 export const restaurants: Restaurant[] = [
@@ -75,6 +85,11 @@ export const restaurants: Restaurant[] = [
     name: 'Applebee\'s Grill + Bar',
     cuisine: 'American',
     image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop',
+    images: [
+      'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop'
+    ],
     rating: 3.9,
     priceRange: '$$',
     distance: '1.5 mi',
@@ -127,6 +142,11 @@ export const restaurants: Restaurant[] = [
     name: 'P.F. Chang\'s',
     cuisine: 'Chinese',
     image: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?w=400&h=300&fit=crop',
+    images: [
+      'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=300&fit=crop'
+    ],
     rating: 4.1,
     priceRange: '$$$',
     distance: '1.3 mi',

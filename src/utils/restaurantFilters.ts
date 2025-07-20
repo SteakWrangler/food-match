@@ -26,8 +26,8 @@ export const filterRestaurants = (restaurants: Restaurant[], filters: FilterStat
     // Price range filter - only filter if a price range is selected
     if (filters.priceRange.length > 0) {
       const priceLevel = restaurant.priceRange.length; // $ = 1, $$ = 2, $$$ = 3, $$$$ = 4
-      // If user selects $$, only show $$ restaurants, not $ and $$
-      if (priceLevel !== filters.priceRange[0]) {
+      // If user selects $$$, show $, $$, and $$$ restaurants (or-less logic)
+      if (priceLevel > filters.priceRange[0]) {
         return false;
       }
     }

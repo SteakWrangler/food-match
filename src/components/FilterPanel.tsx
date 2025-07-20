@@ -2,11 +2,11 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { X, Filter } from 'lucide-react';
 import { FilterState, defaultFilters } from '@/utils/restaurantFilters';
+// import { Badge } from '@/components/ui/badge'; // COMMENTED OUT - can be restored later
+// import { Switch } from '@/components/ui/switch'; // COMMENTED OUT - can be restored later
 
 interface FilterPanelProps {
   isOpen: boolean;
@@ -21,23 +21,10 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   filters, 
   onFiltersChange 
 }) => {
-  const cuisines = [
-    'Italian', 'Mexican', 'Chinese', 'Japanese', 'Thai', 'Indian',
-    'American', 'Mediterranean', 'French', 'Korean', 'Vietnamese', 'Greek'
-  ];
-
   const priceLabels = ['$', '$$', '$$$', '$$$$'];
 
   const updateFilters = (updates: Partial<FilterState>) => {
     onFiltersChange({ ...filters, ...updates });
-  };
-
-  const toggleCuisine = (cuisine: string) => {
-    const newCuisines = filters.selectedCuisines.includes(cuisine) 
-      ? filters.selectedCuisines.filter(c => c !== cuisine)
-      : [...filters.selectedCuisines, cuisine];
-    
-    updateFilters({ selectedCuisines: newCuisines });
   };
 
   const resetFilters = () => {
@@ -67,7 +54,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           {/* Distance */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Distance: {filters.distance[0]} miles
+              Distance: {filters.distance[0]} miles or less
             </label>
             <Slider
               value={filters.distance}
@@ -104,43 +91,11 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Select a specific price range or leave unselected to see all prices
+              Select a price range to see restaurants at that price or less. Leave unselected to see all prices.
             </p>
           </div>
 
-          {/* Open Now */}
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-gray-700">
-              Open Now
-            </label>
-            <Switch
-              checked={filters.openNow}
-              onCheckedChange={(checked) => updateFilters({ openNow: checked })}
-            />
-          </div>
 
-          {/* Cuisines */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Cuisine Types
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {cuisines.map((cuisine) => (
-                <Badge
-                  key={cuisine}
-                  variant={filters.selectedCuisines.includes(cuisine) ? "default" : "outline"}
-                  className={`cursor-pointer transition-colors ${
-                    filters.selectedCuisines.includes(cuisine)
-                      ? 'bg-orange-500 hover:bg-orange-600'
-                      : 'hover:bg-orange-50 hover:border-orange-300'
-                  }`}
-                  onClick={() => toggleCuisine(cuisine)}
-                >
-                  {cuisine}
-                </Badge>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Footer */}

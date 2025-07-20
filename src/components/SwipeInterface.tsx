@@ -38,6 +38,8 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreAttempts, setLoadMoreAttempts] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
+  const lastRestaurantCountRef = useRef(0);
+  const preservedIndexRef = useRef(0);
 
   // Reset current index when custom order changes (item brought to front)
   useEffect(() => {
@@ -75,6 +77,30 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   const currentRestaurant = orderedRestaurants[currentIndex];
 
+  // Preserve current index when new restaurants are added
+  useEffect(() => {
+    console.log(`🔄 Restaurant list changed: ${orderedRestaurants.length} restaurants, currentIndex: ${currentIndex}, lastCount: ${lastRestaurantCountRef.current}`);
+    
+    // If the list grew (new restaurants were added), preserve the current index
+    if (orderedRestaurants.length > lastRestaurantCountRef.current && lastRestaurantCountRef.current > 0) {
+      console.log(`✅ Preserving current index: ${currentIndex} (list grew from ${lastRestaurantCountRef.current} to ${orderedRestaurants.length})`);
+      preservedIndexRef.current = currentIndex;
+      // Don't reset the index - keep it where it was
+    } else if (orderedRestaurants.length === 0) {
+      // List was cleared, reset index
+      console.log(`🔄 List cleared, resetting index to 0`);
+      setCurrentIndex(0);
+      preservedIndexRef.current = 0;
+    } else if (orderedRestaurants.length > 0 && lastRestaurantCountRef.current === 0) {
+      // Initial load, start at 0
+      console.log(`🔄 Initial load, starting at index 0`);
+      setCurrentIndex(0);
+      preservedIndexRef.current = 0;
+    }
+    
+    lastRestaurantCountRef.current = orderedRestaurants.length;
+  }, [orderedRestaurants.length, currentIndex]);
+
   // Reset load more attempts when restaurant list changes (indicating successful load)
   useEffect(() => {
     setLoadMoreAttempts(0);
@@ -84,26 +110,36 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   useEffect(() => {
     const remainingRestaurants = orderedRestaurants.length - currentIndex;
     const maxAttempts = 3; // Maximum number of attempts to load more restaurants
+    const triggerThreshold = 8; // Load more when 8 or fewer restaurants remain (increased from 3)
     
-    if (remainingRestaurants <= 5 && onGenerateMore && !isLoadingMore && loadMoreAttempts < maxAttempts) {
-      console.log(`Auto-loading more restaurants (${remainingRestaurants} left, attempt ${loadMoreAttempts + 1}/${maxAttempts})`);
+    console.log(`Infinite scroll check: ${remainingRestaurants} remaining, currentIndex: ${currentIndex}, total: ${orderedRestaurants.length}`);
+    console.log(`Loading conditions: remaining <= ${triggerThreshold}: ${remainingRestaurants <= triggerThreshold}, onGenerateMore exists: ${!!onGenerateMore}, isLoadingMore: ${isLoadingMore}, attempts < max: ${loadMoreAttempts < maxAttempts}`);
+    
+    if (remainingRestaurants <= triggerThreshold && onGenerateMore && !isLoadingMore && loadMoreAttempts < maxAttempts) {
+      console.log(`🚀 TRIGGERING AUTO-LOAD: ${remainingRestaurants} left, attempt ${loadMoreAttempts + 1}/${maxAttempts}`);
       setIsLoadingMore(true);
       onGenerateMore().then(success => {
         if (success) {
-          console.log('Successfully loaded more restaurants');
+          console.log('✅ Successfully loaded more restaurants');
           setLoadMoreAttempts(0); // Reset attempts on success
         } else {
-          console.log('Failed to load more restaurants');
+          console.log('❌ Failed to load more restaurants');
           setLoadMoreAttempts(prev => prev + 1);
         }
       }).catch(error => {
-        console.error('onGenerateMore error:', error);
+        console.error('💥 onGenerateMore error:', error);
         setLoadMoreAttempts(prev => prev + 1);
       }).finally(() => {
         setIsLoadingMore(false);
       });
     } else if (loadMoreAttempts >= maxAttempts) {
-      console.log('Max attempts reached for loading more restaurants');
+      console.log('⚠️ Max attempts reached for loading more restaurants');
+    } else if (remainingRestaurants > triggerThreshold) {
+      console.log(`⏳ Not triggering yet: ${remainingRestaurants} > ${triggerThreshold}`);
+    } else if (isLoadingMore) {
+      console.log('⏳ Already loading more restaurants...');
+    } else if (!onGenerateMore) {
+      console.log('❌ No onGenerateMore function provided');
     }
   }, [currentIndex, orderedRestaurants.length, onGenerateMore, isLoadingMore, loadMoreAttempts]);
 
@@ -180,6 +216,21 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   }
 
   if (currentIndex >= orderedRestaurants.length) {
+    // Show loading card if we're still trying to load more
+    if (isLoadingMore) {
+      return (
+        <div className="flex items-center justify-center min-h-[700px] p-4">
+          <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-sm">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Loading More Restaurants</h3>
+            <p className="text-gray-600">Finding more great places for you...</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">
@@ -243,13 +294,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       </div>
 
       <div className="flex items-center justify-center min-h-[700px] p-4 relative">
-        {/* Loading indicator */}
-        {isLoadingMore && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-2 rounded-lg z-50">
-            Loading more restaurants...
-          </div>
-        )}
-        
         {/* Background Cards */}
         {orderedRestaurants.slice(currentIndex + 1, currentIndex + 3).map((restaurant, index) => (
           <div
