@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Filter, Users, MapPin, QrCode, UserPlus, Loader2 } from 'lucide-react';
 import useRoom from '@/hooks/useRoom';
 import { foodTypes } from '@/data/foodTypes';
+import { restaurants, Restaurant } from '@/data/restaurants';
 import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
 
 const Index = () => {
@@ -22,7 +23,7 @@ const Index = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   const [showMatch, setShowMatch] = useState(false);
   const [showLocation, setShowLocation] = useState(false);
-  const [matchedRestaurant, setMatchedRestaurant] = useState<any>(null);
+  const [matchedRestaurant, setMatchedRestaurant] = useState<Restaurant | null>(null);
   const [location, setLocation] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [shownMatches, setShownMatches] = useState<Set<string>>(new Set());
