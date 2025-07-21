@@ -218,8 +218,8 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
             key={restaurant.id}
             className="absolute inset-0 flex items-center justify-center"
             style={{
-              zIndex: 10 - index,
-              transform: `scale(${0.85 - index * 0.05}) translateY(${index * 8}px)`,
+              zIndex: 5 - index,
+              transform: `scale(${0.85 - index * 0.05})`,
               opacity: 0.6 - index * 0.2,
               pointerEvents: 'none' // Prevent interaction with background cards
             }}
@@ -238,7 +238,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         {/* Current Card */}
         <div
           ref={cardRef}
-          className="relative z-30"
+          className="relative z-10"
           style={cardStyle}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
