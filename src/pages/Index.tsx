@@ -378,16 +378,6 @@ const Index = () => {
             <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm border border-orange-100">
               <div className="flex items-center justify-between text-xs sm:text-sm">
                 <div className="flex items-center gap-2">
-                  <Users className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
-                  <span className="text-gray-700">Room: {roomState.id}</span>
-                  {roomState.participants && roomState.participants.find(p => p.id === roomState.hostId) && (
-                    <>
-                      <span className="text-gray-400 hidden sm:inline">•</span>
-                      <span className="font-medium text-gray-900 hidden sm:inline">Host: {roomState.participants.find(p => p.id === roomState.hostId)?.name}</span>
-                    </>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
                   {isHost && (
                     <Button
                       variant="ghost"
@@ -398,6 +388,15 @@ const Index = () => {
                       <QrCode className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                   )}
+                  <span className="text-gray-700">Room: {roomState.id}</span>
+                  {roomState.participants && roomState.participants.find(p => p.id === roomState.hostId) && (
+                    <>
+                      <span className="text-gray-400 hidden sm:inline">•</span>
+                      <span className="font-medium text-gray-900 hidden sm:inline">Host: {roomState.participants.find(p => p.id === roomState.hostId)?.name}</span>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
