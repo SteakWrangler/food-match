@@ -32,7 +32,7 @@ const Index = () => {
   const [foodTypeOrder, setFoodTypeOrder] = useState<string[]>([]);
   const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
   const [restaurantError, setRestaurantError] = useState<string | null>(null);
-  const [pendingRoomCreation, setPendingRoomCreation] = useState<{ name: string } | null>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   
@@ -95,19 +95,25 @@ const Index = () => {
     }
   }, [roomState]);
 
-  const handleCreateRoom = async (name: string) => {
+  const handleCreateRoom = async (name: string, locationToUse?: string) => {
     if (isCreatingRoom) return; // Prevent multiple submissions
     
-    if (!location) {
-      // Store the pending room creation and show location modal
-      setPendingRoomCreation({ name });
-      setShowLocation(true);
+    const locationToSet = locationToUse || location;
+    
+    if (!locationToSet) {
+      console.error('No location provided for room creation');
+      setError('Location is required to create a room.');
       return;
+    }
+    
+    // Update the location state if a new location was provided
+    if (locationToUse && locationToUse !== location) {
+      setLocation(locationToUse);
     }
     
     setIsCreatingRoom(true);
     try {
-      await createRoom(name, location);
+      await createRoom(name, locationToSet);
       setShowCreateRoom(false);
     } catch (err) {
       console.error('Error creating room:', err);
@@ -117,21 +123,7 @@ const Index = () => {
     }
   };
 
-  const createRoomWithLocation = async (name: string, location: string) => {
-    if (isCreatingRoom) return; // Prevent multiple submissions
-    
-    setIsCreatingRoom(true);
-    try {
-      await createRoom(name, location);
-      setShowLocation(false);
-      setPendingRoomCreation(null);
-    } catch (err) {
-      console.error('Error creating room with location:', err);
-      setError('Failed to create room. Please try again.');
-    } finally {
-      setIsCreatingRoom(false);
-    }
-  };
+
 
   const handleJoinRoom = async (roomId: string, name: string) => {
     if (!location) {
@@ -159,15 +151,7 @@ const Index = () => {
     setShowLocation(false);
   };
 
-  const handleLocationSetForRoom = (newLocation: string) => {
-    setLocation(newLocation);
-    setShowLocation(false);
-    
-    // If there was a pending room creation, create it now
-    if (pendingRoomCreation) {
-      createRoomWithLocation(pendingRoomCreation.name, newLocation);
-    }
-  };
+
 
   const handleBringRestaurantToFront = (restaurantId: string) => {
     setRestaurantOrder(prev => [restaurantId, ...prev.filter(id => id !== restaurantId)]);
@@ -522,6 +506,8 @@ const Index = () => {
           onCreateRoom={handleCreateRoom}
           onClose={() => setShowCreateRoom(false)}
           isLoading={isCreatingRoom}
+          currentLocation={location}
+          needsLocation={!location}
         />
       )}
 
@@ -554,8 +540,6 @@ const Index = () => {
           currentLocation={location || ''}
           onLocationChange={handleLocationChange}
           onClose={() => setShowLocation(false)}
-          isCreatingRoom={!!pendingRoomCreation}
-          onLocationSetForRoom={handleLocationSetForRoom}
           isLoading={isCreatingRoom}
         />
       )}
