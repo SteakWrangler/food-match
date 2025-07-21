@@ -126,6 +126,57 @@ const MOCK_ROOM_STATE = {
 - [x] No console errors
 - [x] No API calls made
 
+## UI Fixes Applied
+
+### Background Cards Opacity ✅ DONE
+**Files Modified:**
+- `src/components/SwipeInterface.tsx`
+- `src/components/GeneralSwipeInterface.tsx`
+
+**What Changed:**
+- Set background cards opacity to 0 instead of 0.6 - index * 0.2
+- Background cards are now completely hidden until they become the top card
+- Prevents accidental overlap and visual confusion
+
+**Result:**
+- Cleaner card display with no overlapping background cards
+- Better focus on the current card being swiped
+- Improved user experience for both restaurant and food type tabs
+
+### Swipe Animation Improvement ✅ DONE
+**Files Modified:**
+- `src/components/SwipeInterface.tsx`
+- `src/components/GeneralSwipeInterface.tsx`
+
+**What Changed:**
+- Modified `handleSwipe` function to animate cards off-screen instead of snapping back
+- Cards now fully swipe off the screen in the direction they were swiped
+- Added proper timing to wait for animation completion before showing next card
+- Updated transition to use `'all 0.3s ease-out'` for smoother animations
+
+**Result:**
+- Natural swipe animation where cards fully exit the screen
+- No more "snap back" effect that looked jarring
+- Smooth transition between cards
+- Better visual feedback for swipe gestures
+
+### Instant Card Appearance ✅ DONE
+**Files Modified:**
+- `src/components/SwipeInterface.tsx`
+- `src/components/GeneralSwipeInterface.tsx`
+
+**What Changed:**
+- Modified transition logic to disable animation when position is reset
+- Cards now swipe off screen naturally
+- When position resets to center, no transition animation occurs
+- Next card appears instantly without rollback animation
+
+**Result:**
+- Cards swipe off screen naturally in swipe direction
+- Next card appears instantly in center (no rolling animation)
+- No visual rollback or transition when position resets
+- Clean, instant card transitions
+
 ## Restore Instructions
 
 When ready to restore API calls:

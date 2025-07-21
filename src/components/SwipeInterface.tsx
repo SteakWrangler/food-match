@@ -99,12 +99,19 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       }
     }
     
-    // Move to next card
-    setCurrentIndex(prev => prev + 1);
+    // Animate the card off-screen in the swipe direction
+    const screenWidth = window.innerWidth;
+    const finalOffset = direction === 'right' ? screenWidth * 1.5 : -screenWidth * 1.5;
     
-    // Reset drag state
-    setIsDragging(false);
-    setDragOffset({ x: 0, y: 0 });
+    // Set the final position to animate the card off-screen
+    setDragOffset({ x: finalOffset, y: dragOffset.y });
+    
+    // Wait for the animation to complete, then move to next card
+    setTimeout(() => {
+      setCurrentIndex(prev => prev + 1);
+      setIsDragging(false);
+      setDragOffset({ x: 0, y: 0 });
+    }, 300); // Match the transition duration
   };
 
   // Mouse event handlers
@@ -180,7 +187,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   // Card style with drag transform
   const cardStyle: React.CSSProperties = {
     transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${dragOffset.x * 0.1}deg)`,
-    transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+    transition: isDragging ? 'none' : (dragOffset.x === 0 && dragOffset.y === 0 ? 'none' : 'transform 0.3s ease-out'),
     cursor: isDragging ? 'grabbing' : 'grab',
   };
 
@@ -211,18 +218,8 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   return (
     <div className="relative">
-      {/* History Button */}
-      <div className="absolute -top-2 -right-2 z-50">
-        <button
-          onClick={() => setShowHistory(true)}
-          className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full p-2 shadow-sm hover:bg-white transition-colors"
-        >
-          <span className="text-xs sm:text-sm">❤️ {Object.values(userSwipes).filter(s => s === 'right').length}</span>
-        </button>
-      </div>
-
       <div className="flex items-center justify-center min-h-[600px] sm:min-h-[700px] p-2 sm:p-4 relative w-full">
-        {/* Background Cards */}
+        {/* Background Cards - Hidden until they become the top card */}
         {orderedRestaurants.slice(currentIndex + 1, currentIndex + 3).map((restaurant, index) => (
           <div
             key={restaurant.id}
@@ -230,7 +227,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
             style={{
               zIndex: 5 - index,
               transform: `translate(-50%, -50%) scale(${0.85 - index * 0.05})`,
-              opacity: 0.6 - index * 0.2,
+              opacity: 0, // Set to 0 to hide background cards until they become the top card
               pointerEvents: 'none' // Prevent interaction with background cards
             }}
           >
@@ -256,6 +253,16 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
+          {/* History Button - positioned relative to the card */}
+          <div className="absolute -top-2 -left-2 z-50">
+            <button
+              onClick={() => setShowHistory(true)}
+              className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full p-2 shadow-sm hover:bg-white transition-colors"
+            >
+              <span className="text-xs sm:text-sm">❤️ {Object.values(userSwipes).filter(s => s === 'right').length}</span>
+            </button>
+          </div>
+          
           <RestaurantCard
             key={`current-${currentRestaurant.id}`}
             restaurant={currentRestaurant}
