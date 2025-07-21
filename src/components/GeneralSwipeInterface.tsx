@@ -238,7 +238,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
             className="absolute inset-0 flex items-center justify-center"
             style={{
               zIndex: 10 - index,
-              transform: `scale(${0.85 - index * 0.05})`,
+              transform: `scale(${0.85 - index * 0.05}) translateY(${index * 8}px)`,
               opacity: 0.6 - index * 0.2,
               pointerEvents: 'none'
             }}
@@ -256,7 +256,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
         
         {/* Current Card */}
         <div
-          className="relative z-20"
+          className="relative z-30"
           style={cardStyle}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
