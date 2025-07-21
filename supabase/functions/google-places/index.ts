@@ -320,6 +320,58 @@ serve(async (req: Request) => {
       }
     }
 
+    // Handle reverse geocoding
+    if (action === 'reverse-geocode') {
+      const { lat, lng } = body;
+      
+      if (lat === undefined || lng === undefined) {
+        return new Response(JSON.stringify({ error: "Latitude and longitude are required" }), {
+          status: 400,
+          headers: corsHeaders
+        });
+      }
+
+      try {
+        const reverseGeocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googlePlacesApiKey}`;
+        const response = await fetch(reverseGeocodeUrl);
+        
+        if (!response.ok) {
+          throw new Error(`Reverse geocoding failed: HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.status !== 'OK' || !data.results || data.results.length === 0) {
+          return new Response(JSON.stringify({ 
+            error: "No address found for the given coordinates",
+            status: data.status
+          }), {
+            status: 400,
+            headers: corsHeaders
+          });
+        }
+
+        const result = data.results[0];
+
+        return new Response(JSON.stringify({ 
+          address: result.formatted_address,
+          place_id: result.place_id,
+          lat,
+          lng
+        }), {
+          headers: corsHeaders
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ 
+          error: "Reverse geocoding failed",
+          details: error.message
+        }), {
+          status: 500,
+          headers: corsHeaders
+        });
+      }
+    }
+
     // Handle restaurant search
     if (action === 'search-restaurants' || !action) {
       if (!location) {
@@ -413,8 +465,8 @@ serve(async (req: Request) => {
                 let images: string[] = [];
                 if (details.photos && details.photos.length > 0) {
                   try {
-                    // Get up to 3 photos - use photo references immediately as they expire
-                    const photoPromises = details.photos.slice(0, 3).map(async (photo: any) => {
+                    // Get up to 5 photos - use photo references immediately as they expire
+                    const photoPromises = details.photos.slice(0, 5).map(async (photo: any) => {
                       // Use the correct Google Places Photo API URL format
                       const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&maxheight=300&photoreference=${photo.photo_reference}&key=${googlePlacesApiKey}`;
                       
@@ -640,8 +692,8 @@ serve(async (req: Request) => {
             if (details.photos && details.photos.length > 0) {
               console.log(`Found ${details.photos.length} photos for ${place.name}`);
               try {
-                // Get up to 3 photos - use photo references immediately as they expire
-                const photoPromises = details.photos.slice(0, 3).map(async (photo: any, index: number) => {
+                // Get up to 5 photos - use photo references immediately as they expire
+                const photoPromises = details.photos.slice(0, 5).map(async (photo: any, index: number) => {
                   console.log(`Processing photo ${index + 1} for ${place.name}:`, photo);
                   
                   // Use the correct Google Places Photo API URL format
@@ -723,7 +775,7 @@ serve(async (req: Request) => {
 
     // If no valid action is provided
     return new Response(JSON.stringify({ 
-      error: "Invalid action. Use 'search-restaurants' or 'geocode'" 
+      error: "Invalid action. Use 'search-restaurants', 'geocode', or 'reverse-geocode'" 
     }), {
       status: 400,
       headers: corsHeaders

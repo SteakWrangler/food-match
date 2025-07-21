@@ -7,6 +7,7 @@ import JoinRoomModal from '@/components/JoinRoomModal';
 import QRCodeModal from '@/components/QRCodeModal';
 import MatchModal from '@/components/MatchModal';
 import LocationModal from '@/components/LocationModal';
+import LoadingScreen from '@/components/LoadingScreen';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Filter, Users, MapPin, QrCode, UserPlus, Loader2 } from 'lucide-react';
@@ -30,11 +31,11 @@ const Index = () => {
   const [shownMatches, setShownMatches] = useState<Set<string>>(new Set());
   const [restaurantOrder, setRestaurantOrder] = useState<string[]>([]);
   const [foodTypeOrder, setFoodTypeOrder] = useState<string[]>([]);
-  const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
   const [restaurantError, setRestaurantError] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   
   const deviceType = useDeviceType();
   
@@ -126,6 +127,9 @@ const Index = () => {
 
 
   const handleJoinRoom = async (roomId: string, name: string) => {
+    if (isJoiningRoom) return false; // Prevent multiple submissions
+    
+    setIsJoiningRoom(true);
     try {
       await joinRoom(roomId, name);
       setShowJoinRoom(false);
@@ -138,6 +142,8 @@ const Index = () => {
         setError('Failed to join room. Please check the room ID and try again.');
       }
       return false;
+    } finally {
+      setIsJoiningRoom(false);
     }
   };
 
@@ -163,14 +169,11 @@ const Index = () => {
   const handleGenerateMore = async () => {
     if (!roomState) return false;
     
-    setIsLoadingRestaurants(true);
     try {
       const success = await loadMoreRestaurants();
-      setIsLoadingRestaurants(false);
       return success;
     } catch (err) {
       console.error('Error loading more restaurants:', err);
-      setIsLoadingRestaurants(false);
       setError('Failed to load more restaurants. Please try again.');
       return false;
     }
@@ -482,20 +485,28 @@ const Index = () => {
                 When everyone swipes right, it's a match! 🎉
               </p>
             </div>
+            
+            {/* Non-blocking loading indicator for initial restaurant loading */}
+            {isLoadingRestaurantsFromHook && roomState && (
+              <div className="fixed top-4 right-4 z-50 bg-white/95 backdrop-blur-sm border border-orange-200 rounded-full px-4 py-2 shadow-lg">
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-sm text-gray-700 font-medium">
+                    {roomState.restaurants.length <= 8 ? 'Loading initial restaurants...' : 'Loading more restaurants...'}
+                  </span>
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>
 
-      {/* Loading Overlay */}
-      {(isLoadingRestaurants || isLoadingRestaurantsFromHook) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center mx-4">
-            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin mx-auto mb-3 sm:mb-4" />
-            <p className="text-sm sm:text-base text-gray-600">
-              {isLoadingRestaurantsFromHook ? 'Creating room and loading restaurants...' : 'Loading restaurants near you...'}
-            </p>
-          </div>
-        </div>
+      {/* Loading Screen - Show for initial room creation/joining */}
+      {(isLoadingRestaurantsFromHook || isJoiningRoom) && !roomState && (
+        <LoadingScreen 
+          message={isCreatingRoom ? "Setting up your room..." : "Joining room..."}
+          isHost={isCreatingRoom}
+        />
       )}
 
       {/* Modals */}

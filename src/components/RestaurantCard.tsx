@@ -82,13 +82,26 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
       >
         {/* Main Image with Carousel Support */}
         <div className="relative">
-          <RestaurantImageCarousel 
-            images={restaurant.images && restaurant.images.length > 0 
-              ? [restaurant.image, ...restaurant.images] 
-              : [restaurant.image]
-            }
-            restaurantName={restaurant.name}
-          />
+          {(() => {
+            const carouselImages = restaurant.images && restaurant.images.length > 0 
+              ? restaurant.images 
+              : [restaurant.image];
+            
+            // Debug logging for image arrays
+            console.log(`Restaurant ${restaurant.name}:`, {
+              mainImage: restaurant.image,
+              imagesArray: restaurant.images,
+              carouselImages: carouselImages,
+              totalImages: carouselImages.length
+            });
+            
+            return (
+              <RestaurantImageCarousel 
+                images={carouselImages}
+                restaurantName={restaurant.name}
+              />
+            );
+          })()}
           
           {/* Top Info - Only rating */}
           <div className="absolute top-4 right-4 flex justify-end items-start z-10">

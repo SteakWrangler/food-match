@@ -1,16 +1,8 @@
 import { supabase } from './client';
 import { FilterState } from '@/utils/restaurantFilters';
-import { 
-  createMockRoom, 
-  getMockRoom, 
-  joinMockRoom, 
-  addMockSwipe, 
-  updateMockRestaurants 
-} from '@/data/mockRooms';
 
-// TEMPORARY: Use mock room data instead of database calls
-// TODO: Restore database calls by setting USE_MOCK_ROOMS to false
-const USE_MOCK_ROOMS = true;
+// RESTORED: Use real database calls instead of mock data
+const USE_MOCK_ROOMS = false;
 
 export interface RoomData {
   id: string;
@@ -56,15 +48,6 @@ export class RoomService {
   async createRoom(params: CreateRoomParams): Promise<RoomData> {
     const { hostId, hostName, location, filters } = params;
     
-    // TEMPORARY: Use mock room data instead of database calls
-    if (USE_MOCK_ROOMS) {
-      console.log('🔧 TEMPORARY: Using mock room data instead of database calls');
-      console.log('🔧 To restore database calls, set USE_MOCK_ROOMS to false in roomService.ts');
-      
-      const roomId = Math.random().toString(36).substr(2, 9).toUpperCase();
-      return createMockRoom(roomId, hostId, hostName, location, filters);
-    }
-
     const roomData = {
       id: Math.random().toString(36).substr(2, 9).toUpperCase(),
       host_id: hostId,
@@ -97,12 +80,6 @@ export class RoomService {
   }
 
   async getRoom(roomId: string): Promise<RoomData | null> {
-    // TEMPORARY: Use mock room data instead of database calls
-    if (USE_MOCK_ROOMS) {
-      console.log('🔧 TEMPORARY: Getting mock room:', roomId);
-      return getMockRoom(roomId);
-    }
-
     const { data, error } = await supabase
       .from('rooms')
       .select('*')
@@ -110,12 +87,8 @@ export class RoomService {
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // Room not found
-        return null;
-      }
       console.error('Error getting room:', error);
-      throw new Error(`Failed to get room: ${error.message}`);
+      return null;
     }
 
     return data;
@@ -124,16 +97,6 @@ export class RoomService {
   async joinRoom(params: JoinRoomParams): Promise<RoomData> {
     const { roomId, participantId, participantName } = params;
     
-    // TEMPORARY: Use mock room data instead of database calls
-    if (USE_MOCK_ROOMS) {
-      console.log('🔧 TEMPORARY: Joining mock room:', roomId);
-      const result = joinMockRoom(roomId, participantId, participantName);
-      if (!result) {
-        throw new Error('Room not found');
-      }
-      return result;
-    }
-
     // First get the current room
     const currentRoom = await this.getRoom(roomId);
     if (!currentRoom) {
@@ -197,16 +160,6 @@ export class RoomService {
   async updateSwipe(params: UpdateSwipeParams): Promise<RoomData> {
     const { roomId, participantId, itemId, direction, type } = params;
     
-    // TEMPORARY: Use mock room data instead of database calls
-    if (USE_MOCK_ROOMS) {
-      console.log('🔧 TEMPORARY: Updating swipe in mock room:', roomId);
-      const result = addMockSwipe(roomId, participantId, itemId, direction, type);
-      if (!result) {
-        throw new Error('Room not found');
-      }
-      return result;
-    }
-
     // First get the current room
     const currentRoom = await this.getRoom(roomId);
     if (!currentRoom) {
@@ -254,16 +207,6 @@ export class RoomService {
   }
 
   async updateRestaurants(roomId: string, restaurants: any[], nextPageToken?: string): Promise<RoomData> {
-    // TEMPORARY: Use mock room data instead of database calls
-    if (USE_MOCK_ROOMS) {
-      console.log('🔧 TEMPORARY: Updating restaurants in mock room:', roomId);
-      const result = updateMockRestaurants(roomId, restaurants, nextPageToken);
-      if (!result) {
-        throw new Error('Room not found');
-      }
-      return result;
-    }
-
     const updateData: any = {
       restaurants,
       updated_at: new Date().toISOString()

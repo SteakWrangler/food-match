@@ -48,6 +48,10 @@ const RestaurantImageCarousel: React.FC<RestaurantImageCarouselProps> = ({
         opts={{
           align: "start",
           loop: true,
+          dragFree: false,
+          containScroll: "trimSnaps",
+          skipSnaps: false,
+          watchDrag: false,
         }}
         className="w-full h-full"
         setApi={(api) => {
@@ -80,7 +84,7 @@ const RestaurantImageCarousel: React.FC<RestaurantImageCarouselProps> = ({
         
         {/* Image counter */}
         {images.length > 1 && (
-          <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+          <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full font-medium">
             {currentImageIndex + 1} / {images.length}
           </div>
         )}

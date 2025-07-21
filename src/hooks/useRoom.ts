@@ -74,6 +74,9 @@ const useRoom = () => {
 
   const createRoom = async (hostName: string, location: string, filters?: FilterState) => {
     try {
+      // Set loading state immediately
+      setIsLoadingRestaurants(true);
+      
       const roomData = await roomService.createRoom({
         hostId: participantId,
         hostName,
@@ -81,17 +84,29 @@ const useRoom = () => {
         filters
       });
 
-      const roomState = convertRoomDataToState(roomData);
-      setRoomState(roomState);
-      setIsHost(true);
-      
       console.log(`Created room ${roomData.id} from ${location}`);
       
-      // Now load initial restaurants with hybrid system and filters
-      setIsLoadingRestaurants(true);
-      const success = await loadInitialRestaurants(roomData.id, location, filters);
-      setIsLoadingRestaurants(false);
+      // Load restaurants first, then set room state
+      const success = await loadInitialRestaurants(roomData.id, location, filters, true);
       
+      if (success) {
+        // Only set room state after restaurants are loaded
+        const updatedRoomData = await roomService.getRoom(roomData.id);
+        if (updatedRoomData) {
+          const roomState = convertRoomDataToState(updatedRoomData);
+          setRoomState(roomState);
+          setIsHost(true);
+          console.log(`Room ready with ${updatedRoomData.restaurants?.length || 0} restaurants`);
+        }
+      } else {
+        // If loading failed, still create the room but with empty restaurants
+        const roomState = convertRoomDataToState(roomData);
+        setRoomState(roomState);
+        setIsHost(true);
+        console.log('Room created but restaurant loading failed');
+      }
+      
+      setIsLoadingRestaurants(false);
       return roomData.id;
     } catch (error) {
       console.error('Error creating room:', error);
@@ -102,20 +117,18 @@ const useRoom = () => {
     }
   };
 
-  const loadInitialRestaurants = async (roomId: string, location: string, filters?: FilterState) => {
+  const loadInitialRestaurants = async (roomId: string, location: string, filters?: FilterState, isInitialLoad: boolean = false) => {
     try {
       console.log('Loading initial restaurants...');
-      console.log('🔧 MOCK API: Using mock API service that simulates full API flow');
-      console.log('🔧 To restore real API calls, set USE_MOCK_API to false in hybridRestaurants.ts');
       console.log('Applied filters:', filters);
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
       // Convert filters to API parameters
       const apiParams: any = {
         location,
-        radius: filters?.distance?.[0] ? filters.distance[0] * 1609 : 10000, // Convert miles to meters, increased default to 10km
+        radius: filters?.distance?.[0] ? filters.distance[0] * 1609 : 3000, // Further reduced default radius for faster loading
         openNow: filters?.openNow ?? false, // Changed default to false to get more results
-        limit: 40 // Increased from 20 to 40 to get more results
+        limit: isInitialLoad ? 4 : 20 // Load just 4 for initial quick load, 20 for subsequent loads
       };
 
       // Add price range filter - use "or-less" logic
@@ -131,7 +144,7 @@ const useRoom = () => {
       
       const result = await hybridRestaurantsAPI.searchRestaurants(apiParams);
       
-      console.log(`🔧 MOCK API: Fetched ${result.restaurants.length} initial restaurants from simulated API flow`);
+      console.log(`Fetched ${result.restaurants.length} initial restaurants from API`);
       
       // Update room with restaurants (this still uses Supabase for data storage)
       const updatedRoomData = await roomService.updateRestaurants(roomId, result.restaurants, result.nextPageToken);
@@ -139,10 +152,72 @@ const useRoom = () => {
       setRoomState(updatedRoomState);
       
       console.log(`Updated room ${roomId} with ${result.restaurants.length} restaurants`);
+      
+      // If this was the initial load, load more restaurants in the background
+      if (isInitialLoad && result.nextPageToken) {
+        setTimeout(() => {
+          loadMoreRestaurantsInBackground(roomId, location, filters, result.nextPageToken);
+        }, 1000); // Wait 1 second before loading more
+      }
+      
       return true;
     } catch (error) {
       console.error('Failed to load initial restaurants:', error);
       return false;
+    }
+  };
+
+  const loadMoreRestaurantsInBackground = async (roomId: string, location: string, filters?: FilterState, pageToken?: string) => {
+    try {
+      console.log('Loading more restaurants in background...');
+      const hybridRestaurantsAPI = getHybridRestaurantsAPI();
+      
+      // Convert filters to API parameters
+      const apiParams: any = {
+        location,
+        radius: filters?.distance?.[0] ? filters.distance[0] * 1609 : 10000,
+        openNow: filters?.openNow ?? false,
+        limit: 20,
+        pageToken
+      };
+
+      // Add price range filter
+      if (filters?.priceRange && filters.priceRange.length > 0) {
+        apiParams.minPrice = 0;
+        apiParams.maxPrice = filters.priceRange[0];
+      }
+
+      // Add cuisine keyword if specified
+      if (filters?.selectedCuisines && filters.selectedCuisines.length > 0) {
+        apiParams.keyword = filters.selectedCuisines.join(' ');
+      }
+      
+      const result = await hybridRestaurantsAPI.searchRestaurants(apiParams);
+      
+      console.log(`Loaded ${result.restaurants.length} more restaurants in background`);
+      
+      if (result.restaurants.length > 0) {
+        // Get current room state and append new restaurants
+        const currentRoom = await roomService.getRoom(roomId);
+        if (currentRoom) {
+          const updatedRestaurants = [...currentRoom.restaurants, ...result.restaurants];
+          const updatedRoomData = await roomService.updateRestaurants(roomId, updatedRestaurants, result.nextPageToken);
+          const updatedRoomState = convertRoomDataToState(updatedRoomData);
+          setRoomState(updatedRoomState);
+          
+          console.log(`Updated room with ${result.restaurants.length} additional restaurants`);
+        }
+      }
+      
+      // Continue loading more if there are more pages
+      if (result.nextPageToken) {
+        setTimeout(() => {
+          loadMoreRestaurantsInBackground(roomId, location, filters, result.nextPageToken);
+        }, 1500); // Wait 1.5 seconds before loading next batch
+      }
+      
+    } catch (error) {
+      console.error('Failed to load more restaurants in background:', error);
     }
   };
 
@@ -153,20 +228,44 @@ const useRoom = () => {
     const normalizedRoomId = roomId.toUpperCase();
     
     try {
+      // Set loading state
+      setIsLoadingRestaurants(true);
+      
       const roomData = await roomService.joinRoom({
         roomId: normalizedRoomId,
         participantId,
         participantName
       });
 
+      // Check if room has restaurants, if not, wait a bit and check again
+      if (!roomData.restaurants || roomData.restaurants.length === 0) {
+        console.log('Room has no restaurants, waiting for host to load them...');
+        // Wait up to 6 seconds for restaurants to be loaded
+        for (let i = 0; i < 6; i++) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const updatedRoomData = await roomService.getRoom(normalizedRoomId);
+          if (updatedRoomData && updatedRoomData.restaurants && updatedRoomData.restaurants.length > 0) {
+            console.log(`Restaurants loaded after ${i + 1} seconds`);
+            const roomState = convertRoomDataToState(updatedRoomData);
+            setRoomState(roomState);
+            setIsHost(false);
+            setIsLoadingRestaurants(false);
+            return true;
+          }
+        }
+        console.log('No restaurants loaded after 6 seconds, joining with empty room');
+      }
+
       const roomState = convertRoomDataToState(roomData);
       setRoomState(roomState);
       setIsHost(false);
+      setIsLoadingRestaurants(false);
       
       console.log(`Successfully joined room ${normalizedRoomId} with ${roomData.restaurants?.length || 0} restaurants`);
       return true;
     } catch (error) {
       console.error('Error joining room:', error);
+      setIsLoadingRestaurants(false);
       // Re-throw the error so the calling function can handle it
       throw error;
     }
@@ -234,8 +333,6 @@ const useRoom = () => {
     
     try {
       console.log('🚀 Starting to load more restaurants...');
-      console.log('🔧 MOCK API: Using mock API service that simulates full API flow');
-      console.log('🔧 To restore real API calls, set USE_MOCK_API to false in hybridRestaurants.ts');
       console.log('🔍 Applied filters:', filters);
       
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
@@ -249,7 +346,7 @@ const useRoom = () => {
         location: roomState.location,
         radius: appliedFilters?.distance?.[0] ? appliedFilters.distance[0] * 1609 : 10000, // Convert miles to meters, increased default to 10km
         openNow: appliedFilters?.openNow ?? false, // Changed default to false to get more results
-        limit: 40 // Increased from 20 to 40 to get more results
+        limit: 40 // Load more restaurants per request for better experience
       };
 
       // Add price range filter - use "or-less" logic
@@ -275,7 +372,7 @@ const useRoom = () => {
       
       const result = await hybridRestaurantsAPI.searchRestaurants(apiParams);
       
-      console.log(`🔧 MOCK API: Received ${result.restaurants.length} restaurants from simulated API flow`);
+      console.log(`Received ${result.restaurants.length} restaurants from API`);
       console.log('🔍 Sample new restaurant:', result.restaurants[0]);
       
       if (result.restaurants.length > 0) {
@@ -340,7 +437,6 @@ const useRoom = () => {
     
     try {
       console.log('🧪 Testing for API duplicates...');
-      console.log('🔧 MOCK API: Testing with simulated API flow');
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
       // First call - get 20 restaurants
