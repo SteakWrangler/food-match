@@ -1,27 +1,27 @@
-// TEMPORARY MOCK DATA MODE
+// MOCK API SIMULATION MODE
 // =========================
-// This file has been temporarily modified to use hard-coded restaurant data
-// instead of making API calls to save on API usage during development.
+// This file has been modified to use a mock API service that simulates
+// the full API flow but returns hard-coded data instead of making actual API calls.
 //
-// TO RESTORE API CALLS:
-// 1. Set USE_MOCK_DATA to false below
-// 2. Remove the import of getMockRestaurants
-// 3. Remove the mock data check in searchRestaurants method
-// 4. Delete src/data/mockRestaurants.ts when no longer needed
+// TO RESTORE REAL API CALLS:
+// 1. Set USE_MOCK_API to false below
+// 2. Remove the import of getMockApiService
+// 3. Remove the mock API check in searchRestaurants method
+// 4. Delete src/integrations/supabase/mockApiService.ts when no longer needed
 //
-// TO ENABLE MOCK DATA:
-// 1. Set USE_MOCK_DATA to true (current state)
-// 2. Mock data will be used instead of API calls
+// TO ENABLE MOCK API SIMULATION:
+// 1. Set USE_MOCK_API to true (current state)
+// 2. Mock API will simulate the full API flow with hard-coded data
 //
 // =========================
 
 import { supabase } from './client';
 import { Restaurant } from '@/data/restaurants';
-import { getMockRestaurants } from '@/data/mockRestaurants';
+import { getMockApiService } from './mockApiService';
 
-// TEMPORARY: Use mock data instead of API calls
-// TODO: Restore API calls by setting USE_MOCK_DATA to false
-const USE_MOCK_DATA = true;
+// MOCK API: Use mock API service instead of real API calls
+// TODO: Restore real API calls by setting USE_MOCK_API to false
+const USE_MOCK_API = true;
 
 export interface HybridRestaurantSearchParams {
   location: string;
@@ -36,13 +36,15 @@ export interface HybridRestaurantSearchParams {
 }
 
 export class HybridRestaurantsAPI {
+  private mockApiService = getMockApiService();
+
   async searchRestaurants(params: HybridRestaurantSearchParams): Promise<{ restaurants: Restaurant[], nextPageToken?: string }> {
     try {
-      // TEMPORARY: Use mock data instead of API calls
-      if (USE_MOCK_DATA) {
-        console.log('🔧 TEMPORARY: Using mock restaurant data instead of API calls');
-        console.log('🔧 To restore API calls, set USE_MOCK_DATA to false in hybridRestaurants.ts');
-        return getMockRestaurants(params);
+      // MOCK API: Use mock API service instead of real API calls
+      if (USE_MOCK_API) {
+        console.log('🔧 MOCK API: Using mock API service instead of real API calls');
+        console.log('🔧 To restore real API calls, set USE_MOCK_API to false in hybridRestaurants.ts');
+        return this.mockApiService.getMockRestaurantsWithAPISimulation(params);
       }
 
       const { useHybrid = true, ...searchParams } = params;
@@ -175,6 +177,15 @@ export class HybridRestaurantsAPI {
   // Cache management methods
   async getCacheStats(): Promise<any> {
     try {
+      if (USE_MOCK_API) {
+        // Use mock API service for cache stats
+        const result = await this.mockApiService.simulateCacheManagerAPI({ action: 'get-stats' });
+        if (result.error) {
+          throw new Error(result.error.message);
+        }
+        return result.data;
+      }
+
       const { data, error } = await supabase.functions.invoke('cache-manager', {
         body: { action: 'get-stats' }
       });
@@ -192,6 +203,15 @@ export class HybridRestaurantsAPI {
 
   async cleanupCache(): Promise<any> {
     try {
+      if (USE_MOCK_API) {
+        // Use mock API service for cache cleanup
+        const result = await this.mockApiService.simulateCacheManagerAPI({ action: 'cleanup-expired' });
+        if (result.error) {
+          throw new Error(result.error.message);
+        }
+        return result.data;
+      }
+
       const { data, error } = await supabase.functions.invoke('cache-manager', {
         body: { action: 'cleanup-expired' }
       });

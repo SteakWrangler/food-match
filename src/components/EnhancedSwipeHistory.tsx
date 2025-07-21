@@ -36,11 +36,30 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
 
   // Helper function to get likes count for an item
   const getLikesCount = (itemId: string): { count: number; participants: string[] } => {
-    if (!roomState?.swipes) return { count: 1, participants: [currentUser?.name || 'You'] };
+    if (!roomState) return { count: 0, participants: [] };
     
     const participants = roomState.participants || [];
+    const swipes = type === 'restaurants' ? roomState.restaurantSwipes : roomState.foodTypeSwipes;
+    
     const likedParticipants = participants.filter((participant: any) => 
-      roomState.swipes[participant.id]?.[itemId] === 'right'
+      swipes[participant.id]?.[itemId] === 'right'
+    );
+    
+    return {
+      count: likedParticipants.length,
+      participants: likedParticipants.map((p: any) => p.name)
+    };
+  };
+
+  // Helper function to get likes count from OTHER participants only
+  const getOthersLikesCount = (itemId: string): { count: number; participants: string[] } => {
+    if (!roomState) return { count: 0, participants: [] };
+    
+    const participants = roomState.participants || [];
+    const swipes = type === 'restaurants' ? roomState.restaurantSwipes : roomState.foodTypeSwipes;
+    
+    const likedParticipants = participants.filter((participant: any) => 
+      participant.id !== participantId && swipes[participant.id]?.[itemId] === 'right'
     );
     
     return {
@@ -58,10 +77,10 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
     return likes.count === totalParticipants && totalParticipants > 1;
   });
 
-  // Others' Likes - items others liked but you didn't
+  // Others' Likes - items that OTHER people liked but you didn't
   const othersLikes = items.filter(item => {
-    const likes = getLikesCount(item.id);
-    return userSwipes[item.id] !== 'right' && likes.count > 0;
+    const othersLikes = getOthersLikesCount(item.id);
+    return userSwipes[item.id] !== 'right' && othersLikes.count > 0;
   });
 
   // Sort by popularity (most likes first)
@@ -73,8 +92,17 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
     });
   };
 
+  // Sort others' likes by how many OTHER people liked them
+  const sortOthersByPopularity = (items: (Restaurant | FoodType)[]) => {
+    return [...items].sort((a, b) => {
+      const aOthersLikes = getOthersLikesCount(a.id).count;
+      const bOthersLikes = getOthersLikesCount(b.id).count;
+      return bOthersLikes - aOthersLikes; // Descending order
+    });
+  };
+
   const sortedYourLikes = sortByPopularity(yourLikes);
-  const sortedOthersLikes = sortByPopularity(othersLikes);
+  const sortedOthersLikes = sortOthersByPopularity(othersLikes);
   const sortedMatches = sortByPopularity(matches);
 
   const handleBringToFront = (itemId: string) => {
@@ -151,16 +179,16 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-red-500" />
             Swipe History
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
             <TabsTrigger value="your-likes" className="text-xs">
               <Heart className="w-3 h-3 mr-1" />
               Your Likes ({yourLikes.length})
@@ -175,7 +203,7 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="your-likes" className="flex-1 overflow-y-auto mt-4">
+          <TabsContent value="your-likes" className="flex-1 overflow-y-auto mt-4 space-y-3">
             {sortedYourLikes.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Heart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
@@ -192,7 +220,7 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
             )}
           </TabsContent>
           
-          <TabsContent value="matches" className="flex-1 overflow-y-auto mt-4">
+          <TabsContent value="matches" className="flex-1 overflow-y-auto mt-4 space-y-3">
             {sortedMatches.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Trophy className="w-12 h-12 mx-auto mb-4 text-gray-300" />
@@ -209,7 +237,7 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
             )}
           </TabsContent>
           
-          <TabsContent value="others-likes" className="flex-1 overflow-y-auto mt-4">
+          <TabsContent value="others-likes" className="flex-1 overflow-y-auto mt-4 space-y-3">
             {sortedOthersLikes.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
@@ -219,7 +247,7 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
             ) : (
               <div className="space-y-3">
                 {sortedOthersLikes.map(item => {
-                  const likes = getLikesCount(item.id);
+                  const likes = getOthersLikesCount(item.id);
                   return renderItemCard(item, likes, true); // Show "Try Again" button for others' likes
                 })}
               </div>
@@ -227,7 +255,7 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
           </TabsContent>
         </Tabs>
 
-        <div className="pt-4 border-t">
+        <div className="pt-4 border-t flex-shrink-0">
           <Button onClick={onClose} variant="outline" className="w-full">
             Close
           </Button>

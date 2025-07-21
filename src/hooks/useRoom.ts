@@ -105,8 +105,8 @@ const useRoom = () => {
   const loadInitialRestaurants = async (roomId: string, location: string, filters?: FilterState) => {
     try {
       console.log('Loading initial restaurants...');
-      console.log('🔧 NOTE: Currently using MOCK DATA instead of API calls');
-      console.log('🔧 To restore API calls, see hybridRestaurants.ts for instructions');
+      console.log('🔧 MOCK API: Using mock API service that simulates full API flow');
+      console.log('🔧 To restore real API calls, set USE_MOCK_API to false in hybridRestaurants.ts');
       console.log('Applied filters:', filters);
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
@@ -131,9 +131,9 @@ const useRoom = () => {
       
       const result = await hybridRestaurantsAPI.searchRestaurants(apiParams);
       
-      console.log(`Fetched ${result.restaurants.length} initial restaurants from Google Places + ChatGPT API`);
+      console.log(`🔧 MOCK API: Fetched ${result.restaurants.length} initial restaurants from simulated API flow`);
       
-      // Update room with restaurants
+      // Update room with restaurants (this still uses Supabase for data storage)
       const updatedRoomData = await roomService.updateRestaurants(roomId, result.restaurants, result.nextPageToken);
       const updatedRoomState = convertRoomDataToState(updatedRoomData);
       setRoomState(updatedRoomState);
@@ -234,8 +234,8 @@ const useRoom = () => {
     
     try {
       console.log('🚀 Starting to load more restaurants...');
-      console.log('🔧 NOTE: Currently using MOCK DATA instead of API calls');
-      console.log('🔧 To restore API calls, see hybridRestaurants.ts for instructions');
+      console.log('🔧 MOCK API: Using mock API service that simulates full API flow');
+      console.log('🔧 To restore real API calls, set USE_MOCK_API to false in hybridRestaurants.ts');
       console.log('🔍 Applied filters:', filters);
       
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
@@ -275,7 +275,7 @@ const useRoom = () => {
       
       const result = await hybridRestaurantsAPI.searchRestaurants(apiParams);
       
-      console.log(`📊 Received ${result.restaurants.length} restaurants from API`);
+      console.log(`🔧 MOCK API: Received ${result.restaurants.length} restaurants from simulated API flow`);
       console.log('🔍 Sample new restaurant:', result.restaurants[0]);
       
       if (result.restaurants.length > 0) {
@@ -340,6 +340,7 @@ const useRoom = () => {
     
     try {
       console.log('🧪 Testing for API duplicates...');
+      console.log('🔧 MOCK API: Testing with simulated API flow');
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
       // First call - get 20 restaurants
