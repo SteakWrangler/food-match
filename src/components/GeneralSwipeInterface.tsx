@@ -32,8 +32,20 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [userSwipes, setUserSwipes] = useState<Record<string, 'left' | 'right'>>({});
   const deviceType = useDeviceType();
+
+  // Get user swipes from room state (food type swipes only)
+  const userFoodTypeSwipes = roomState?.foodTypeSwipes?.[participantId || ''] || {};
+  
+  // Debug logging
+  console.log('GeneralSwipeInterface - userFoodTypeSwipes:', userFoodTypeSwipes);
+  console.log('GeneralSwipeInterface - participantId:', participantId);
+  console.log('GeneralSwipeInterface - roomState:', roomState);
+
+  // Monitor room state changes
+  useEffect(() => {
+    console.log('GeneralSwipeInterface - roomState changed:', roomState);
+  }, [roomState]);
 
   // Reset current index when custom order changes (item brought to front)
   useEffect(() => {
@@ -78,12 +90,6 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
 
   const handleSwipe = (direction: 'left' | 'right') => {
     if (!currentFoodType) return;
-
-    // Track user's swipe
-    setUserSwipes(prev => ({
-      ...prev,
-      [currentFoodType.id]: direction
-    }));
 
     // Call the onSwipe callback if provided (for room mode)
     if (onSwipe) {
@@ -226,7 +232,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
           onClick={() => setShowHistory(true)}
           className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full p-2 shadow-sm hover:bg-white transition-colors"
         >
-          <span className="text-xs sm:text-sm">❤️ {Object.values(userSwipes).filter(s => s === 'right').length}</span>
+          <span className="text-xs sm:text-sm">❤️ {Object.values(userFoodTypeSwipes).filter(s => s === 'right').length}</span>
         </button>
       </div>
 
@@ -300,7 +306,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
       <EnhancedSwipeHistory
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
-        userSwipes={userSwipes}
+        userSwipes={userFoodTypeSwipes}
         roomState={roomState}
         items={orderedFoodTypes}
         type="foodTypes"

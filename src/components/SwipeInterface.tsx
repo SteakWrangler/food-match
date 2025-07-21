@@ -39,8 +39,18 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const deviceType = useDeviceType();
 
-  // Get user swipes from room state
-  const userSwipes = roomState?.swipes?.[participantId || ''] || {};
+  // Get user swipes from room state (restaurant swipes only)
+  const userSwipes = roomState?.restaurantSwipes?.[participantId || ''] || {};
+  
+  // Debug logging
+  console.log('SwipeInterface - userSwipes:', userSwipes);
+  console.log('SwipeInterface - participantId:', participantId);
+  console.log('SwipeInterface - roomState:', roomState);
+
+  // Monitor room state changes
+  useEffect(() => {
+    console.log('SwipeInterface - roomState changed:', roomState);
+  }, [roomState]);
 
   // Order restaurants based on custom order or default
   const orderedRestaurants = React.useMemo(() => {

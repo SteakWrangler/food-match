@@ -6,6 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MapPin, X, Navigation } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { getMockLocationFromCoords } from '@/data/mockLocations';
+
+// TEMPORARY: Use mock location data instead of API calls
+// TODO: Restore API calls by setting USE_MOCK_LOCATION to false
+const USE_MOCK_LOCATION = true;
 
 interface LocationModalProps {
   currentLocation: string;
@@ -51,21 +56,30 @@ const LocationModal: React.FC<LocationModalProps> = ({
       
       const { latitude, longitude } = position.coords;
       
-      // Use Google Places API for reverse geocoding
-      const { data, error } = await supabase.functions.invoke('google-places', {
-        body: {
-          action: 'reverse-geocode',
-          lat: latitude,
-          lng: longitude
-        },
-      });
-
-      if (error || !data?.address) {
-        console.error('Reverse geocoding failed:', error);
-        // Fallback to coordinates if reverse geocoding fails
-        setLocation(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`);
+      // TEMPORARY: Use mock location data instead of API calls
+      if (USE_MOCK_LOCATION) {
+        console.log('🔧 TEMPORARY: Using mock location data instead of API calls');
+        console.log('🔧 To restore API calls, set USE_MOCK_LOCATION to false in LocationModal.tsx');
+        
+        const mockLocation = getMockLocationFromCoords(latitude, longitude);
+        setLocation(mockLocation.address);
       } else {
-        setLocation(data.address);
+        // Use Google Places API for reverse geocoding
+        const { data, error } = await supabase.functions.invoke('google-places', {
+          body: {
+            action: 'reverse-geocode',
+            lat: latitude,
+            lng: longitude
+          },
+        });
+
+        if (error || !data?.address) {
+          console.error('Reverse geocoding failed:', error);
+          // Fallback to coordinates if reverse geocoding fails
+          setLocation(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`);
+        } else {
+          setLocation(data.address);
+        }
       }
     } catch (error) {
       console.error('Error getting location:', error);

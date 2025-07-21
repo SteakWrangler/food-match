@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { getHybridRestaurantsAPI } from '@/integrations/supabase/hybridRestaurants';
+import { getRoomService, RoomData } from '@/integrations/supabase/roomService';
 import { FilterState } from '@/utils/restaurantFilters';
 
 export interface RoomState {
@@ -12,16 +13,14 @@ export interface RoomState {
     isOnline: boolean;
   }>;
   currentRestaurantIndex: number;
-  swipes: Record<string, Record<string, 'left' | 'right'>>; // participantId -> restaurantId -> swipe
+  restaurantSwipes: Record<string, Record<string, 'left' | 'right'>>;
+  foodTypeSwipes: Record<string, Record<string, 'left' | 'right'>>;
   restaurants: any[];
   location: string;
-  lastUpdated: number; // Add timestamp for sync
-  filters?: FilterState; // Add filters to room state
-  nextPageToken?: string; // Add nextPageToken for pagination
+  lastUpdated: number;
+  filters?: FilterState;
+  nextPageToken?: string;
 }
-
-// In-memory storage for active rooms
-const activeRooms = new Map<string, RoomState>();
 
 const useRoom = () => {
   const [roomState, setRoomState] = useState<RoomState | null>(null);
@@ -29,14 +28,40 @@ const useRoom = () => {
   const [participantId] = useState(() => `user_${Math.random().toString(36).substr(2, 9)}`);
   const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const roomService = getRoomService();
 
-  // Polling mechanism to sync room state
+  // Convert RoomData to RoomState
+  const convertRoomDataToState = (roomData: RoomData): RoomState => ({
+    id: roomData.id,
+    hostId: roomData.host_id,
+    participants: roomData.participants,
+    currentRestaurantIndex: roomData.current_restaurant_index,
+    restaurantSwipes: roomData.restaurant_swipes,
+    foodTypeSwipes: roomData.food_type_swipes,
+    restaurants: roomData.restaurants,
+    location: roomData.location,
+    filters: roomData.filters,
+    nextPageToken: roomData.next_page_token,
+    lastUpdated: new Date(roomData.updated_at).getTime()
+  });
+
+  // TEMPORARY: Disabled polling mechanism to use local state instead of API calls
+  // TODO: Restore polling by uncommenting this useEffect when ready to use API calls
+  /*
   useEffect(() => {
     if (roomState) {
-      // Temporarily disable polling for debugging
-      // pollingIntervalRef.current = setInterval(() => {
-      //   syncRoomState();
-      // }, 2000);
+      // Poll every 2 seconds to get updates from other participants
+      pollingIntervalRef.current = setInterval(async () => {
+        try {
+          const updatedRoomData = await roomService.getRoom(roomState.id);
+          if (updatedRoomData) {
+            const updatedRoomState = convertRoomDataToState(updatedRoomData);
+            setRoomState(updatedRoomState);
+          }
+        } catch (error) {
+          console.error('Error polling room state:', error);
+        }
+      }, 2000);
 
       return () => {
         if (pollingIntervalRef.current) {
@@ -45,63 +70,31 @@ const useRoom = () => {
       };
     }
   }, [roomState?.id]);
-
-  const syncRoomState = () => {
-    if (!roomState) return;
-
-    // Check if there's a newer version in localStorage
-    const storedRoom = localStorage.getItem(`room_${roomState.id}`);
-    if (storedRoom) {
-      const parsedRoom: RoomState = JSON.parse(storedRoom);
-      
-      // If the stored version is newer, update our state
-      if (parsedRoom.lastUpdated > roomState.lastUpdated) {
-        console.log('Syncing room state from localStorage');
-        setRoomState(parsedRoom);
-        activeRooms.set(roomState.id, parsedRoom);
-      }
-    }
-  };
+  */
 
   const createRoom = async (hostName: string, location: string, filters?: FilterState) => {
     try {
-      const roomId = Math.random().toString(36).substr(2, 9).toUpperCase();
-      
-      // Create room first without restaurants
-      const newRoom: RoomState = {
-        id: roomId,
+      const roomData = await roomService.createRoom({
         hostId: participantId,
-        participants: [{
-          id: participantId,
-          name: hostName,
-          isOnline: true
-        }],
-        currentRestaurantIndex: 0,
-        swipes: {},
-        restaurants: [], // Start with empty restaurants
+        hostName,
         location,
-        filters, // Store filters in room state
-        lastUpdated: Date.now()
-      };
+        filters
+      });
 
-      setRoomState(newRoom);
+      const roomState = convertRoomDataToState(roomData);
+      setRoomState(roomState);
       setIsHost(true);
       
-      // Store in memory and localStorage
-      activeRooms.set(roomId, newRoom);
-      localStorage.setItem(`room_${roomId}`, JSON.stringify(newRoom));
-      
-      console.log(`Created room ${roomId} from ${location}`);
+      console.log(`Created room ${roomData.id} from ${location}`);
       
       // Now load initial restaurants with hybrid system and filters
       setIsLoadingRestaurants(true);
-      const success = await loadInitialRestaurants(roomId, location, filters);
+      const success = await loadInitialRestaurants(roomData.id, location, filters);
       setIsLoadingRestaurants(false);
       
-      return roomId;
+      return roomData.id;
     } catch (error) {
       console.error('Error creating room:', error);
-      // Reset state on error
       setRoomState(null);
       setIsHost(false);
       setIsLoadingRestaurants(false);
@@ -111,22 +104,24 @@ const useRoom = () => {
 
   const loadInitialRestaurants = async (roomId: string, location: string, filters?: FilterState) => {
     try {
-      console.log('Loading initial restaurants with Google Places + ChatGPT system...');
+      console.log('Loading initial restaurants...');
+      console.log('🔧 NOTE: Currently using MOCK DATA instead of API calls');
+      console.log('🔧 To restore API calls, see hybridRestaurants.ts for instructions');
       console.log('Applied filters:', filters);
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
       // Convert filters to API parameters
       const apiParams: any = {
         location,
-        radius: filters?.distance?.[0] ? filters.distance[0] * 1609 : 5000, // Convert miles to meters
-        openNow: filters?.openNow ?? true,
-        limit: 20
+        radius: filters?.distance?.[0] ? filters.distance[0] * 1609 : 10000, // Convert miles to meters, increased default to 10km
+        openNow: filters?.openNow ?? false, // Changed default to false to get more results
+        limit: 40 // Increased from 20 to 40 to get more results
       };
 
       // Add price range filter - use "or-less" logic
       if (filters?.priceRange && filters.priceRange.length > 0) {
         apiParams.minPrice = 0; // Start from lowest price (Google uses 0-4)
-        apiParams.maxPrice = filters.priceRange[0] - 1; // Up to selected price level
+        apiParams.maxPrice = filters.priceRange[0]; // Use the selected price level directly, not -1
       }
 
       // Add cuisine keyword if specified
@@ -138,39 +133,15 @@ const useRoom = () => {
       
       console.log(`Fetched ${result.restaurants.length} initial restaurants from Google Places + ChatGPT API`);
       
-      // Get the current room from memory or localStorage
-      let currentRoom = activeRooms.get(roomId);
-      if (!currentRoom) {
-        const storedRoom = localStorage.getItem(`room_${roomId}`);
-        if (storedRoom) {
-          currentRoom = JSON.parse(storedRoom);
-        }
-      }
-      
-      if (!currentRoom) {
-        console.error('Room not found when trying to load initial restaurants');
-        return false;
-      }
-      
-      // Update the room with restaurants and filters
-      const updatedRoom: RoomState = {
-        ...currentRoom,
-        restaurants: result.restaurants,
-        filters, // Store the filters that were used
-        nextPageToken: result.nextPageToken, // Store the nextPageToken for pagination
-        lastUpdated: Date.now()
-      };
-      
-      setRoomState(updatedRoom);
-      activeRooms.set(roomId, updatedRoom);
-      localStorage.setItem(`room_${roomId}`, JSON.stringify(updatedRoom));
+      // Update room with restaurants
+      const updatedRoomData = await roomService.updateRestaurants(roomId, result.restaurants, result.nextPageToken);
+      const updatedRoomState = convertRoomDataToState(updatedRoomData);
+      setRoomState(updatedRoomState);
       
       console.log(`Updated room ${roomId} with ${result.restaurants.length} restaurants`);
       return true;
     } catch (error) {
       console.error('Failed to load initial restaurants:', error);
-      // Don't reset the room state on restaurant loading failure
-      // The room was created successfully, just without restaurants
       return false;
     }
   };
@@ -181,84 +152,55 @@ const useRoom = () => {
     // Normalize room ID to uppercase
     const normalizedRoomId = roomId.toUpperCase();
     
-    // Check memory first
-    let room = activeRooms.get(normalizedRoomId);
-    
-    if (!room) {
-      // Check localStorage
-      const storedRoom = localStorage.getItem(`room_${normalizedRoomId}`);
-      if (storedRoom) {
-        room = JSON.parse(storedRoom);
-        activeRooms.set(normalizedRoomId, room);
-        console.log(`Found room in localStorage: ${normalizedRoomId}`);
-      } else {
-        console.log(`Room not found in localStorage: ${normalizedRoomId}`);
-        // Debug: list all available rooms
-        const allKeys = Object.keys(localStorage);
-        const roomKeys = allKeys.filter(key => key.startsWith('room_'));
-        console.log('Available rooms in localStorage:', roomKeys);
-      }
-    } else {
-      console.log(`Found room in memory: ${normalizedRoomId}`);
-    }
+    try {
+      const roomData = await roomService.joinRoom({
+        roomId: normalizedRoomId,
+        participantId,
+        participantName
+      });
 
-    if (!room) {
-      console.error('Room not found');
+      const roomState = convertRoomDataToState(roomData);
+      setRoomState(roomState);
+      setIsHost(false);
+      
+      console.log(`Successfully joined room ${normalizedRoomId} with ${roomData.restaurants?.length || 0} restaurants`);
+      return true;
+    } catch (error) {
+      console.error('Error joining room:', error);
       return false;
     }
-
-    // Add participant to room
-    const updatedRoom: RoomState = {
-      ...room,
-      participants: [
-        ...room.participants,
-        {
-          id: participantId,
-          name: participantName,
-          isOnline: true
-        }
-      ],
-      lastUpdated: Date.now()
-    };
-
-    setRoomState(updatedRoom);
-    setIsHost(false);
-    
-    // Update storage
-    activeRooms.set(normalizedRoomId, updatedRoom);
-    localStorage.setItem(`room_${normalizedRoomId}`, JSON.stringify(updatedRoom));
-    
-    console.log(`Successfully joined room ${normalizedRoomId} with ${updatedRoom.restaurants?.length || 0} restaurants`);
-    return true;
   };
 
-  const addSwipe = async (restaurantId: string, direction: 'left' | 'right') => {
+  const addSwipe = async (itemId: string, direction: 'left' | 'right', type: 'restaurant' | 'foodType' = 'restaurant') => {
     if (!roomState) return;
 
-    const updatedRoom: RoomState = {
-      ...roomState,
-      swipes: {
-        ...roomState.swipes,
-        [participantId]: {
-          ...roomState.swipes[participantId],
-          [restaurantId]: direction
-        }
-      },
-      lastUpdated: Date.now()
-    };
+    console.log('addSwipe called:', { itemId, direction, type, participantId });
+    console.log('Current room state before update:', roomState);
 
-    setRoomState(updatedRoom);
-    activeRooms.set(roomState.id, updatedRoom);
-    localStorage.setItem(`room_${roomState.id}`, JSON.stringify(updatedRoom));
-    
-    console.log(`Added swipe: ${direction} on ${restaurantId}`);
+    try {
+      const updatedRoomData = await roomService.updateSwipe({
+        roomId: roomState.id,
+        participantId,
+        itemId,
+        direction,
+        type
+      });
+
+      const updatedRoomState = convertRoomDataToState(updatedRoomData);
+      setRoomState(updatedRoomState);
+      
+      console.log(`Added ${type} swipe: ${direction} on ${itemId}`);
+    } catch (error) {
+      console.error('Error adding swipe:', error);
+      throw error;
+    }
   };
 
   const checkForMatch = (itemId: string, type: 'restaurant' | 'foodType' = 'restaurant'): boolean => {
     if (!roomState) return false;
 
     const allParticipants = roomState.participants;
-    const allSwipes = roomState.swipes;
+    const allSwipes = type === 'restaurant' ? roomState.restaurantSwipes : roomState.foodTypeSwipes;
 
     // Don't show matches if there's only one person in the room
     if (allParticipants.length <= 1) return false;
@@ -273,9 +215,10 @@ const useRoom = () => {
     return participantsWhoSwipedRight.length === allParticipants.length;
   };
 
-  const getParticipantSwipe = (participantId: string, restaurantId: string) => {
+  const getParticipantSwipe = (participantId: string, itemId: string, type: 'restaurant' | 'foodType' = 'restaurant') => {
     if (!roomState) return null;
-    return roomState.swipes[participantId]?.[restaurantId] || null;
+    const swipes = type === 'restaurant' ? roomState.restaurantSwipes : roomState.foodTypeSwipes;
+    return swipes[participantId]?.[itemId] || null;
   };
 
   const loadMoreRestaurants = async (filters?: FilterState) => {
@@ -289,7 +232,9 @@ const useRoom = () => {
     }
     
     try {
-      console.log('🚀 Starting to load more restaurants with Google Places + ChatGPT system...');
+      console.log('🚀 Starting to load more restaurants...');
+      console.log('🔧 NOTE: Currently using MOCK DATA instead of API calls');
+      console.log('🔧 To restore API calls, see hybridRestaurants.ts for instructions');
       console.log('🔍 Applied filters:', filters);
       
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
@@ -301,15 +246,15 @@ const useRoom = () => {
       // Convert filters to API parameters
       const apiParams: any = {
         location: roomState.location,
-        radius: appliedFilters?.distance?.[0] ? appliedFilters.distance[0] * 1609 : 5000, // Convert miles to meters
-        openNow: appliedFilters?.openNow ?? true,
-        limit: 20 // Request 20 more restaurants
+        radius: appliedFilters?.distance?.[0] ? appliedFilters.distance[0] * 1609 : 10000, // Convert miles to meters, increased default to 10km
+        openNow: appliedFilters?.openNow ?? false, // Changed default to false to get more results
+        limit: 40 // Increased from 20 to 40 to get more results
       };
 
       // Add price range filter - use "or-less" logic
       if (appliedFilters?.priceRange && appliedFilters.priceRange.length > 0) {
         apiParams.minPrice = 0; // Start from lowest price (Google uses 0-4)
-        apiParams.maxPrice = appliedFilters.priceRange[0] - 1; // Up to selected price level
+        apiParams.maxPrice = appliedFilters.priceRange[0]; // Use the selected price level directly, not -1
       }
 
       // Add cuisine keyword if specified
@@ -343,10 +288,7 @@ const useRoom = () => {
         };
         
         setRoomState(updatedRoom);
-        activeRooms.set(roomState.id, updatedRoom);
-        localStorage.setItem(`room_${roomState.id}`, JSON.stringify(updatedRoom));
-        
-        console.log(`✅ Successfully added ${result.restaurants.length} new restaurants (total: ${updatedRoom.restaurants.length})`);
+        // No need to update roomService here, as it's polled for updates
         return true;
       } else {
         console.log('⚠️ No restaurants returned from API');
@@ -377,8 +319,7 @@ const useRoom = () => {
       };
       
       setRoomState(updatedRoom);
-      activeRooms.set(roomState.id, updatedRoom);
-      localStorage.setItem(`room_${roomState.id}`, JSON.stringify(updatedRoom));
+      // No need to update roomService here, as it's polled for updates
       
       // Load new restaurants with filters
       const success = await loadInitialRestaurants(roomState.id, roomState.location, filters);
@@ -446,12 +387,13 @@ const useRoom = () => {
     }
   };
 
-  const leaveRoom = () => {
+  const leaveRoom = async () => {
     if (roomState) {
-      // Remove from memory
-      activeRooms.delete(roomState.id);
-      // Remove from localStorage
-      localStorage.removeItem(`room_${roomState.id}`);
+      try {
+        await roomService.leaveRoom(roomState.id, participantId);
+      } catch (error) {
+        console.error('Error leaving room:', error);
+      }
     }
     setRoomState(null);
     setIsHost(false);

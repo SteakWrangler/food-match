@@ -264,7 +264,7 @@ serve(async (req: Request) => {
       minPrice, 
       maxPrice, 
       openNow, 
-      limit = 20,
+      limit = 40, // Increased from 20 to 40 to get more results
       type = 'restaurant',
       pageToken // Add pageToken parameter
     } = body;
@@ -377,9 +377,13 @@ serve(async (req: Request) => {
             const filteredTextResults = textSearchData.results.filter(place => !shouldExcludePlace(place));
             console.log(`Filtered text search results: ${textSearchData.results.length} -> ${filteredTextResults.length}`);
             
+            // TEMPORARILY COMMENT OUT DEDUPLICATION TO DEBUG
             // Remove duplicate chain restaurants
-            const deduplicatedTextResults = removeDuplicateChains(filteredTextResults);
-            console.log(`Deduplicated text search results: ${filteredTextResults.length} -> ${deduplicatedTextResults.length}`);
+            // const deduplicatedTextResults = removeDuplicateChains(filteredTextResults);
+            // console.log(`Deduplicated text search results: ${filteredTextResults.length} -> ${deduplicatedTextResults.length}`);
+            
+            // Use filtered results directly without deduplication for debugging
+            const deduplicatedTextResults = filteredTextResults;
             
             // Transform text search results
             const restaurants: RestaurantData[] = await Promise.all(
@@ -536,6 +540,7 @@ serve(async (req: Request) => {
         const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?${searchParams.toString()}`;
         
         console.log(`Searching for restaurants at: ${placesUrl}`);
+        console.log(`Search parameters: radius=${radius}, type=${type}, keyword=${keyword}, minPrice=${minPrice}, maxPrice=${maxPrice}, openNow=${openNow}`);
         
         const placesResponse = await fetch(placesUrl);
         
@@ -544,6 +549,11 @@ serve(async (req: Request) => {
         }
 
         const placesData: GooglePlacesResponse = await placesResponse.json();
+        
+        console.log(`Google Places API returned ${placesData.results?.length || 0} results`);
+        if (placesData.results && placesData.results.length > 0) {
+          console.log('Sample results:', placesData.results.slice(0, 3).map(r => r.name));
+        }
         
         if (placesData.status !== 'OK' && placesData.status !== 'ZERO_RESULTS') {
           return new Response(JSON.stringify({ 
@@ -568,9 +578,13 @@ serve(async (req: Request) => {
         const filteredNearbyResults = placesData.results.filter(place => !shouldExcludePlace(place));
         console.log(`Filtered nearby search results: ${placesData.results.length} -> ${filteredNearbyResults.length}`);
         
+        // TEMPORARILY COMMENT OUT DEDUPLICATION TO DEBUG
         // Remove duplicate chain restaurants
-        const deduplicatedNearbyResults = removeDuplicateChains(filteredNearbyResults);
-        console.log(`Deduplicated nearby search results: ${filteredNearbyResults.length} -> ${deduplicatedNearbyResults.length}`);
+        // const deduplicatedNearbyResults = removeDuplicateChains(filteredNearbyResults);
+        // console.log(`Deduplicated nearby search results: ${filteredNearbyResults.length} -> ${deduplicatedNearbyResults.length}`);
+        
+        // Use filtered results directly without deduplication for debugging
+        const deduplicatedNearbyResults = filteredNearbyResults;
         
         // Transform the results to match our Restaurant interface
         const restaurants: RestaurantData[] = await Promise.all(

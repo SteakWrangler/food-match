@@ -1,5 +1,27 @@
+// TEMPORARY MOCK DATA MODE
+// =========================
+// This file has been temporarily modified to use hard-coded restaurant data
+// instead of making API calls to save on API usage during development.
+//
+// TO RESTORE API CALLS:
+// 1. Set USE_MOCK_DATA to false below
+// 2. Remove the import of getMockRestaurants
+// 3. Remove the mock data check in searchRestaurants method
+// 4. Delete src/data/mockRestaurants.ts when no longer needed
+//
+// TO ENABLE MOCK DATA:
+// 1. Set USE_MOCK_DATA to true (current state)
+// 2. Mock data will be used instead of API calls
+//
+// =========================
+
 import { supabase } from './client';
 import { Restaurant } from '@/data/restaurants';
+import { getMockRestaurants } from '@/data/mockRestaurants';
+
+// TEMPORARY: Use mock data instead of API calls
+// TODO: Restore API calls by setting USE_MOCK_DATA to false
+const USE_MOCK_DATA = true;
 
 export interface HybridRestaurantSearchParams {
   location: string;
@@ -16,6 +38,13 @@ export interface HybridRestaurantSearchParams {
 export class HybridRestaurantsAPI {
   async searchRestaurants(params: HybridRestaurantSearchParams): Promise<{ restaurants: Restaurant[], nextPageToken?: string }> {
     try {
+      // TEMPORARY: Use mock data instead of API calls
+      if (USE_MOCK_DATA) {
+        console.log('🔧 TEMPORARY: Using mock restaurant data instead of API calls');
+        console.log('🔧 To restore API calls, set USE_MOCK_DATA to false in hybridRestaurants.ts');
+        return getMockRestaurants(params);
+      }
+
       const { useHybrid = true, ...searchParams } = params;
 
       // Always use hybrid system (Google Places + ChatGPT)

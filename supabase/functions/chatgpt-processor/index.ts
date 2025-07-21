@@ -106,7 +106,7 @@ serve(async (req: Request) => {
             processedRestaurants.push({
               ...restaurant,
               cuisine: cachedData.cuisine || restaurant.cuisine,
-              tags: cachedData.tags || restaurant.tags,
+              tags: cachedData.tags || restaurant.tags || [], // Ensure tags is always an array
               description: cachedData.description || restaurant.description,
               processedByChatGPT: true,
               chatGPTConfidence: cachedData.confidence_score
@@ -151,7 +151,7 @@ serve(async (req: Request) => {
             processedRestaurants.push({
               ...restaurant,
               // cuisine: chatGPTResult.cuisine, // COMMENTED OUT
-              // tags: tagStrings, // COMMENTED OUT
+              tags: restaurant.tags || [], // Ensure tags is always an array
               description: chatGPTResult.description,
               processedByChatGPT: true,
               chatGPTConfidence: chatGPTResult.confidence_score
@@ -160,6 +160,7 @@ serve(async (req: Request) => {
             // If ChatGPT processing failed, use original data
             processedRestaurants.push({
               ...restaurant,
+              tags: restaurant.tags || [], // Ensure tags is always an array
               processedByChatGPT: false,
               chatGPTConfidence: 0
             });

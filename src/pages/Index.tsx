@@ -213,10 +213,13 @@ const Index = () => {
   const handleRestaurantSwipe = (restaurantId: string, direction: 'left' | 'right') => {
     if (!roomState || !participantId) return;
     
-    addSwipe(restaurantId, direction);
+    console.log('handleRestaurantSwipe called:', { restaurantId, direction, participantId });
+    console.log('Current room state before swipe:', roomState);
+    
+    addSwipe(restaurantId, direction, 'restaurant');
     
     // Check for match
-    if (direction === 'right' && checkForMatch(restaurantId)) {
+    if (direction === 'right' && checkForMatch(restaurantId, 'restaurant')) {
       const matchedItem = restaurants.find(r => r.id === restaurantId);
       if (matchedItem && !showMatch && !shownMatches.has(restaurantId)) {
         console.log(`🎉 MATCH FOUND for ${matchedItem.name}!`);
@@ -230,10 +233,13 @@ const Index = () => {
   const handleFoodTypeSwipe = (foodTypeId: string, direction: 'left' | 'right') => {
     if (!roomState || !participantId) return;
     
-    addSwipe(foodTypeId, direction);
+    console.log('handleFoodTypeSwipe called:', { foodTypeId, direction, participantId });
+    console.log('Current room state before swipe:', roomState);
+    
+    addSwipe(foodTypeId, direction, 'foodType');
     
     // Check for match
-    if (direction === 'right' && checkForMatch(foodTypeId)) {
+    if (direction === 'right' && checkForMatch(foodTypeId, 'foodType')) {
       const matchedItem = foodTypes.find(f => f.id === foodTypeId);
       if (matchedItem && !showMatch && !shownMatches.has(foodTypeId)) {
         console.log(`🎉 IMMEDIATE MATCH FOUND for ${matchedItem.name}!`);
