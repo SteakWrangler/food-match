@@ -230,7 +230,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
         </button>
       </div>
 
-      <div className="flex items-center justify-center min-h-[600px] sm:min-h-[700px] p-2 sm:p-4 relative">
+      <div className="flex items-center justify-center min-h-[600px] sm:min-h-[700px] p-2 sm:p-4 relative w-full">
         {/* Background Cards */}
         {orderedFoodTypes.slice(currentIndex + 1, currentIndex + 3).map((foodType, index) => (
           <div

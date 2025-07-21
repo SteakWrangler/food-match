@@ -248,7 +248,7 @@ const Index = () => {
       case 'tablet':
         return 'max-w-2xl mx-auto px-6 py-6';
       default:
-        return 'max-w-4xl mx-auto px-8 py-8';
+        return 'max-w-md mx-auto px-4 py-6'; // Keep original desktop layout
     }
   };
 
@@ -259,7 +259,7 @@ const Index = () => {
       case 'tablet':
         return 'max-w-2xl mx-auto px-6 py-4';
       default:
-        return 'max-w-4xl mx-auto px-8 py-4';
+        return 'max-w-md mx-auto px-4 py-4'; // Keep original desktop layout
     }
   };
 
@@ -307,8 +307,8 @@ const Index = () => {
                 }`}
               >
                 <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">{location || 'Set Location'}</span>
-                <span className="xs:hidden">{location ? 'Location' : 'Set'}</span>
+                <span className="hidden sm:inline">{location || 'Set Location'}</span>
+                <span className="sm:hidden">{location ? 'Location' : 'Set'}</span>
               </button>
               {activeTab === 'specific' && (
                 <Button
@@ -344,8 +344,7 @@ const Index = () => {
                   className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-base sm:text-lg py-4 sm:py-6"
                 >
                   <QrCode className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  <span className="hidden sm:inline">Create Room & Share QR</span>
-                  <span className="sm:hidden">Create Room</span>
+                  Create Room & Share QR
                 </Button>
                 
                 <Button
@@ -387,7 +386,7 @@ const Index = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowQRCode(true)}
-                      className="text-orange-600 hover:bg-orange-50 p-1 sm:p-2"
+                      className="text-orange-600 hover:bg-orange-50"
                     >
                       <QrCode className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
@@ -396,7 +395,7 @@ const Index = () => {
                     variant="ghost"
                     size="sm"
                     onClick={handleLeaveRoom}
-                    className="text-red-600 hover:bg-red-50 p-1 sm:p-2"
+                    className="text-red-600 hover:bg-red-50"
                   >
                     <span className="text-xs sm:text-sm">Leave</span>
                   </Button>

@@ -211,7 +211,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         </button>
       </div>
 
-      <div className="flex items-center justify-center min-h-[600px] sm:min-h-[700px] p-2 sm:p-4 relative">
+      <div className="flex items-center justify-center min-h-[600px] sm:min-h-[700px] p-2 sm:p-4 relative w-full">
         {/* Background Cards */}
         {orderedRestaurants.slice(currentIndex + 1, currentIndex + 3).map((restaurant, index) => (
           <div
