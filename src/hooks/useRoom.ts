@@ -167,7 +167,8 @@ const useRoom = () => {
       return true;
     } catch (error) {
       console.error('Error joining room:', error);
-      return false;
+      // Re-throw the error so the calling function can handle it
+      throw error;
     }
   };
 

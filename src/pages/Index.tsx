@@ -126,18 +126,17 @@ const Index = () => {
 
 
   const handleJoinRoom = async (roomId: string, name: string) => {
-    if (!location) {
-      setShowLocation(true);
-      return false;
-    }
-    
     try {
       await joinRoom(roomId, name);
       setShowJoinRoom(false);
       return true;
     } catch (err) {
       console.error('Error joining room:', err);
-      setError('Failed to join room. Please check the room ID and try again.');
+      // Don't set global error for room-not-found errors, let the modal handle it
+      // Only set global error for unexpected errors
+      if (err instanceof Error && err.message !== 'Room not found') {
+        setError('Failed to join room. Please check the room ID and try again.');
+      }
       return false;
     }
   };
