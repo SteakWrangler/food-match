@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Simplified ChatGPT processor - only generates descriptions
+// Simplified ChatGPT processor - only generates descriptions (no caching)
 // TODO: Tag functionality commented out - can be restored later if needed
 
 const corsHeaders = {
@@ -62,10 +61,7 @@ serve(async (req: Request) => {
       });
     }
 
-    // Initialize Supabase client for cache
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Note: Removed Supabase client initialization since we're no longer caching
 
     // Parse request body
     let body: any;
@@ -93,64 +89,15 @@ serve(async (req: Request) => {
         const processedRestaurants: RestaurantData[] = [];
 
         for (const restaurant of restaurants) {
-          // Check cache first
-          const { data: cachedData, error: cacheError } = await supabase
-            .from('chatgpt_cache')
-            .select('*')
-            .eq('restaurant_name', restaurant.name)
-            .single();
-
-          if (cachedData && !cacheError) {
-            // Use cached data
-            console.log(`Using cached data for ${restaurant.name}`);
-            processedRestaurants.push({
-              ...restaurant,
-              cuisine: cachedData.cuisine || restaurant.cuisine,
-              tags: cachedData.tags || restaurant.tags || [], // Ensure tags is always an array
-              description: cachedData.description || restaurant.description,
-              processedByChatGPT: true,
-              chatGPTConfidence: cachedData.confidence_score
-            });
-            continue;
-          }
-
-          // Process with ChatGPT
+          // Process with ChatGPT (no caching)
           console.log(`Processing ${restaurant.name} with ChatGPT`);
           
           const chatGPTResult = await processWithChatGPT(restaurant, openaiApiKey);
           
           if (chatGPTResult) {
-            // COMMENTED OUT - Tag processing logic
-            // const tagsWithConfidence = chatGPTResult.tags.map(t => ({
-            //   tag: t.tag,
-            //   confidence: t.confidence
-            // }));
-            
-            // const tagStrings = chatGPTResult.tags.map(t => t.tag);
-            
-            // Save to cache
-            const cacheEntry = {
-              restaurant_name: restaurant.name,
-              google_place_id,
-              // cuisine: chatGPTResult.cuisine, // COMMENTED OUT
-              // tags: tagStrings, // COMMENTED OUT
-              // tags_with_confidence: tagsWithConfidence, // COMMENTED OUT
-              description: chatGPTResult.description,
-              confidence_score: chatGPTResult.confidence_score,
-              raw_chatgpt_response: chatGPTResult
-            };
-
-            await supabase
-              .from('chatgpt_cache')
-              .upsert(cacheEntry, { 
-                onConflict: 'restaurant_name',
-                ignoreDuplicates: false 
-              });
-
             // Add processed restaurant
             processedRestaurants.push({
               ...restaurant,
-              // cuisine: chatGPTResult.cuisine, // COMMENTED OUT
               tags: restaurant.tags || [], // Ensure tags is always an array
               description: chatGPTResult.description,
               processedByChatGPT: true,

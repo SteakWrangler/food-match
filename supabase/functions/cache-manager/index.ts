@@ -59,28 +59,7 @@ serve(async (req: Request) => {
       }
 
       try {
-        // Check both cache tables
-        const { data: chatgptData, error: chatgptError } = await supabase
-          .from('chatgpt_cache')
-          .select('*')
-          .eq('restaurant_name', restaurant_name)
-          .single();
-
-        if (chatgptError && chatgptError.code !== 'PGRST116') {
-          throw chatgptError;
-        }
-
-        if (chatgptData) {
-          return new Response(JSON.stringify({ 
-            found: true,
-            source: 'chatgpt_cache',
-            data: chatgptData
-          }), {
-            headers: corsHeaders
-          });
-        }
-
-        // If not found in chatgpt_cache, check restaurant_cache
+        // Note: ChatGPT cache has been removed, only checking restaurant_cache
         const { data: restaurantData, error: restaurantError } = await supabase
           .from('restaurant_cache')
           .select('*')
@@ -120,68 +99,20 @@ serve(async (req: Request) => {
       }
     }
 
-    // Save new ChatGPT results to cache
+    // Note: ChatGPT cache saving has been removed
     if (action === 'save-to-cache') {
-      if (!restaurant_name || !cache_data) {
-        return new Response(JSON.stringify({ error: "Restaurant name and cache data are required" }), {
-          status: 400,
-          headers: corsHeaders
-        });
-      }
-
-      try {
-        const cacheEntry: CacheEntry = {
-          restaurant_name,
-          google_place_id,
-          ...cache_data
-        };
-
-        const { data, error } = await supabase
-          .from('chatgpt_cache')
-          .upsert(cacheEntry, { 
-            onConflict: 'restaurant_name',
-            ignoreDuplicates: false 
-          })
-          .select()
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        return new Response(JSON.stringify({ 
-          success: true,
-          message: "Cache entry saved successfully",
-          data
-        }), {
-          headers: corsHeaders
-        });
-
-      } catch (error) {
-        console.error('Error saving to cache:', error);
-        return new Response(JSON.stringify({ 
-          error: "Failed to save to cache",
-          details: error.message
-        }), {
-          status: 500,
-          headers: corsHeaders
-        });
-      }
+      return new Response(JSON.stringify({ 
+        error: "ChatGPT cache has been removed. This action is no longer supported." 
+      }), {
+        status: 400,
+        headers: corsHeaders
+      });
     }
 
     // Get cache statistics
     if (action === 'get-stats') {
       try {
-        // Get total entries in chatgpt_cache
-        const { count: chatgptCount, error: chatgptError } = await supabase
-          .from('chatgpt_cache')
-          .select('*', { count: 'exact', head: true });
-
-        if (chatgptError) {
-          throw chatgptError;
-        }
-
-        // Get total entries in restaurant_cache
+        // Note: ChatGPT cache has been removed, only checking restaurant_cache
         const { count: restaurantCount, error: restaurantError } = await supabase
           .from('restaurant_cache')
           .select('*', { count: 'exact', head: true });
@@ -191,7 +122,7 @@ serve(async (req: Request) => {
         }
 
         const stats: CacheStats = {
-          total_entries: (chatgptCount || 0) + (restaurantCount || 0),
+          total_entries: restaurantCount || 0,
           cache_hits: 0, // This would need to be tracked separately
           cache_misses: 0, // This would need to be tracked separately
           hit_rate: 0 // This would need to be calculated from hits/misses
@@ -199,8 +130,8 @@ serve(async (req: Request) => {
 
         return new Response(JSON.stringify({ 
           stats,
-          chatgpt_cache_entries: chatgptCount || 0,
-          restaurant_cache_entries: restaurantCount || 0
+          restaurant_cache_entries: restaurantCount || 0,
+          note: "ChatGPT cache has been removed"
         }), {
           headers: corsHeaders
         });
@@ -223,18 +154,7 @@ serve(async (req: Request) => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        // Clean up chatgpt_cache
-        const { data: chatgptDeleted, error: chatgptError } = await supabase
-          .from('chatgpt_cache')
-          .delete()
-          .lt('updated_at', thirtyDaysAgo.toISOString())
-          .select();
-
-        if (chatgptError) {
-          throw chatgptError;
-        }
-
-        // Clean up restaurant_cache
+        // Note: ChatGPT cache has been removed, only cleaning restaurant_cache
         const { data: restaurantDeleted, error: restaurantError } = await supabase
           .from('restaurant_cache')
           .delete()
@@ -248,8 +168,8 @@ serve(async (req: Request) => {
         return new Response(JSON.stringify({ 
           success: true,
           message: "Cache cleanup completed",
-          chatgpt_deleted: chatgptDeleted?.length || 0,
-          restaurant_deleted: restaurantDeleted?.length || 0
+          restaurant_deleted: restaurantDeleted?.length || 0,
+          note: "ChatGPT cache has been removed"
         }), {
           headers: corsHeaders
         });
@@ -268,7 +188,7 @@ serve(async (req: Request) => {
 
     // If no valid action is provided
     return new Response(JSON.stringify({ 
-      error: "Invalid action. Use 'check-cache', 'save-to-cache', 'get-stats', or 'cleanup-expired'" 
+      error: "Invalid action. Use 'check-cache', 'get-stats', or 'cleanup-expired'. Note: 'save-to-cache' has been removed." 
     }), {
       status: 400,
       headers: corsHeaders
