@@ -27,6 +27,7 @@ const useRoom = () => {
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [participantId] = useState(() => `user_${Math.random().toString(36).substr(2, 9)}`);
+  const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Polling mechanism to sync room state
@@ -93,7 +94,9 @@ const useRoom = () => {
       console.log(`Created room ${roomId} from ${location}`);
       
       // Now load initial restaurants with hybrid system and filters
+      setIsLoadingRestaurants(true);
       const success = await loadInitialRestaurants(roomId, location, filters);
+      setIsLoadingRestaurants(false);
       
       return roomId;
     } catch (error) {
@@ -101,6 +104,7 @@ const useRoom = () => {
       // Reset state on error
       setRoomState(null);
       setIsHost(false);
+      setIsLoadingRestaurants(false);
       throw error;
     }
   };
@@ -457,6 +461,7 @@ const useRoom = () => {
     roomState,
     isHost,
     participantId,
+    isLoadingRestaurantsFromHook: isLoadingRestaurants,
     createRoom,
     joinRoom,
     addSwipe,

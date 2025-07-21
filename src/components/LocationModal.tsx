@@ -11,21 +11,33 @@ interface LocationModalProps {
   currentLocation: string;
   onLocationChange: (location: string) => void;
   onClose: () => void;
+  isCreatingRoom?: boolean;
+  onLocationSetForRoom?: (location: string) => void;
+  isLoading?: boolean;
 }
 
 const LocationModal: React.FC<LocationModalProps> = ({ 
   currentLocation, 
   onLocationChange, 
-  onClose 
+  onClose,
+  isCreatingRoom = false,
+  onLocationSetForRoom,
+  isLoading = false
 }) => {
   const [location, setLocation] = useState(currentLocation);
   const [isDetecting, setIsDetecting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (location.trim()) {
-      onLocationChange(location.trim());
-      onClose();
+    if (location.trim() && !isLoading) {
+      if (isCreatingRoom && onLocationSetForRoom) {
+        // If we're creating a room, call the room-specific callback
+        onLocationSetForRoom(location.trim());
+      } else {
+        // Otherwise, use the general location change callback
+        onLocationChange(location.trim());
+        onClose();
+      }
     }
   };
 
@@ -77,6 +89,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
               size="icon"
               onClick={onClose}
               className="rounded-full"
+              disabled={isLoading}
             >
               <X className="w-5 h-5" />
             </Button>
@@ -95,6 +108,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
                 placeholder="e.g., San Francisco, CA or 94102"
                 className="mt-1"
                 autoFocus
+                disabled={isLoading}
               />
             </div>
 
@@ -103,7 +117,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
               variant="outline"
               className="w-full"
               onClick={handleUseCurrentLocation}
-              disabled={isDetecting}
+              disabled={isDetecting || isLoading}
             >
               <Navigation className="w-4 h-4 mr-2" />
               {isDetecting ? 'Detecting...' : 'Use Current Location'}
@@ -115,13 +129,14 @@ const LocationModal: React.FC<LocationModalProps> = ({
                 variant="outline" 
                 className="flex-1"
                 onClick={onClose}
+                disabled={isLoading}
               >
                 Cancel
               </Button>
               <Button 
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
-                disabled={!location.trim()}
+                disabled={!location.trim() || isLoading}
               >
                 Set Location
               </Button>

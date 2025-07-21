@@ -9,14 +9,15 @@ import { X } from 'lucide-react';
 interface CreateRoomModalProps {
   onCreateRoom: (name: string) => void;
   onClose: () => void;
+  isLoading?: boolean;
 }
 
-const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onCreateRoom, onClose }) => {
+const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onCreateRoom, onClose, isLoading = false }) => {
   const [name, setName] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim()) {
+    if (name.trim() && !isLoading) {
       onCreateRoom(name.trim());
     }
   };
@@ -32,6 +33,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onCreateRoom, onClose
               size="icon"
               onClick={onClose}
               className="rounded-full"
+              disabled={isLoading}
             >
               <X className="w-5 h-5" />
             </Button>
@@ -48,6 +50,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onCreateRoom, onClose
                 placeholder="Enter your name"
                 className="mt-1"
                 autoFocus
+                disabled={isLoading}
               />
             </div>
 
@@ -57,15 +60,16 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ onCreateRoom, onClose
                 variant="outline" 
                 className="flex-1"
                 onClick={onClose}
+                disabled={isLoading}
               >
                 Cancel
               </Button>
               <Button 
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
-                disabled={!name.trim()}
+                disabled={!name.trim() || isLoading}
               >
-                Create Room
+                {isLoading ? 'Creating Room...' : 'Create Room'}
               </Button>
             </div>
           </form>

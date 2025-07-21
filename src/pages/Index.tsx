@@ -34,6 +34,7 @@ const Index = () => {
   const [restaurantError, setRestaurantError] = useState<string | null>(null);
   const [pendingRoomCreation, setPendingRoomCreation] = useState<{ name: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   
   const deviceType = useDeviceType();
   
@@ -41,6 +42,7 @@ const Index = () => {
     roomState,
     isHost,
     participantId,
+    isLoadingRestaurantsFromHook,
     createRoom,
     joinRoom,
     addSwipe,
@@ -94,6 +96,8 @@ const Index = () => {
   }, [roomState]);
 
   const handleCreateRoom = async (name: string) => {
+    if (isCreatingRoom) return; // Prevent multiple submissions
+    
     if (!location) {
       // Store the pending room creation and show location modal
       setPendingRoomCreation({ name });
@@ -101,16 +105,22 @@ const Index = () => {
       return;
     }
     
+    setIsCreatingRoom(true);
     try {
       await createRoom(name, location);
       setShowCreateRoom(false);
     } catch (err) {
       console.error('Error creating room:', err);
       setError('Failed to create room. Please try again.');
+    } finally {
+      setIsCreatingRoom(false);
     }
   };
 
   const createRoomWithLocation = async (name: string, location: string) => {
+    if (isCreatingRoom) return; // Prevent multiple submissions
+    
+    setIsCreatingRoom(true);
     try {
       await createRoom(name, location);
       setShowLocation(false);
@@ -118,6 +128,8 @@ const Index = () => {
     } catch (err) {
       console.error('Error creating room with location:', err);
       setError('Failed to create room. Please try again.');
+    } finally {
+      setIsCreatingRoom(false);
     }
   };
 
@@ -143,6 +155,11 @@ const Index = () => {
   };
 
   const handleLocationChange = (newLocation: string) => {
+    setLocation(newLocation);
+    setShowLocation(false);
+  };
+
+  const handleLocationSetForRoom = (newLocation: string) => {
     setLocation(newLocation);
     setShowLocation(false);
     
@@ -482,11 +499,13 @@ const Index = () => {
       </main>
 
       {/* Loading Overlay */}
-      {isLoadingRestaurants && (
+      {(isLoadingRestaurants || isLoadingRestaurantsFromHook) && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center mx-4">
             <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin mx-auto mb-3 sm:mb-4" />
-            <p className="text-sm sm:text-base text-gray-600">Loading restaurants near you...</p>
+            <p className="text-sm sm:text-base text-gray-600">
+              {isLoadingRestaurantsFromHook ? 'Creating room and loading restaurants...' : 'Loading restaurants near you...'}
+            </p>
           </div>
         </div>
       )}
@@ -496,6 +515,7 @@ const Index = () => {
         <CreateRoomModal
           onCreateRoom={handleCreateRoom}
           onClose={() => setShowCreateRoom(false)}
+          isLoading={isCreatingRoom}
         />
       )}
 
@@ -528,6 +548,9 @@ const Index = () => {
           currentLocation={location || ''}
           onLocationChange={handleLocationChange}
           onClose={() => setShowLocation(false)}
+          isCreatingRoom={!!pendingRoomCreation}
+          onLocationSetForRoom={handleLocationSetForRoom}
+          isLoading={isCreatingRoom}
         />
       )}
 
