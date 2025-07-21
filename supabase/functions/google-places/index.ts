@@ -125,6 +125,107 @@ const shouldExcludePlace = (place: GooglePlacesResult): boolean => {
   return false;
 };
 
+// Function to remove duplicate chain restaurants
+const removeDuplicateChains = (places: GooglePlacesResult[]): GooglePlacesResult[] => {
+  const seenNames = new Set<string>();
+  const filteredPlaces: GooglePlacesResult[] = [];
+  
+  for (const place of places) {
+    // Normalize the name for comparison (remove common suffixes and prefixes)
+    const normalizedName = place.name
+      .toLowerCase()
+      .replace(/\s*-\s*.*$/, '') // Remove everything after dash
+      .replace(/\s*\(.*?\)/g, '') // Remove parentheses content
+      .replace(/\s*#\d+/, '') // Remove location numbers like "#123"
+      .replace(/\s*at\s+.*$/, '') // Remove "at [location]" suffixes
+      .replace(/\s*on\s+.*$/, '') // Remove "on [street]" suffixes
+      .replace(/\s*&\s*co\.?/gi, '') // Remove "& Co" suffixes
+      .replace(/\s*restaurant\s*$/i, '') // Remove "Restaurant" suffix
+      .replace(/\s*grill\s*$/i, '') // Remove "Grill" suffix
+      .replace(/\s*bar\s*$/i, '') // Remove "Bar" suffix
+      .replace(/\s*cafe\s*$/i, '') // Remove "Cafe" suffix
+      .replace(/\s*bistro\s*$/i, '') // Remove "Bistro" suffix
+      .replace(/\s*kitchen\s*$/i, '') // Remove "Kitchen" suffix
+      .replace(/\s*tavern\s*$/i, '') // Remove "Tavern" suffix
+      .replace(/\s*pub\s*$/i, '') // Remove "Pub" suffix
+      .replace(/\s*lounge\s*$/i, '') // Remove "Lounge" suffix
+      .replace(/\s*steakhouse\s*$/i, '') // Remove "Steakhouse" suffix
+      .replace(/\s*bbq\s*$/i, '') // Remove "BBQ" suffix
+      .replace(/\s*barbecue\s*$/i, '') // Remove "Barbecue" suffix
+      .replace(/\s*pizza\s*$/i, '') // Remove "Pizza" suffix
+      .replace(/\s*italian\s*$/i, '') // Remove "Italian" suffix
+      .replace(/\s*mexican\s*$/i, '') // Remove "Mexican" suffix
+      .replace(/\s*chinese\s*$/i, '') // Remove "Chinese" suffix
+      .replace(/\s*japanese\s*$/i, '') // Remove "Japanese" suffix
+      .replace(/\s*thai\s*$/i, '') // Remove "Thai" suffix
+      .replace(/\s*indian\s*$/i, '') // Remove "Indian" suffix
+      .replace(/\s*american\s*$/i, '') // Remove "American" suffix
+      .replace(/\s*french\s*$/i, '') // Remove "French" suffix
+      .replace(/\s*greek\s*$/i, '') // Remove "Greek" suffix
+      .replace(/\s*mediterranean\s*$/i, '') // Remove "Mediterranean" suffix
+      .replace(/\s*korean\s*$/i, '') // Remove "Korean" suffix
+      .replace(/\s*vietnamese\s*$/i, '') // Remove "Vietnamese" suffix
+      .replace(/\s*spanish\s*$/i, '') // Remove "Spanish" suffix
+      .replace(/\s*german\s*$/i, '') // Remove "German" suffix
+      .replace(/\s*british\s*$/i, '') // Remove "British" suffix
+      .replace(/\s*irish\s*$/i, '') // Remove "Irish" suffix
+      .replace(/\s*caribbean\s*$/i, '') // Remove "Caribbean" suffix
+      .replace(/\s*middle\s+eastern\s*$/i, '') // Remove "Middle Eastern" suffix
+      .replace(/\s*african\s*$/i, '') // Remove "African" suffix
+      .replace(/\s*brazilian\s*$/i, '') // Remove "Brazilian" suffix
+      .replace(/\s*peruvian\s*$/i, '') // Remove "Peruvian" suffix
+      .replace(/\s*argentinian\s*$/i, '') // Remove "Argentinian" suffix
+      .replace(/\s*cuban\s*$/i, '') // Remove "Cuban" suffix
+      .replace(/\s*puerto\s*rican\s*$/i, '') // Remove "Puerto Rican" suffix
+      .replace(/\s*fusion\s*$/i, '') // Remove "Fusion" suffix
+      .replace(/\s*seafood\s*$/i, '') // Remove "Seafood" suffix
+      .replace(/\s*steak\s*$/i, '') // Remove "Steak" suffix
+      .replace(/\s*bakery\s*$/i, '') // Remove "Bakery" suffix
+      .replace(/\s*desserts\s*$/i, '') // Remove "Desserts" suffix
+      .replace(/\s*burgers\s*$/i, '') // Remove "Burgers" suffix
+      .replace(/\s*pasta\s*$/i, '') // Remove "Pasta" suffix
+      .replace(/\s*tacos\s*$/i, '') // Remove "Tacos" suffix
+      .replace(/\s*burritos\s*$/i, '') // Remove "Burritos" suffix
+      .replace(/\s*ramen\s*$/i, '') // Remove "Ramen" suffix
+      .replace(/\s*pho\s*$/i, '') // Remove "Pho" suffix
+      .replace(/\s*curry\s*$/i, '') // Remove "Curry" suffix
+      .replace(/\s*kebab\s*$/i, '') // Remove "Kebab" suffix
+      .replace(/\s*falafel\s*$/i, '') // Remove "Falafel" suffix
+      .replace(/\s*gyros\s*$/i, '') // Remove "Gyros" suffix
+      .replace(/\s*paella\s*$/i, '') // Remove "Paella" suffix
+      .replace(/\s*tapas\s*$/i, '') // Remove "Tapas" suffix
+      .replace(/\s*schnitzel\s*$/i, '') // Remove "Schnitzel" suffix
+      .replace(/\s*fish\s*&\s*chips\s*$/i, '') // Remove "Fish & Chips" suffix
+      .replace(/\s*bangers\s*&\s*mash\s*$/i, '') // Remove "Bangers & Mash" suffix
+      .replace(/\s*jerk\s*chicken\s*$/i, '') // Remove "Jerk Chicken" suffix
+      .replace(/\s*ceviche\s*$/i, '') // Remove "Ceviche" suffix
+      .replace(/\s*asado\s*$/i, '') // Remove "Asado" suffix
+      .replace(/\s*ropa\s*vieja\s*$/i, '') // Remove "Ropa Vieja" suffix
+      .replace(/\s*mofongo\s*$/i, '') // Remove "Mofongo" suffix
+      .replace(/\s*empanadas\s*$/i, '') // Remove "Empanadas" suffix
+      .replace(/\s*sandwiches\s*$/i, '') // Remove "Sandwiches" suffix
+      .replace(/\s*subs\s*$/i, '') // Remove "Subs" suffix
+      .replace(/\s*wings\s*$/i, '') // Remove "Wings" suffix
+      .replace(/\s*noodles\s*$/i, '') // Remove "Noodles" suffix
+      .replace(/\s*chicken\s*$/i, '') // Remove "Chicken" suffix
+      .replace(/\s*hot\s*dogs\s*$/i, '') // Remove "Hot Dogs" suffix
+      .replace(/\s*ice\s*cream\s*$/i, '') // Remove "Ice Cream" suffix
+      .replace(/\s*coffee\s*$/i, '') // Remove "Coffee" suffix
+      .trim();
+    
+    // Skip if we've already seen this normalized name
+    if (seenNames.has(normalizedName)) {
+      continue;
+    }
+    
+    // Add to seen set and keep this place
+    seenNames.add(normalizedName);
+    filteredPlaces.push(place);
+  }
+  
+  return filteredPlaces;
+};
+
 serve(async (req: Request) => {
   try {
     // Handle CORS preflight requests
@@ -276,9 +377,13 @@ serve(async (req: Request) => {
             const filteredTextResults = textSearchData.results.filter(place => !shouldExcludePlace(place));
             console.log(`Filtered text search results: ${textSearchData.results.length} -> ${filteredTextResults.length}`);
             
+            // Remove duplicate chain restaurants
+            const deduplicatedTextResults = removeDuplicateChains(filteredTextResults);
+            console.log(`Deduplicated text search results: ${filteredTextResults.length} -> ${deduplicatedTextResults.length}`);
+            
             // Transform text search results
             const restaurants: RestaurantData[] = await Promise.all(
-              filteredTextResults.slice(0, limit).map(async (place: any) => {
+              deduplicatedTextResults.slice(0, limit).map(async (place: any) => {
                 const priceLevelToString = (level?: number): string => {
                   if (!level) return '';
                   return '$'.repeat(level);
@@ -463,9 +568,13 @@ serve(async (req: Request) => {
         const filteredNearbyResults = placesData.results.filter(place => !shouldExcludePlace(place));
         console.log(`Filtered nearby search results: ${placesData.results.length} -> ${filteredNearbyResults.length}`);
         
+        // Remove duplicate chain restaurants
+        const deduplicatedNearbyResults = removeDuplicateChains(filteredNearbyResults);
+        console.log(`Deduplicated nearby search results: ${filteredNearbyResults.length} -> ${deduplicatedNearbyResults.length}`);
+        
         // Transform the results to match our Restaurant interface
         const restaurants: RestaurantData[] = await Promise.all(
-          filteredNearbyResults.slice(0, limit).map(async (place) => {
+          deduplicatedNearbyResults.slice(0, limit).map(async (place) => {
             // Get additional details for each place
             const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,website,opening_hours,types,photos&key=${googlePlacesApiKey}`;
             
