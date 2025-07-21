@@ -216,22 +216,20 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         {orderedRestaurants.slice(currentIndex + 1, currentIndex + 3).map((restaurant, index) => (
           <div
             key={restaurant.id}
-            className="absolute inset-0 flex items-center justify-center"
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
             style={{
               zIndex: 5 - index,
-              transform: `scale(${0.85 - index * 0.05})`,
+              transform: `translate(-50%, -50%) scale(${0.85 - index * 0.05})`,
               opacity: 0.6 - index * 0.2,
               pointerEvents: 'none' // Prevent interaction with background cards
             }}
           >
-            <div className="relative">
-              <RestaurantCard
-                key={`background-${restaurant.id}`}
-                restaurant={restaurant}
-                onSwipe={() => {}}
-                showButtons={false}
-              />
-            </div>
+            <RestaurantCard
+              key={`background-${restaurant.id}`}
+              restaurant={restaurant}
+              onSwipe={() => {}}
+              showButtons={false}
+            />
           </div>
         ))}
         

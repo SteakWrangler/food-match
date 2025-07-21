@@ -235,22 +235,20 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
         {orderedFoodTypes.slice(currentIndex + 1, currentIndex + 3).map((foodType, index) => (
           <div
             key={foodType.id}
-            className="absolute inset-0 flex items-center justify-center"
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
             style={{
               zIndex: 5 - index,
-              transform: `scale(${0.85 - index * 0.05})`,
+              transform: `translate(-50%, -50%) scale(${0.85 - index * 0.05})`,
               opacity: 0.6 - index * 0.2,
               pointerEvents: 'none'
             }}
           >
-            <div className="relative">
-              <FoodTypeCard
-                key={`background-${foodType.id}`}
-                foodType={foodType}
-                onSwipe={() => {}}
-                showButtons={false}
-              />
-            </div>
+            <FoodTypeCard
+              key={`background-${foodType.id}`}
+              foodType={foodType}
+              onSwipe={() => {}}
+              showButtons={false}
+            />
           </div>
         ))}
         
