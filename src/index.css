@@ -99,5 +99,58 @@
 
   body {
     @apply bg-background text-foreground;
+    /* Prevent horizontal scrolling on mobile */
+    overflow-x: hidden;
+    /* Improve touch scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Improve touch targets on mobile */
+  @media (max-width: 768px) {
+    button, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
+  /* Prevent text selection during swipes */
+  .swipe-card {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Smooth scrolling for iOS */
+  html {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Better focus indicators for accessibility */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+/* Responsive utilities */
+@layer utilities {
+  .container-responsive {
+    @apply w-full mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: 100%;
+  }
+  
+  .container-mobile {
+    @apply max-w-sm mx-auto px-3;
+  }
+  
+  .container-tablet {
+    @apply max-w-2xl mx-auto px-6;
+  }
+  
+  .container-desktop {
+    @apply max-w-4xl mx-auto px-8;
   }
 }

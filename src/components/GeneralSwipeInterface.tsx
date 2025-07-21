@@ -4,6 +4,7 @@ import MatchModal from './MatchModal';
 import EnhancedSwipeHistory from './EnhancedSwipeHistory';
 import { FoodType } from '@/data/foodTypes';
 import { randomizeFoodTypesByTiers } from '@/utils/foodTypeRandomizer';
+import { useDeviceType } from '@/hooks/use-mobile';
 
 interface GeneralSwipeInterfaceProps {
   foodTypes: FoodType[];
@@ -32,6 +33,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [userSwipes, setUserSwipes] = useState<Record<string, 'left' | 'right'>>({});
+  const deviceType = useDeviceType();
 
   // Reset current index when custom order changes (item brought to front)
   useEffect(() => {
@@ -103,6 +105,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
         description: `You both want ${currentFoodType.name}! Time to find a great place nearby.`,
         tags: ['Match', 'Food Type']
       };
+      
       setMatchedFoodType(mockRestaurant);
       setShowMatch(true);
     }
@@ -130,7 +133,39 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
   const handleMouseUp = () => {
     if (!isDragging) return;
     
-    const threshold = 100;
+    const threshold = deviceType === 'mobile' ? 50 : 100;
+    
+    if (Math.abs(dragOffset.x) > threshold) {
+      handleSwipe(dragOffset.x > 0 ? 'right' : 'left');
+    } else {
+      setDragOffset({ x: 0, y: 0 });
+    }
+    
+    setDragStart(null);
+    setIsDragging(false);
+  };
+
+  // Touch event handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setDragStart({ x: touch.clientX, y: touch.clientY });
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragStart || !isDragging) return;
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - dragStart.x;
+    const deltaY = touch.clientY - dragStart.y;
+    setDragOffset({ x: deltaX, y: deltaY });
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    
+    const threshold = 50;
+    
     if (Math.abs(dragOffset.x) > threshold) {
       handleSwipe(dragOffset.x > 0 ? 'right' : 'left');
     } else {
@@ -150,7 +185,8 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
   if (orderedFoodTypes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">No food types available!</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">No food types found!</h2>
+        <p className="text-sm sm:text-base text-gray-600">Try adjusting your filters to see more options.</p>
       </div>
     );
   }
@@ -158,18 +194,22 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
   if (currentIndex >= orderedFoodTypes.length) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">No more food types!</h2>
-        <p className="text-gray-600 mb-4">You've seen all available food options.</p>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
+          No more food types!
+        </h2>
+        <p className="text-sm sm:text-base text-gray-600 mb-4">
+          You've seen all available food type options.
+        </p>
         <div className="space-y-3">
           <button 
             onClick={() => setShowHistory(true)}
-            className="px-6 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+            className="px-6 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors text-sm sm:text-base"
           >
             View Your Likes
           </button>
           <button 
             onClick={() => setCurrentIndex(0)}
-            className="block px-6 py-3 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
+            className="block px-6 py-3 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors text-sm sm:text-base"
           >
             Start Over
           </button>
@@ -181,36 +221,39 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
   return (
     <div className="relative">
       {/* History Button */}
-      <div className="absolute top-0 right-0 z-50">
+      <div className="absolute -top-2 -right-2 z-50">
         <button
           onClick={() => setShowHistory(true)}
           className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full p-2 shadow-sm hover:bg-white transition-colors"
         >
-          <span className="text-sm">❤️ {Object.values(userSwipes).filter(s => s === 'right').length}</span>
+          <span className="text-xs sm:text-sm">❤️ {Object.values(userSwipes).filter(s => s === 'right').length}</span>
         </button>
       </div>
 
-      <div className="flex items-center justify-center min-h-[700px] p-4">
+      <div className="flex items-center justify-center min-h-[600px] sm:min-h-[700px] p-2 sm:p-4 relative">
         {/* Background Cards */}
         {orderedFoodTypes.slice(currentIndex + 1, currentIndex + 3).map((foodType, index) => (
           <div
             key={foodType.id}
-            className="absolute"
+            className="absolute inset-0 flex items-center justify-center"
             style={{
               zIndex: 10 - index,
-              transform: `scale(${0.95 - index * 0.02}) translateY(${index * 8}px)`,
-              opacity: 0.8 - index * 0.2
+              transform: `scale(${0.85 - index * 0.05})`,
+              opacity: 0.6 - index * 0.2,
+              pointerEvents: 'none'
             }}
           >
             <div className="relative">
               <FoodTypeCard
+                key={`background-${foodType.id}`}
                 foodType={foodType}
                 onSwipe={() => {}}
+                showButtons={false}
               />
             </div>
           </div>
         ))}
-
+        
         {/* Current Card */}
         <div
           className="relative z-20"
@@ -219,8 +262,12 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <FoodTypeCard
+            key={`current-${currentFoodType.id}`}
             foodType={currentFoodType}
             onSwipe={handleSwipe}
           />
@@ -230,12 +277,12 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
         {isDragging && (
           <>
             {dragOffset.x > 50 && (
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-green-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold rotate-12 opacity-80">
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-green-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-2xl text-lg sm:text-2xl font-bold rotate-12 opacity-80">
                 LIKE!
               </div>
             )}
             {dragOffset.x < -50 && (
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-red-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold -rotate-12 opacity-80">
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-red-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-2xl text-lg sm:text-2xl font-bold -rotate-12 opacity-80">
                 NOPE!
               </div>
             )}

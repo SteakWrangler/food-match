@@ -1,7 +1,8 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import RestaurantCard from './RestaurantCard';
 import MatchModal from './MatchModal';
 import EnhancedSwipeHistory from './EnhancedSwipeHistory';
+import { useDeviceType } from '@/hooks/use-mobile';
 import { Restaurant } from '@/data/restaurants';
 
 interface SwipeInterfaceProps {
@@ -29,135 +30,57 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMatch, setShowMatch] = useState(false);
+  const [matchedRestaurant, setMatchedRestaurant] = useState<Restaurant | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [matchedRestaurant, setMatchedRestaurant] = useState<any>(null);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [userSwipes, setUserSwipes] = useState<Record<string, 'left' | 'right'>>({});
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [loadMoreAttempts, setLoadMoreAttempts] = useState(0);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const [isLoading, setIsLoading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-  const lastRestaurantCountRef = useRef(0);
-  const preservedIndexRef = useRef(0);
+  const deviceType = useDeviceType();
 
-  // Reset current index when custom order changes (item brought to front)
-  useEffect(() => {
-    if (customOrder && customOrder.length > 0) {
-      setCurrentIndex(0);
-    }
-  }, [customOrder]);
+  // Get user swipes from room state
+  const userSwipes = roomState?.swipes?.[participantId || ''] || {};
 
-  // Use custom order if available, otherwise use original order
-  const orderedRestaurants = useMemo(() => {
-    if (customOrder && customOrder.length > 0) {
-      // Create a map for quick lookup
-      const restaurantMap = new Map(restaurants.map(r => [r.id, r]));
-      const ordered: Restaurant[] = [];
-      
-      // Add items in custom order first
-      for (const id of customOrder) {
-        const restaurant = restaurantMap.get(id);
-        if (restaurant) {
-          ordered.push(restaurant);
-        }
-      }
-      
-      // Add any remaining restaurants that weren't in the custom order
-      for (const restaurant of restaurants) {
-        if (!customOrder.includes(restaurant.id)) {
-          ordered.push(restaurant);
-        }
-      }
-      
-      return ordered;
+  // Order restaurants based on custom order or default
+  const orderedRestaurants = React.useMemo(() => {
+    if (!customOrder || customOrder.length === 0) {
+      return restaurants;
     }
-    return restaurants;
+    
+    const ordered: Restaurant[] = [];
+    const unordered: Restaurant[] = [];
+    
+    // Add restaurants in custom order first
+    customOrder.forEach(id => {
+      const restaurant = restaurants.find(r => r.id === id);
+      if (restaurant) {
+        ordered.push(restaurant);
+      }
+    });
+    
+    // Add remaining restaurants
+    restaurants.forEach(restaurant => {
+      if (!customOrder.includes(restaurant.id)) {
+        unordered.push(restaurant);
+      }
+    });
+    
+    return [...ordered, ...unordered];
   }, [restaurants, customOrder]);
 
   const currentRestaurant = orderedRestaurants[currentIndex];
 
-  // Preserve current index when new restaurants are added
-  useEffect(() => {
-    console.log(`🔄 Restaurant list changed: ${orderedRestaurants.length} restaurants, currentIndex: ${currentIndex}, lastCount: ${lastRestaurantCountRef.current}`);
-    
-    // If the list grew (new restaurants were added), preserve the current index
-    if (orderedRestaurants.length > lastRestaurantCountRef.current && lastRestaurantCountRef.current > 0) {
-      console.log(`✅ Preserving current index: ${currentIndex} (list grew from ${lastRestaurantCountRef.current} to ${orderedRestaurants.length})`);
-      preservedIndexRef.current = currentIndex;
-      // Don't reset the index - keep it where it was
-    } else if (orderedRestaurants.length === 0) {
-      // List was cleared, reset index
-      console.log(`🔄 List cleared, resetting index to 0`);
-      setCurrentIndex(0);
-      preservedIndexRef.current = 0;
-    } else if (orderedRestaurants.length > 0 && lastRestaurantCountRef.current === 0) {
-      // Initial load, start at 0
-      console.log(`🔄 Initial load, starting at index 0`);
-      setCurrentIndex(0);
-      preservedIndexRef.current = 0;
-    }
-    
-    lastRestaurantCountRef.current = orderedRestaurants.length;
-  }, [orderedRestaurants.length, currentIndex]);
-
-  // Reset load more attempts when restaurant list changes (indicating successful load)
-  useEffect(() => {
-    setLoadMoreAttempts(0);
-  }, [orderedRestaurants.length]);
-
-  // Auto-load more restaurants when getting close to the end
-  useEffect(() => {
-    const remainingRestaurants = orderedRestaurants.length - currentIndex;
-    const maxAttempts = 3; // Maximum number of attempts to load more restaurants
-    const triggerThreshold = 8; // Load more when 8 or fewer restaurants remain (increased from 3)
-    
-    console.log(`Infinite scroll check: ${remainingRestaurants} remaining, currentIndex: ${currentIndex}, total: ${orderedRestaurants.length}`);
-    console.log(`Loading conditions: remaining <= ${triggerThreshold}: ${remainingRestaurants <= triggerThreshold}, onGenerateMore exists: ${!!onGenerateMore}, isLoadingMore: ${isLoadingMore}, attempts < max: ${loadMoreAttempts < maxAttempts}`);
-    
-    if (remainingRestaurants <= triggerThreshold && onGenerateMore && !isLoadingMore && loadMoreAttempts < maxAttempts) {
-      console.log(`🚀 TRIGGERING AUTO-LOAD: ${remainingRestaurants} left, attempt ${loadMoreAttempts + 1}/${maxAttempts}`);
-      setIsLoadingMore(true);
-      onGenerateMore().then(success => {
-        if (success) {
-          console.log('✅ Successfully loaded more restaurants');
-          setLoadMoreAttempts(0); // Reset attempts on success
-        } else {
-          console.log('❌ Failed to load more restaurants');
-          setLoadMoreAttempts(prev => prev + 1);
-        }
-      }).catch(error => {
-        console.error('💥 onGenerateMore error:', error);
-        setLoadMoreAttempts(prev => prev + 1);
-      }).finally(() => {
-        setIsLoadingMore(false);
-      });
-    } else if (loadMoreAttempts >= maxAttempts) {
-      console.log('⚠️ Max attempts reached for loading more restaurants');
-    } else if (remainingRestaurants > triggerThreshold) {
-      console.log(`⏳ Not triggering yet: ${remainingRestaurants} > ${triggerThreshold}`);
-    } else if (isLoadingMore) {
-      console.log('⏳ Already loading more restaurants...');
-    } else if (!onGenerateMore) {
-      console.log('❌ No onGenerateMore function provided');
-    }
-  }, [currentIndex, orderedRestaurants.length, onGenerateMore, isLoadingMore, loadMoreAttempts]);
-
+  // Handle swipe
   const handleSwipe = (direction: 'left' | 'right') => {
     if (!currentRestaurant) return;
-
-    // Track user's swipe
-    setUserSwipes(prev => ({
-      ...prev,
-      [currentRestaurant.id]: direction
-    }));
-
-    // Call the onSwipe callback if provided (for room mode)
+    
+    // Call the parent's onSwipe function
     if (onSwipe) {
       onSwipe(currentRestaurant.id, direction);
     }
-
-    // Check for match using the real room data
+    
+    // Check for match
     if (direction === 'right' && checkForMatch && checkForMatch(currentRestaurant.id)) {
       setMatchedRestaurant(currentRestaurant);
       setShowMatch(true);
@@ -165,118 +88,113 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         onMatch(currentRestaurant);
       }
     }
-
-    // Move to next restaurant after a short delay
-    setTimeout(() => {
-      setCurrentIndex(prev => prev + 1);
-      setDragOffset({ x: 0, y: 0 });
-    }, 300);
+    
+    // Move to next card
+    setCurrentIndex(prev => prev + 1);
+    
+    // Reset drag state
+    setIsDragging(false);
+    setDragOffset({ x: 0, y: 0 });
   };
 
+  // Mouse event handlers
   const handleMouseDown = (e: React.MouseEvent) => {
-    setDragStart({ x: e.clientX, y: e.clientY });
     setIsDragging(true);
+    setStartPos({ x: e.clientX, y: e.clientY });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!dragStart || !isDragging) return;
+    if (!isDragging) return;
     
-    const deltaX = e.clientX - dragStart.x;
-    const deltaY = e.clientY - dragStart.y;
+    const deltaX = e.clientX - startPos.x;
+    const deltaY = e.clientY - startPos.y;
     setDragOffset({ x: deltaX, y: deltaY });
   };
 
   const handleMouseUp = () => {
     if (!isDragging) return;
     
-    const threshold = 100;
+    const threshold = deviceType === 'mobile' ? 50 : 100;
+    
     if (Math.abs(dragOffset.x) > threshold) {
-      handleSwipe(dragOffset.x > 0 ? 'right' : 'left');
+      const direction = dragOffset.x > 0 ? 'right' : 'left';
+      handleSwipe(direction);
     } else {
+      // Reset position if not enough drag
       setDragOffset({ x: 0, y: 0 });
     }
     
-    setDragStart(null);
     setIsDragging(false);
   };
 
-  const cardStyle = {
-    transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${dragOffset.x * 0.1}deg)`,
-    opacity: Math.max(0.7, 1 - Math.abs(dragOffset.x) / 300),
-    transition: isDragging ? 'none' : 'all 0.3s ease-out'
+  // Touch event handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setIsDragging(true);
+    setStartPos({ x: touch.clientX, y: touch.clientY });
   };
 
-  if (orderedRestaurants.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">No restaurants found!</h2>
-        <p className="text-gray-600">Try adjusting your filters to see more options.</p>
-      </div>
-    );
-  }
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - startPos.x;
+    const deltaY = touch.clientY - startPos.y;
+    setDragOffset({ x: deltaX, y: deltaY });
+  };
 
-  if (currentIndex >= orderedRestaurants.length) {
-    // Show loading card if we're still trying to load more
-    if (isLoadingMore) {
-      return (
-        <div className="flex items-center justify-center min-h-[700px] p-4">
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-sm">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Loading More Restaurants</h3>
-            <p className="text-gray-600">Finding more great places for you...</p>
-          </div>
-        </div>
-      );
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    
+    const threshold = 50;
+    
+    if (Math.abs(dragOffset.x) > threshold) {
+      const direction = dragOffset.x > 0 ? 'right' : 'left';
+      handleSwipe(direction);
+    } else {
+      // Reset position if not enough drag
+      setDragOffset({ x: 0, y: 0 });
     }
+    
+    setIsDragging(false);
+  };
 
+  // Load more restaurants when running low
+  useEffect(() => {
+    if (onGenerateMore && currentIndex >= orderedRestaurants.length - 3) {
+      setIsLoading(true);
+      onGenerateMore().finally(() => setIsLoading(false));
+    }
+  }, [currentIndex, orderedRestaurants.length, onGenerateMore]);
+
+  // Card style with drag transform
+  const cardStyle: React.CSSProperties = {
+    transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${dragOffset.x * 0.1}deg)`,
+    transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+    cursor: isDragging ? 'grabbing' : 'grab',
+  };
+
+  // No restaurants to show
+  if (!currentRestaurant) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          No more restaurants!
-        </h2>
-        <p className="text-gray-600 mb-4">
-          {loadMoreAttempts >= 3 
-            ? "We tried to load more restaurants but couldn't find any additional options in your area."
-            : "You've seen all available options matching your filters."
-          }
+      <div className="text-center py-12">
+        <div className="text-4xl sm:text-6xl mb-4">🍽️</div>
+        <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">No more restaurants</h3>
+        <p className="text-sm sm:text-base text-gray-600 mb-4">
+          You've seen all the restaurants in your area.
         </p>
-        <div className="space-y-3">
-          {loadMoreAttempts >= 3 && onGenerateMore && (
-            <button 
-              onClick={() => {
-                setLoadMoreAttempts(0);
-                setIsLoadingMore(true);
-                onGenerateMore().then(success => {
-                  if (success) {
-                    console.log('Successfully loaded more restaurants via manual retry');
-                  } else {
-                    console.log('Failed to load more restaurants via manual retry');
-                  }
-                }).finally(() => {
-                  setIsLoadingMore(false);
-                });
-              }}
-              disabled={isLoadingMore}
-              className="px-6 py-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors disabled:opacity-50"
-            >
-              {isLoadingMore ? 'Loading...' : 'Try Loading More'}
-            </button>
-          )}
-          <button 
-            onClick={() => setShowHistory(true)}
-            className="px-6 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+        {onGenerateMore && (
+          <button
+            onClick={() => {
+              setIsLoading(true);
+              onGenerateMore().finally(() => setIsLoading(false));
+            }}
+            disabled={isLoading}
+            className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium disabled:opacity-50"
           >
-            View Your Likes
+            {isLoading ? 'Loading...' : 'Load More'}
           </button>
-          <button 
-            onClick={() => setCurrentIndex(0)}
-            className="block px-6 py-3 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
-          >
-            Start Over
-          </button>
-        </div>
+        )}
       </div>
     );
   }
@@ -289,11 +207,11 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           onClick={() => setShowHistory(true)}
           className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full p-2 shadow-sm hover:bg-white transition-colors"
         >
-          <span className="text-sm">❤️ {Object.values(userSwipes).filter(s => s === 'right').length}</span>
+          <span className="text-xs sm:text-sm">❤️ {Object.values(userSwipes).filter(s => s === 'right').length}</span>
         </button>
       </div>
 
-      <div className="flex items-center justify-center min-h-[700px] p-4 relative">
+      <div className="flex items-center justify-center min-h-[600px] sm:min-h-[700px] p-2 sm:p-4 relative">
         {/* Background Cards */}
         {orderedRestaurants.slice(currentIndex + 1, currentIndex + 3).map((restaurant, index) => (
           <div
@@ -317,8 +235,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           </div>
         ))}
         
-
-
         {/* Current Card */}
         <div
           ref={cardRef}
@@ -328,6 +244,9 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <RestaurantCard
             key={`current-${currentRestaurant.id}`}
@@ -340,12 +259,12 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         {isDragging && (
           <>
             {dragOffset.x > 50 && (
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-green-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold rotate-12 opacity-80">
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-green-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-2xl text-lg sm:text-2xl font-bold rotate-12 opacity-80">
                 LIKE!
               </div>
             )}
             {dragOffset.x < -50 && (
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-red-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold -rotate-12 opacity-80">
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-red-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-2xl text-lg sm:text-2xl font-bold -rotate-12 opacity-80">
                 NOPE!
               </div>
             )}

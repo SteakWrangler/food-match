@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Filter, Users, MapPin, QrCode, UserPlus, Loader2 } from 'lucide-react';
 import useRoom from '@/hooks/useRoom';
+import { useDeviceType } from '@/hooks/use-mobile';
 import { foodTypes } from '@/data/foodTypes';
 import { restaurants, Restaurant } from '@/data/restaurants';
 import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
@@ -33,6 +34,8 @@ const Index = () => {
   const [restaurantError, setRestaurantError] = useState<string | null>(null);
   const [pendingRoomCreation, setPendingRoomCreation] = useState<{ name: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  const deviceType = useDeviceType();
   
   const {
     roomState,
@@ -98,49 +101,44 @@ const Index = () => {
       return;
     }
     
-    await createRoomWithLocation(name, location);
+    try {
+      await createRoom(name, location);
+      setShowCreateRoom(false);
+    } catch (err) {
+      console.error('Error creating room:', err);
+      setError('Failed to create room. Please try again.');
+    }
   };
 
   const createRoomWithLocation = async (name: string, location: string) => {
-    setIsLoadingRestaurants(true);
-    setRestaurantError(null);
-    setError(null);
-    
     try {
-      // Reset filters to default when creating a new room (without reloading)
-      resetFiltersWithoutReload();
-      
-      // Pass default filters when creating room
-      const roomId = await createRoom(name, location, defaultFilters);
-      setShowCreateRoom(false);
-      setShowQRCode(true);
-    } catch (error) {
-      console.error('Failed to create room:', error);
-      setRestaurantError('Failed to load restaurants. Please try again.');
-      setError('Failed to create room');
-    } finally {
-      setIsLoadingRestaurants(false);
+      await createRoom(name, location);
+      setShowLocation(false);
+      setPendingRoomCreation(null);
+    } catch (err) {
+      console.error('Error creating room with location:', err);
+      setError('Failed to create room. Please try again.');
     }
   };
 
   const handleJoinRoom = async (roomId: string, name: string) => {
-    const success = await joinRoom(roomId, name);
-    if (success) {
-      setShowJoinRoom(false);
-      // Clear URL parameter
-      window.history.replaceState({}, document.title, window.location.pathname);
-      // Reset shown matches for new room
-      setShownMatches(new Set());
-      // Reset filters to default when joining a room (without reloading)
-      resetFiltersWithoutReload();
+    if (!location) {
+      setShowLocation(true);
+      return false;
     }
-    return success;
+    
+    try {
+      await joinRoom(roomId, name);
+      setShowJoinRoom(false);
+      return true;
+    } catch (err) {
+      console.error('Error joining room:', err);
+      setError('Failed to join room. Please check the room ID and try again.');
+      return false;
+    }
   };
 
   const handleLeaveRoom = () => {
-    // Reset filters to default when leaving a room (without reloading)
-    resetFiltersWithoutReload();
-    // Call the original leaveRoom function
     leaveRoom();
   };
 
@@ -148,19 +146,11 @@ const Index = () => {
     setLocation(newLocation);
     setShowLocation(false);
     
-    // If we're in a room, reset filters when changing location (without reloading)
-    if (isInRoom) {
-      resetFiltersWithoutReload();
-    }
-    
-    // If there's a pending room creation, create the room now
+    // If there was a pending room creation, create it now
     if (pendingRoomCreation) {
       createRoomWithLocation(pendingRoomCreation.name, newLocation);
-      setPendingRoomCreation(null);
     }
   };
-
-
 
   const handleBringRestaurantToFront = (restaurantId: string) => {
     setRestaurantOrder(prev => [restaurantId, ...prev.filter(id => id !== restaurantId)]);
@@ -171,124 +161,48 @@ const Index = () => {
   };
 
   const handleGenerateMore = async () => {
-    console.log('🔄 handleGenerateMore called');
-    if (!roomState || !location) {
-      console.log('❌ handleGenerateMore: No room state or location');
-      return false;
-    }
+    if (!roomState) return false;
     
+    setIsLoadingRestaurants(true);
     try {
-      console.log('🔄 handleGenerateMore: Calling loadMoreRestaurants with filters:', filters);
-      // Pass current filters when loading more restaurants
-      const success = await loadMoreRestaurants(filters);
-      console.log('✅ handleGenerateMore: Result:', success);
+      const success = await loadMoreRestaurants();
+      setIsLoadingRestaurants(false);
       return success;
-    } catch (error) {
-      console.error('💥 handleGenerateMore: Failed to load more restaurants:', error);
+    } catch (err) {
+      console.error('Error loading more restaurants:', err);
+      setIsLoadingRestaurants(false);
+      setError('Failed to load more restaurants. Please try again.');
       return false;
     }
   };
 
-  // Add function to handle filter changes
   const handleFiltersChange = async (newFilters: FilterState) => {
     setFilters(newFilters);
     
-    // If we're in a room, reload restaurants with new filters
     if (isInRoom && roomState) {
-      setIsLoadingRestaurants(true);
-      setRestaurantError(null);
-      
       try {
-        const success = await reloadRestaurantsWithFilters(newFilters);
-        if (!success) {
-          setRestaurantError('Failed to reload restaurants with new filters. Please try again.');
-        }
-      } catch (error) {
-        console.error('Failed to reload restaurants with filters:', error);
-        setRestaurantError('Failed to reload restaurants with new filters.');
-      } finally {
-        setIsLoadingRestaurants(false);
+        await reloadRestaurantsWithFilters(newFilters);
+      } catch (err) {
+        console.error('Error reloading restaurants with filters:', err);
+        setError('Failed to apply filters. Please try again.');
       }
     }
   };
 
-  // Add function to reset filters without reloading restaurants
   const resetFiltersWithoutReload = () => {
-    setFilters({ ...defaultFilters });
+    setFilters(defaultFilters);
   };
 
-  // Check for matches whenever room state changes (due to syncing)
-  useEffect(() => {
-    if (roomState && isInRoom) {
-      // Check all items that have been swiped on
-      const allSwipedItems = new Set<string>();
-      Object.values(roomState.swipes).forEach(participantSwipes => {
-        Object.keys(participantSwipes).forEach(itemId => {
-          allSwipedItems.add(itemId);
-        });
-      });
-
-      // Check each swiped item for a match
-      allSwipedItems.forEach(itemId => {
-        // Check if it's a restaurant or food type based on what's available
-        const isRestaurant = (roomState?.restaurants || filteredRestaurants).some(r => r.id === itemId);
-        const isFoodType = foodTypes.some(f => f.id === itemId);
-        
-        let type: 'restaurant' | 'foodType';
-        if (isRestaurant) {
-          type = 'restaurant';
-        } else if (isFoodType) {
-          type = 'foodType';
-        } else {
-          return; // Skip if we can't determine the type
-        }
-
-        if (checkForMatch(itemId, type)) {
-          let matchedItem;
-          if (type === 'restaurant') {
-            // Use room restaurants if available, otherwise fall back to filtered restaurants
-            const availableRestaurants = roomState?.restaurants || filteredRestaurants;
-            matchedItem = availableRestaurants.find(r => r.id === itemId);
-          } else {
-            const foodType = foodTypes.find(f => f.id === itemId);
-            if (foodType) {
-              // Convert food type to restaurant-like object for the match modal
-              matchedItem = {
-                id: foodType.id,
-                name: foodType.name,
-                cuisine: foodType.name,
-                image: foodType.image,
-                rating: 4.5,
-                priceRange: '$$',
-                distance: 'Food Type Match',
-                estimatedTime: 'Ready to explore!',
-                description: `You both want ${foodType.name}! Time to find a great place nearby.`,
-                tags: ['Match', 'Food Type']
-              };
-            }
-          }
-          
-          if (matchedItem && !showMatch && !shownMatches.has(itemId)) {
-            console.log(`🎉 MATCH FOUND for ${matchedItem.name}!`);
-            setMatchedRestaurant(matchedItem);
-            setShowMatch(true);
-            setShownMatches(prev => new Set([...prev, itemId]));
-          }
-        }
-      });
-    }
-  }, [roomState, isInRoom, checkForMatch, showMatch, filteredRestaurants, foodTypes]);
-
   const handleRestaurantSwipe = (restaurantId: string, direction: 'left' | 'right') => {
+    if (!roomState || !participantId) return;
+    
     addSwipe(restaurantId, direction);
     
-    // Check for immediate match when current user swipes right
-    if (direction === 'right' && checkForMatch(restaurantId, 'restaurant')) {
-      const availableRestaurants = roomState?.restaurants || filteredRestaurants;
-      const matchedItem = availableRestaurants.find(r => r.id === restaurantId);
-      
+    // Check for match
+    if (direction === 'right' && checkForMatch(restaurantId)) {
+      const matchedItem = restaurants.find(r => r.id === restaurantId);
       if (matchedItem && !showMatch && !shownMatches.has(restaurantId)) {
-        console.log(`🎉 IMMEDIATE MATCH FOUND for ${matchedItem.name}!`);
+        console.log(`🎉 MATCH FOUND for ${matchedItem.name}!`);
         setMatchedRestaurant(matchedItem);
         setShowMatch(true);
         setShownMatches(prev => new Set([...prev, restaurantId]));
@@ -297,33 +211,55 @@ const Index = () => {
   };
 
   const handleFoodTypeSwipe = (foodTypeId: string, direction: 'left' | 'right') => {
+    if (!roomState || !participantId) return;
+    
     addSwipe(foodTypeId, direction);
     
-    // Check for immediate match when current user swipes right
-    if (direction === 'right' && checkForMatch(foodTypeId, 'foodType')) {
-      const foodType = foodTypes.find(f => f.id === foodTypeId);
-      if (foodType) {
+    // Check for match
+    if (direction === 'right' && checkForMatch(foodTypeId)) {
+      const matchedItem = foodTypes.find(f => f.id === foodTypeId);
+      if (matchedItem && !showMatch && !shownMatches.has(foodTypeId)) {
+        console.log(`🎉 IMMEDIATE MATCH FOUND for ${matchedItem.name}!`);
         // Convert food type to restaurant-like object for the match modal
-        const matchedItem = {
-          id: foodType.id,
-          name: foodType.name,
-          cuisine: foodType.name,
-          image: foodType.image,
+        const restaurantMatch = {
+          id: matchedItem.id,
+          name: matchedItem.name,
+          cuisine: matchedItem.name,
+          image: matchedItem.image,
           rating: 4.5,
           priceRange: '$$',
           distance: 'Food Type Match',
           estimatedTime: 'Ready to explore!',
-          description: `You both want ${foodType.name}! Time to find a great place nearby.`,
+          description: `You both want ${matchedItem.name}! Time to find a great place nearby.`,
           tags: ['Match', 'Food Type']
         };
-        
-        if (!showMatch && !shownMatches.has(foodTypeId)) {
-          console.log(`🎉 IMMEDIATE MATCH FOUND for ${matchedItem.name}!`);
-          setMatchedRestaurant(matchedItem);
-          setShowMatch(true);
-          setShownMatches(prev => new Set([...prev, foodTypeId]));
-        }
+        setMatchedRestaurant(restaurantMatch);
+        setShowMatch(true);
+        setShownMatches(prev => new Set([...prev, foodTypeId]));
       }
+    }
+  };
+
+  // Responsive container classes
+  const getContainerClasses = () => {
+    switch (deviceType) {
+      case 'mobile':
+        return 'max-w-sm mx-auto px-3 py-4';
+      case 'tablet':
+        return 'max-w-2xl mx-auto px-6 py-6';
+      default:
+        return 'max-w-4xl mx-auto px-8 py-8';
+    }
+  };
+
+  const getHeaderClasses = () => {
+    switch (deviceType) {
+      case 'mobile':
+        return 'max-w-sm mx-auto px-3 py-3';
+      case 'tablet':
+        return 'max-w-2xl mx-auto px-6 py-4';
+      default:
+        return 'max-w-4xl mx-auto px-8 py-4';
     }
   };
 
@@ -332,15 +268,15 @@ const Index = () => {
       {/* Error Fallback */}
       {error && (
         <div className="fixed inset-0 bg-red-500 text-white flex items-center justify-center z-50">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
-            <p className="mb-4">{error}</p>
+          <div className="text-center p-4">
+            <h2 className="text-xl sm:text-2xl font-bold mb-4">Something went wrong</h2>
+            <p className="mb-4 text-sm sm:text-base">{error}</p>
             <button 
               onClick={() => {
                 setError(null);
                 window.location.reload();
               }}
-              className="bg-white text-red-500 px-4 py-2 rounded-lg"
+              className="bg-white text-red-500 px-4 py-2 rounded-lg text-sm sm:text-base"
             >
               Reload Page
             </button>
@@ -350,75 +286,79 @@ const Index = () => {
 
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-orange-100 sticky top-0 z-40">
-        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">F</span>
+        <div className={getHeaderClasses()}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-xs sm:text-sm">F</span>
+              </div>
+              <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
+                FoodMatch
+              </h1>
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-              FoodMatch
-            </h1>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowLocation(true)}
-              className={`flex items-center gap-1 text-sm transition-colors ${
-                location 
-                  ? 'text-gray-600 hover:text-orange-600' 
-                  : 'text-orange-600 hover:text-orange-700 font-medium'
-              }`}
-            >
-              <MapPin className="w-4 h-4" />
-              <span>{location || 'Set Location'}</span>
-            </button>
-            {activeTab === 'specific' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFilters(true)}
-                className="border-orange-200 hover:bg-orange-50"
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowLocation(true)}
+                className={`flex items-center gap-1 text-xs sm:text-sm transition-colors ${
+                  location 
+                    ? 'text-gray-600 hover:text-orange-600' 
+                    : 'text-orange-600 hover:text-orange-700 font-medium'
+                }`}
               >
-                <Filter className="w-4 h-4" />
-              </Button>
-            )}
+                <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">{location || 'Set Location'}</span>
+                <span className="xs:hidden">{location ? 'Location' : 'Set'}</span>
+              </button>
+              {activeTab === 'specific' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFilters(true)}
+                  className="border-orange-200 hover:bg-orange-50"
+                >
+                  <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-md mx-auto px-4 py-6">
+      <main className={getContainerClasses()}>
         {!isInRoom ? (
           /* Welcome Screen */
-          <div className="text-center space-y-6">
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-sm border border-orange-100">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          <div className="text-center space-y-4 sm:space-y-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-sm border border-orange-100">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">
                 Find food together!
               </h2>
-              <p className="text-gray-600 mb-8">
+              <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
                 Swipe on restaurants with your dining partner and get matched when you both like the same place.
               </p>
               
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <Button
                   onClick={() => setShowCreateRoom(true)}
-                  className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-lg py-6"
+                  className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-base sm:text-lg py-4 sm:py-6"
                 >
-                  <QrCode className="w-5 h-5 mr-2" />
-                  Create Room & Share QR
+                  <QrCode className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                  <span className="hidden sm:inline">Create Room & Share QR</span>
+                  <span className="sm:hidden">Create Room</span>
                 </Button>
                 
                 <Button
                   onClick={() => setShowJoinRoom(true)}
                   variant="outline"
-                  className="w-full border-orange-200 hover:bg-orange-50 text-lg py-6"
+                  className="w-full border-orange-200 hover:bg-orange-50 text-base sm:text-lg py-4 sm:py-6"
                 >
-                  <UserPlus className="w-5 h-5 mr-2" />
+                  <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   Join Room
                 </Button>
                 
                 {!location && (
-                  <p className="text-sm text-gray-500 mt-4">
+                  <p className="text-xs sm:text-sm text-gray-500 mt-3 sm:mt-4">
                     💡 Set your location first to get relevant restaurant suggestions
                   </p>
                 )}
@@ -429,15 +369,15 @@ const Index = () => {
           /* Room Active */
           <>
             {/* Room Status Bar */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 mb-6 shadow-sm border border-orange-100">
-              <div className="flex items-center justify-between text-sm">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm border border-orange-100">
+              <div className="flex items-center justify-between text-xs sm:text-sm">
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-orange-500" />
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
                   <span className="text-gray-700">Room: {roomState.id}</span>
                   {roomState.participants && roomState.participants.find(p => p.id === roomState.hostId) && (
                     <>
-                      <span className="text-gray-400">•</span>
-                      <span className="font-medium text-gray-900">Host: {roomState.participants.find(p => p.id === roomState.hostId)?.name}</span>
+                      <span className="text-gray-400 hidden sm:inline">•</span>
+                      <span className="font-medium text-gray-900 hidden sm:inline">Host: {roomState.participants.find(p => p.id === roomState.hostId)?.name}</span>
                     </>
                   )}
                 </div>
@@ -447,40 +387,40 @@ const Index = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowQRCode(true)}
-                      className="text-orange-600 hover:bg-orange-50"
+                      className="text-orange-600 hover:bg-orange-50 p-1 sm:p-2"
                     >
-                      <QrCode className="w-4 h-4" />
+                      <QrCode className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                   )}
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleLeaveRoom}
-                    className="text-red-600 hover:bg-red-50"
+                    className="text-red-600 hover:bg-red-50 p-1 sm:p-2"
                   >
-                    Leave
+                    <span className="text-xs sm:text-sm">Leave</span>
                   </Button>
                 </div>
               </div>
             </div>
 
             {/* Tab System */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
               <TabsList className="grid w-full grid-cols-2 bg-white/80 backdrop-blur-sm">
-                <TabsTrigger value="specific" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+                <TabsTrigger value="specific" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-xs sm:text-sm">
                   Restaurants
                 </TabsTrigger>
-                <TabsTrigger value="general" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+                <TabsTrigger value="general" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-xs sm:text-sm">
                   Food Types
                 </TabsTrigger>
               </TabsList>
               
               <TabsContent value="specific" className="mt-0">
                 {filteredRestaurants.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="text-6xl mb-4">🍽️</div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">No restaurants found</h3>
-                    <p className="text-gray-600 mb-4">
+                  <div className="text-center py-8 sm:py-12">
+                    <div className="text-4xl sm:text-6xl mb-4">🍽️</div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">No restaurants found</h3>
+                    <p className="text-sm sm:text-base text-gray-600 mb-4">
                       {isInRoom 
                         ? "No restaurants available in your area. Try changing your location."
                         : "Join a room to start swiping on restaurants!"
@@ -492,7 +432,7 @@ const Index = () => {
                         variant="outline"
                         className="border-orange-200 hover:bg-orange-50"
                       >
-                        <MapPin className="w-4 h-4 mr-2" />
+                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                         Change Location
                       </Button>
                     )}
@@ -527,14 +467,14 @@ const Index = () => {
             </Tabs>
 
             {/* Instructions */}
-            <div className="text-center mt-8 space-y-2">
-              <p className="text-gray-600 text-sm">
+            <div className="text-center mt-6 sm:mt-8 space-y-2">
+              <p className="text-gray-600 text-xs sm:text-sm">
                 {activeTab === 'specific' 
                   ? 'Swipe right if you want to eat there, left if you don\'t'
                   : 'Swipe right on food types you\'re craving, left if you don\'t want them'
                 }
               </p>
-              <p className="text-orange-600 text-sm font-medium">
+              <p className="text-orange-600 text-xs sm:text-sm font-medium">
                 When everyone swipes right, it's a match! 🎉
               </p>
             </div>
@@ -545,24 +485,10 @@ const Index = () => {
       {/* Loading Overlay */}
       {isLoadingRestaurants && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-8 text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-            <p className="text-gray-600">Loading restaurants near you...</p>
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center mx-4">
+            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin mx-auto mb-3 sm:mb-4" />
+            <p className="text-sm sm:text-base text-gray-600">Loading restaurants near you...</p>
           </div>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {restaurantError && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg z-50">
-          {restaurantError}
-        </div>
-      )}
-
-      {/* General Error Message */}
-      {error && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg z-50">
-          {error}
         </div>
       )}
 
@@ -606,13 +532,12 @@ const Index = () => {
         />
       )}
 
-      {/* Filter Panel */}
-      {isInRoom && (
+      {showFilters && (
         <FilterPanel
           isOpen={showFilters}
           onClose={() => setShowFilters(false)}
           filters={filters}
-          onFiltersChange={handleFiltersChange} // Use new handler
+          onFiltersChange={handleFiltersChange}
         />
       )}
     </div>

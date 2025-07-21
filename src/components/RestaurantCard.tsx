@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card } from '@/components/ui/card';
-// import { Badge } from '@/components/ui/badge'; // COMMENTED OUT - can be restored later
-import { MapPin, Clock, Star, Car, Users, ChevronLeft, ChevronRight, Phone, Globe } from 'lucide-react';
-import { formatForDisplay } from '@/lib/utils';
+import { Star, MapPin, Clock, Phone, Globe } from 'lucide-react';
 import RestaurantImageCarousel from './RestaurantImageCarousel';
-// import { getDisplayTags } from '@/utils/tagDisplayUtils'; // COMMENTED OUT - can be restored later
-// import TagDisplay from './TagDisplay'; // COMMENTED OUT - can be restored later
+import { useDeviceType } from '@/hooks/use-mobile';
 
 interface Restaurant {
   id: string;
@@ -37,15 +34,50 @@ interface RestaurantCardProps {
   showButtons?: boolean;
 }
 
-
-
 const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, style, showButtons = true }) => {
+  const deviceType = useDeviceType();
   
-  // Force refresh - layout fixes applied
+  // Responsive card sizing
+  const getCardClasses = () => {
+    switch (deviceType) {
+      case 'mobile':
+        return 'w-full max-w-[320px] h-[500px]';
+      case 'tablet':
+        return 'w-full max-w-[400px] h-[550px]';
+      default:
+        return 'w-full max-w-[400px] h-[600px]';
+    }
+  };
+
+  const getTextClasses = () => {
+    switch (deviceType) {
+      case 'mobile':
+        return {
+          title: 'text-xl',
+          subtitle: 'text-xs',
+          body: 'text-xs'
+        };
+      case 'tablet':
+        return {
+          title: 'text-2xl',
+          subtitle: 'text-sm',
+          body: 'text-sm'
+        };
+      default:
+        return {
+          title: 'text-2xl',
+          subtitle: 'text-sm',
+          body: 'text-sm'
+        };
+    }
+  };
+
+  const textClasses = getTextClasses();
+  
   return (
-    <div className="w-[400px] mx-auto flex flex-col">
+    <div className={`${getCardClasses()} mx-auto flex flex-col`}>
       <Card 
-        className="w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none h-[600px] w-[400px] flex flex-col border-0"
+        className={`w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex flex-col border-0`}
         style={style}
       >
         {/* Main Image with Carousel Support */}
@@ -68,15 +100,15 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
         </div>
 
         {/* Restaurant Name and Basic Info */}
-        <div className="px-6 pt-4 pb-2 border-b border-gray-100">
-          <h2 className="text-2xl font-bold mb-2 text-gray-900">{restaurant.name}</h2>
-          <div className="flex items-center gap-4 text-sm text-gray-600">
+        <div className="px-4 sm:px-6 pt-4 pb-2 border-b border-gray-100">
+          <h2 className={`${textClasses.title} font-bold mb-2 text-gray-900`}>{restaurant.name}</h2>
+          <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
             <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
+              <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>{restaurant.distance}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
+              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>{restaurant.estimatedTime}</span>
             </div>
             <span className="font-medium">{restaurant.priceRange}</span>
@@ -84,12 +116,12 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto min-h-[120px]">
-          <div className="p-6">
+        <div className="flex-1 overflow-y-auto min-h-[100px] sm:min-h-[120px]">
+          <div className="p-4 sm:p-6">
             {/* Description Section */}
             {restaurant.description && (
               <div className="mb-4">
-                <p className="text-gray-600 text-sm leading-relaxed">
+                <p className={`text-gray-600 ${textClasses.body} leading-relaxed`}>
                   {restaurant.description}
                 </p>
               </div>
@@ -99,20 +131,20 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
             {(restaurant.address || restaurant.phone || restaurant.website) && (
               <div className="space-y-2">
                 {restaurant.address && (
-                  <div className="flex items-start gap-2 text-sm text-gray-600">
-                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div className="flex items-start gap-2 text-xs sm:text-sm text-gray-600">
+                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mt-0.5 flex-shrink-0" />
                     <span className="text-xs">{restaurant.address}</span>
                   </div>
                 )}
                 {restaurant.phone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                    <Phone className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span className="text-xs">{restaurant.phone}</span>
                   </div>
                 )}
                 {restaurant.website && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Globe className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                    <Globe className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span className="text-xs truncate">{restaurant.website}</span>
                   </div>
                 )}
@@ -124,18 +156,18 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
 
       {/* Swipe Action Buttons - Below the card */}
       {showButtons && (
-        <div className="flex justify-center gap-4 mt-4">
+        <div className="flex justify-center gap-3 sm:gap-4 mt-4">
           <button
             onClick={() => onSwipe('left')}
-            className="w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
+            className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
           >
-            <span className="text-2xl group-hover:scale-110 transition-transform">✕</span>
+            <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform">✕</span>
           </button>
           <button
             onClick={() => onSwipe('right')}
-            className="w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group"
+            className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group"
           >
-            <span className="text-2xl group-hover:scale-110 transition-transform">♥</span>
+            <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform">♥</span>
           </button>
         </div>
       )}
