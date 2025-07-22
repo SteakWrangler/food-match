@@ -110,15 +110,24 @@ const shouldExcludePlace = (place: GooglePlacesResult): boolean => {
   }
   
   // Additional checks for specific patterns
-  if (name.includes('gas') || name.includes('fuel')) {
+  if (name.includes('gas') || name.includes('fuel') || name.includes('petrol')) {
     return true;
   }
   
-  if (name.includes('hotel') || name.includes('inn') || name.includes('motel')) {
+  if (name.includes('hotel') || name.includes('inn') || name.includes('motel') || name.includes('resort')) {
     return true;
   }
   
-  if (name.includes('golf') || name.includes('country club')) {
+  if (name.includes('golf') || name.includes('country club') || name.includes('golf club')) {
+    return true;
+  }
+  
+  // Additional exclusions for other non-restaurant establishments
+  if (name.includes('car wash') || name.includes('auto repair') || name.includes('mechanic')) {
+    return true;
+  }
+  
+  if (name.includes('pharmacy') || name.includes('drugstore') || name.includes('medical')) {
     return true;
   }
   
@@ -429,13 +438,9 @@ serve(async (req: Request) => {
             const filteredTextResults = textSearchData.results.filter(place => !shouldExcludePlace(place));
             console.log(`Filtered text search results: ${textSearchData.results.length} -> ${filteredTextResults.length}`);
             
-            // TEMPORARILY COMMENT OUT DEDUPLICATION TO DEBUG
             // Remove duplicate chain restaurants
-            // const deduplicatedTextResults = removeDuplicateChains(filteredTextResults);
-            // console.log(`Deduplicated text search results: ${filteredTextResults.length} -> ${deduplicatedTextResults.length}`);
-            
-            // Use filtered results directly without deduplication for debugging
-            const deduplicatedTextResults = filteredTextResults;
+            const deduplicatedTextResults = removeDuplicateChains(filteredTextResults);
+            console.log(`Deduplicated text search results: ${filteredTextResults.length} -> ${deduplicatedTextResults.length}`);
             
             // Transform text search results
             const restaurants: RestaurantData[] = await Promise.all(
@@ -630,13 +635,9 @@ serve(async (req: Request) => {
         const filteredNearbyResults = placesData.results.filter(place => !shouldExcludePlace(place));
         console.log(`Filtered nearby search results: ${placesData.results.length} -> ${filteredNearbyResults.length}`);
         
-        // TEMPORARILY COMMENT OUT DEDUPLICATION TO DEBUG
         // Remove duplicate chain restaurants
-        // const deduplicatedNearbyResults = removeDuplicateChains(filteredNearbyResults);
-        // console.log(`Deduplicated nearby search results: ${filteredNearbyResults.length} -> ${deduplicatedNearbyResults.length}`);
-        
-        // Use filtered results directly without deduplication for debugging
-        const deduplicatedNearbyResults = filteredNearbyResults;
+        const deduplicatedNearbyResults = removeDuplicateChains(filteredNearbyResults);
+        console.log(`Deduplicated nearby search results: ${filteredNearbyResults.length} -> ${deduplicatedNearbyResults.length}`);
         
         // Transform the results to match our Restaurant interface
         const restaurants: RestaurantData[] = await Promise.all(

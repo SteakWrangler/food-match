@@ -176,14 +176,14 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     setIsDragging(false);
   };
 
-  // Load more restaurants when running low - with debouncing to prevent multiple calls
+  // Load more restaurants when running low - with better debouncing to prevent multiple calls
   useEffect(() => {
-    if (onGenerateMore && currentIndex >= orderedRestaurants.length - 3 && !isLoading) {
-      // Add a small delay to prevent multiple rapid calls
+    if (onGenerateMore && currentIndex >= orderedRestaurants.length - 8 && !isLoading) {
+      // Add a longer delay to prevent multiple rapid calls
       const timeoutId = setTimeout(() => {
         setIsLoading(true);
         onGenerateMore().finally(() => setIsLoading(false));
-      }, 100);
+      }, 300);
       
       return () => clearTimeout(timeoutId);
     }
@@ -223,22 +223,12 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   return (
     <div className="relative">
-      {/* Non-blocking loading indicator for loading more restaurants */}
+      {/* Single loading indicator for loading more restaurants */}
       {isLoading && (
         <div className="absolute top-4 right-4 z-50 bg-white/95 backdrop-blur-sm border border-orange-200 rounded-full px-4 py-2 shadow-lg">
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
             <span className="text-sm text-gray-700 font-medium">Loading more restaurants...</span>
-          </div>
-        </div>
-      )}
-      
-      {/* Subtle background loading indicator */}
-      {roomState && roomState.restaurants.length <= 8 && (
-        <div className="absolute bottom-4 right-4 z-50 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full px-3 py-1 shadow-sm">
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 border border-orange-400 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-xs text-gray-600">Loading more...</span>
           </div>
         </div>
       )}

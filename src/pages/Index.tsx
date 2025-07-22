@@ -112,10 +112,14 @@ const Index = () => {
       setLocation(locationToUse);
     }
     
+    // Close the modal immediately when room creation starts
+    setShowCreateRoom(false);
     setIsCreatingRoom(true);
+    
     try {
       await createRoom(name, locationToSet);
-      setShowCreateRoom(false);
+      // Show QR modal after successful room creation
+      setShowQRCode(true);
     } catch (err) {
       console.error('Error creating room:', err);
       setError('Failed to create room. Please try again.');
@@ -202,18 +206,30 @@ const Index = () => {
     console.log('handleRestaurantSwipe called:', { restaurantId, direction, participantId });
     console.log('Current room state before swipe:', roomState);
     
-    addSwipe(restaurantId, direction, 'restaurant');
-    
-    // Check for match
-    if (direction === 'right' && checkForMatch(restaurantId, 'restaurant')) {
-      const matchedItem = restaurants.find(r => r.id === restaurantId);
-      if (matchedItem && !showMatch && !shownMatches.has(restaurantId)) {
-        console.log(`🎉 MATCH FOUND for ${matchedItem.name}!`);
-        setMatchedRestaurant(matchedItem);
-        setShowMatch(true);
-        setShownMatches(prev => new Set([...prev, restaurantId]));
+    // Check for match BEFORE adding the swipe (since we know what direction we're swiping)
+    if (direction === 'right') {
+      // Get all participants except the current user
+      const otherParticipants = roomState.participants.filter(p => p.id !== participantId);
+      
+      // Check if all other participants have already swiped right
+      const allOthersSwipedRight = otherParticipants.every(participant => {
+        const participantSwipes = roomState.restaurantSwipes[participant.id];
+        return participantSwipes && participantSwipes[restaurantId] === 'right';
+      });
+      
+      // If all others swiped right and we're swiping right, it's a match!
+      if (allOthersSwipedRight && otherParticipants.length > 0) {
+        const matchedItem = restaurants.find(r => r.id === restaurantId);
+        if (matchedItem && !showMatch && !shownMatches.has(restaurantId)) {
+          console.log(`🎉 MATCH FOUND for ${matchedItem.name}!`);
+          setMatchedRestaurant(matchedItem);
+          setShowMatch(true);
+          setShownMatches(prev => new Set([...prev, restaurantId]));
+        }
       }
     }
+    
+    addSwipe(restaurantId, direction, 'restaurant');
   };
 
   const handleFoodTypeSwipe = (foodTypeId: string, direction: 'left' | 'right') => {
@@ -222,31 +238,43 @@ const Index = () => {
     console.log('handleFoodTypeSwipe called:', { foodTypeId, direction, participantId });
     console.log('Current room state before swipe:', roomState);
     
-    addSwipe(foodTypeId, direction, 'foodType');
-    
-    // Check for match
-    if (direction === 'right' && checkForMatch(foodTypeId, 'foodType')) {
-      const matchedItem = foodTypes.find(f => f.id === foodTypeId);
-      if (matchedItem && !showMatch && !shownMatches.has(foodTypeId)) {
-        console.log(`🎉 IMMEDIATE MATCH FOUND for ${matchedItem.name}!`);
-        // Convert food type to restaurant-like object for the match modal
-        const restaurantMatch = {
-          id: matchedItem.id,
-          name: matchedItem.name,
-          cuisine: matchedItem.name,
-          image: matchedItem.image,
-          rating: 4.5,
-          priceRange: '$$',
-          distance: 'Food Type Match',
-          estimatedTime: 'Ready to explore!',
-          description: `You both want ${matchedItem.name}! Time to find a great place nearby.`,
-          tags: ['Match', 'Food Type']
-        };
-        setMatchedRestaurant(restaurantMatch);
-        setShowMatch(true);
-        setShownMatches(prev => new Set([...prev, foodTypeId]));
+    // Check for match BEFORE adding the swipe (since we know what direction we're swiping)
+    if (direction === 'right') {
+      // Get all participants except the current user
+      const otherParticipants = roomState.participants.filter(p => p.id !== participantId);
+      
+      // Check if all other participants have already swiped right
+      const allOthersSwipedRight = otherParticipants.every(participant => {
+        const participantSwipes = roomState.foodTypeSwipes[participant.id];
+        return participantSwipes && participantSwipes[foodTypeId] === 'right';
+      });
+      
+      // If all others swiped right and we're swiping right, it's a match!
+      if (allOthersSwipedRight && otherParticipants.length > 0) {
+        const matchedItem = foodTypes.find(f => f.id === foodTypeId);
+        if (matchedItem && !showMatch && !shownMatches.has(foodTypeId)) {
+          console.log(`🎉 IMMEDIATE MATCH FOUND for ${matchedItem.name}!`);
+          // Convert food type to restaurant-like object for the match modal
+          const restaurantMatch = {
+            id: matchedItem.id,
+            name: matchedItem.name,
+            cuisine: matchedItem.name,
+            image: matchedItem.image,
+            rating: 4.5,
+            priceRange: '$$',
+            distance: 'Food Type Match',
+            estimatedTime: 'Ready to explore!',
+            description: `You both want ${matchedItem.name}! Time to find a great place nearby.`,
+            tags: ['Match', 'Food Type']
+          };
+          setMatchedRestaurant(restaurantMatch);
+          setShowMatch(true);
+          setShownMatches(prev => new Set([...prev, foodTypeId]));
+        }
       }
     }
+    
+    addSwipe(foodTypeId, direction, 'foodType');
   };
 
   // Responsive container classes
@@ -488,11 +516,11 @@ const Index = () => {
             
             {/* Non-blocking loading indicator for initial restaurant loading */}
             {isLoadingRestaurantsFromHook && roomState && (
-              <div className="fixed top-4 right-4 z-50 bg-white/95 backdrop-blur-sm border border-orange-200 rounded-full px-4 py-2 shadow-lg">
+              <div className="fixed top-2 right-2 z-50 bg-white/90 backdrop-blur-sm border border-orange-200 rounded-lg px-3 py-1.5 shadow-md">
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-sm text-gray-700 font-medium">
-                    {roomState.restaurants.length <= 8 ? 'Loading initial restaurants...' : 'Loading more restaurants...'}
+                  <div className="w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs text-gray-600 font-medium">
+                    {roomState.restaurants.length <= 8 ? 'Loading...' : 'Loading more...'}
                   </span>
                 </div>
               </div>

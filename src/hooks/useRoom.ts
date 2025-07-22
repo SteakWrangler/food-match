@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getHybridRestaurantsAPI } from '@/integrations/supabase/hybridRestaurants';
 import { getRoomService, RoomData } from '@/integrations/supabase/roomService';
-import { FilterState } from '@/utils/restaurantFilters';
+import { FilterState, defaultFilters } from '@/utils/restaurantFilters';
 
 export interface RoomState {
   id: string;
@@ -126,9 +126,9 @@ const useRoom = () => {
       // Convert filters to API parameters
       const apiParams: any = {
         location,
-        radius: filters?.distance?.[0] ? filters.distance[0] * 1609 : 3000, // Further reduced default radius for faster loading
+        radius: (filters?.distance?.[0] || defaultFilters.distance[0]) * 1609, // Convert miles to meters, use filter distance or default
         openNow: filters?.openNow ?? false, // Changed default to false to get more results
-        limit: isInitialLoad ? 4 : 20 // Load just 4 for initial quick load, 20 for subsequent loads
+        limit: 20 // Load 20 restaurants initially
       };
 
       // Add price range filter - use "or-less" logic
@@ -175,7 +175,7 @@ const useRoom = () => {
       // Convert filters to API parameters
       const apiParams: any = {
         location,
-        radius: filters?.distance?.[0] ? filters.distance[0] * 1609 : 10000,
+        radius: (filters?.distance?.[0] || defaultFilters.distance[0]) * 1609, // Convert miles to meters, use filter distance or default
         openNow: filters?.openNow ?? false,
         limit: 20,
         pageToken
@@ -197,16 +197,22 @@ const useRoom = () => {
       console.log(`Loaded ${result.restaurants.length} more restaurants in background`);
       
       if (result.restaurants.length > 0) {
-        // Get current room state and append new restaurants
-        const currentRoom = await roomService.getRoom(roomId);
-        if (currentRoom) {
-          const updatedRestaurants = [...currentRoom.restaurants, ...result.restaurants];
-          const updatedRoomData = await roomService.updateRestaurants(roomId, updatedRestaurants, result.nextPageToken);
-          const updatedRoomState = convertRoomDataToState(updatedRoomData);
-          setRoomState(updatedRoomState);
-          
-          console.log(`Updated room with ${result.restaurants.length} additional restaurants`);
-        }
+        // Append new restaurants to current room state (preserve swipes)
+        const updatedRestaurants = [...roomState.restaurants, ...result.restaurants];
+        const updatedRoom: RoomState = {
+          ...roomState,
+          restaurants: updatedRestaurants,
+          nextPageToken: result.nextPageToken,
+          lastUpdated: Date.now()
+        };
+        setRoomState(updatedRoom);
+        
+        // Update the database in the background
+        roomService.updateRestaurants(roomId, updatedRestaurants, result.nextPageToken).catch(error => {
+          console.error('Failed to update room in database:', error);
+        });
+        
+        console.log(`Updated room with ${result.restaurants.length} additional restaurants`);
       }
       
       // Continue loading more if there are more pages
@@ -344,9 +350,9 @@ const useRoom = () => {
       // Convert filters to API parameters
       const apiParams: any = {
         location: roomState.location,
-        radius: appliedFilters?.distance?.[0] ? appliedFilters.distance[0] * 1609 : 10000, // Convert miles to meters, increased default to 10km
+        radius: (appliedFilters?.distance?.[0] || defaultFilters.distance[0]) * 1609, // Convert miles to meters, use filter distance or default
         openNow: appliedFilters?.openNow ?? false, // Changed default to false to get more results
-        limit: 40 // Load more restaurants per request for better experience
+        limit: 20 // Load 20 restaurants per request for proper pagination
       };
 
       // Add price range filter - use "or-less" logic
@@ -382,7 +388,11 @@ const useRoom = () => {
           restaurants: [...roomState.restaurants, ...result.restaurants], // Append the new restaurants
           filters: appliedFilters,
           nextPageToken: result.nextPageToken, // Store the nextPageToken for future pagination
-          lastUpdated: Date.now()
+          lastUpdated: Date.now(),
+          // Preserve existing swipes to prevent losing likes
+          restaurantSwipes: roomState.restaurantSwipes,
+          foodTypeSwipes: roomState.foodTypeSwipes,
+          currentRestaurantIndex: roomState.currentRestaurantIndex
         };
         
         setRoomState(updatedRoom);

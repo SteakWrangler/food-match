@@ -61,8 +61,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // Note: Removed Supabase client initialization since we're no longer caching
-
     // Parse request body
     let body: any;
     try {
@@ -86,47 +84,59 @@ serve(async (req: Request) => {
       }
 
       try {
+        // Process restaurants in parallel batches for better performance
+        const batchSize = 5; // Process 5 restaurants at a time
         const processedRestaurants: RestaurantData[] = [];
-
-        for (const restaurant of restaurants) {
-          // Process with ChatGPT (no caching)
-          console.log(`Processing ${restaurant.name} with ChatGPT`);
+        
+        for (let i = 0; i < restaurants.length; i += batchSize) {
+          const batch = restaurants.slice(i, i + batchSize);
           
-          const chatGPTResult = await processWithChatGPT(restaurant, openaiApiKey);
+          // Process batch in parallel
+          const batchPromises = batch.map(restaurant => 
+            processWithChatGPT(restaurant, openaiApiKey)
+          );
           
-          if (chatGPTResult) {
-            // Add processed restaurant
-            processedRestaurants.push({
-              ...restaurant,
-              tags: restaurant.tags || [], // Ensure tags is always an array
-              description: chatGPTResult.description,
-              processedByChatGPT: true,
-              chatGPTConfidence: chatGPTResult.confidence_score
-            });
-          } else {
-            // If ChatGPT processing failed, use original data
-            processedRestaurants.push({
-              ...restaurant,
-              tags: restaurant.tags || [], // Ensure tags is always an array
-              processedByChatGPT: false,
-              chatGPTConfidence: 0
-            });
-          }
+          const batchResults = await Promise.all(batchPromises);
+          
+          // Add processed restaurants
+          batch.forEach((restaurant, index) => {
+            const chatGPTResult = batchResults[index];
+            
+            if (chatGPTResult) {
+              processedRestaurants.push({
+                ...restaurant,
+                description: chatGPTResult.description,
+                processedByChatGPT: true,
+                chatGPTConfidence: chatGPTResult.confidence_score
+              });
+            } else {
+              // Fallback to original restaurant data if ChatGPT processing failed
+              processedRestaurants.push({
+                ...restaurant,
+                processedByChatGPT: false,
+                chatGPTConfidence: 0
+              });
+            }
+          });
         }
 
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           restaurants: processedRestaurants,
-          count: processedRestaurants.length,
-          processed_count: processedRestaurants.filter(r => r.processedByChatGPT).length
+          processed_count: processedRestaurants.filter(r => r.processedByChatGPT).length,
+          total_restaurants: processedRestaurants.length
         }), {
           headers: corsHeaders
         });
 
       } catch (error) {
-        console.error('Error processing restaurants with ChatGPT:', error);
+        console.error('Error processing restaurants:', error);
         return new Response(JSON.stringify({ 
           error: "Failed to process restaurants",
-          details: error.message
+          restaurants: restaurants.map(r => ({
+            ...r,
+            processedByChatGPT: false,
+            chatGPTConfidence: 0
+          }))
         }), {
           status: 500,
           headers: corsHeaders
@@ -134,19 +144,15 @@ serve(async (req: Request) => {
       }
     }
 
-    // If no valid action is provided
-    return new Response(JSON.stringify({ 
-      error: "Invalid action. Use 'process-restaurants'" 
-    }), {
+    return new Response(JSON.stringify({ error: "Invalid action" }), {
       status: 400,
       headers: corsHeaders
     });
 
   } catch (error) {
-    console.error('Unhandled error in ChatGPT processor function:', error);
+    console.error('Unexpected error in ChatGPT processor:', error);
     return new Response(JSON.stringify({ 
-      error: "Internal server error",
-      details: error.message
+      error: "Internal server error"
     }), {
       status: 500,
       headers: corsHeaders
@@ -156,39 +162,10 @@ serve(async (req: Request) => {
 
 async function processWithChatGPT(restaurant: RestaurantData, apiKey: string): Promise<ChatGPTResponse | null> {
   try {
-    // Create a simple, clear prompt for ChatGPT
-    const prompt = `Analyze this restaurant and provide a description.
+    // Create a shorter, optimized prompt for faster processing
+    const prompt = `Describe this restaurant in 1-2 sentences: ${restaurant.name}${restaurant.address ? ` at ${restaurant.address}` : ''}${restaurant.rating ? ` (${restaurant.rating}★)` : ''}${restaurant.priceRange ? ` (${restaurant.priceRange})` : ''}.
 
-Restaurant: ${restaurant.name}
-Address: ${restaurant.address || 'Unknown'}
-Rating: ${restaurant.rating || 'Unknown'}
-Price Range: ${restaurant.priceRange || 'Unknown'}
-
-// COMMENTED OUT - Tag selection prompts
-// For this restaurant, which of these CUISINE tags would you most likely associate with it? (Select ALL that apply):
-// Italian, Mexican, Chinese, Japanese, Thai, Indian, American, French, Greek, Mediterranean, Korean, Vietnamese, Spanish, German, British, Irish, Caribbean, Middle Eastern, African, Brazilian, Peruvian, Argentinian, Cuban, Puerto Rican, Fusion, Pizza, Sushi, BBQ, Seafood, Steakhouse, Bakery, Desserts, Burgers, Pasta, Tacos, Burritos, Ramen, Pho, Curry, Kebab, Falafel, Gyros, Paella, Tapas, Schnitzel, Fish & Chips, Bangers & Mash, Jerk Chicken, Ceviche, Asado, Ropa Vieja, Mofongo, Empanadas, Sandwiches, Subs, Wings, Noodles, Chicken, Hot Dogs, Ice Cream, Coffee
-
-// For this restaurant, which of these SERVICE tags would you most likely associate with it? (Select ALL that apply):
-// Dine-in, Takeout, Delivery, Fast Food, Fast Casual, Fine Dining, Casual Dining, Upscale Casual, Family Style, Buffet, Food Truck, Bar, Sports Bar, Pub, Cafe, Coffee Shop
-
-// For this restaurant, which of these ATMOSPHERE tags would you most likely associate with it? (Select ALL that apply):
-// Romantic, Family Friendly, Date Night, Business Lunch, Group Dining, Outdoor Seating, Live Music, Entertainment, Late Night, Breakfast, Brunch, Lunch, Dinner, Weekend Brunch, Trendy, Cozy, Lively
-
-// For this restaurant, which of these DIETARY tags would you most likely associate with it? (Select ALL that apply):
-// Vegetarian Friendly, Vegan, Gluten Free, Healthy, Organic, Low Carb, Keto Friendly, Dairy Free, Nut Free
-
-// For this restaurant, which of these PRICE tags would you most likely associate with it? (Select ALL that apply):
-// Budget Friendly, Mid Range, Upscale, Luxury, Value
-
-// For this restaurant, which of these FEATURE tags would you most likely associate with it? (Select ALL that apply):
-// Wine List, Craft Beer, Cocktails, Coffee, Desserts, Bakery, Fresh, Local, Seasonal, Farm to Table, Chef Driven, Award Winning, Celebrity Chef, Historic, Trendy
-
-Use your knowledge about restaurants to provide an accurate and helpful description. For well-known chains, use your knowledge of what they serve.
-
-Respond in this exact JSON format:
-{
-  "description": "string (brief description of the restaurant)"
-}`;
+Respond in JSON: {"description": "brief description"}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -197,19 +174,19 @@ Respond in this exact JSON format:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-3.5-turbo-instruct',
         messages: [
           {
             role: 'system',
-            content: 'You are a restaurant analysis expert. Provide accurate, helpful information about restaurants based on their name, location, and available data.'
+            content: 'You are a restaurant expert. Provide brief, accurate descriptions.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.7,
-        max_tokens: 500
+        temperature: 0.3, // Lower temperature for more consistent responses
+        max_tokens: 150 // Reduced token limit for faster responses
       })
     });
 
@@ -227,41 +204,25 @@ Respond in this exact JSON format:
       return null;
     }
 
-    console.log('ChatGPT raw response for', restaurant.name, ':', content);
-
     // Parse the JSON response
     try {
       const result = JSON.parse(content);
-      console.log('Parsed ChatGPT result for', restaurant.name, ':', result);
-      
-      // COMMENTED OUT - Tag processing logic
-      // let tags: TagWithConfidence[] = [];
-      // if (Array.isArray(result.tags)) {
-      //   if (result.tags.length > 0 && typeof result.tags[0] === 'string') {
-      //     // Old format: string array
-      //     tags = result.tags.map((tag: string) => ({ tag, confidence: 8 }));
-      //   } else {
-      //     // New format: object array with confidence
-      //     tags = result.tags.map((tagObj: any) => ({
-      //       tag: tagObj.tag || tagObj,
-      //       confidence: tagObj.confidence || 8
-      //     }));
-      //   }
-      // }
       
       return {
-        // cuisine: result.cuisine || 'Unknown', // COMMENTED OUT
-        // tags: tags, // COMMENTED OUT
-        description: result.description || 'A restaurant offering various dishes.',
-        confidence_score: result.confidence_score || 5
+        description: result.description || `A restaurant called ${restaurant.name}`,
+        confidence_score: 8
       };
     } catch (parseError) {
       console.error('Failed to parse ChatGPT response:', parseError);
-      return null;
+      // Fallback description
+      return {
+        description: `A restaurant called ${restaurant.name}`,
+        confidence_score: 5
+      };
     }
 
   } catch (error) {
-    console.error('Error calling OpenAI API:', error);
+    console.error('Error processing with ChatGPT:', error);
     return null;
   }
 } 

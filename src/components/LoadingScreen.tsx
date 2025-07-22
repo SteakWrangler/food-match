@@ -24,11 +24,8 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
         {/* Loading Text */}
         <div className="space-y-2">
           <h2 className="text-2xl font-bold text-gray-800">
-            {isHost ? "Setting up your room..." : "Joining room..."}
-          </h2>
-          <p className="text-gray-600 max-w-md mx-auto">
             {message}
-          </p>
+          </h2>
         </div>
         
         {/* Loading Animation */}

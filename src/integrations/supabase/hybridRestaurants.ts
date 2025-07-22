@@ -32,17 +32,59 @@ export interface HybridRestaurantSearchParams {
   limit?: number;
   useHybrid?: boolean;
   pageToken?: string; // Add pageToken parameter
+  fastMode?: boolean; // Add fast mode to skip ChatGPT processing initially
 }
 
 export class HybridRestaurantsAPI {
   async searchRestaurants(params: HybridRestaurantSearchParams): Promise<{ restaurants: Restaurant[], nextPageToken?: string }> {
     try {
-      const { useHybrid = true, ...searchParams } = params;
+      const { useHybrid = true, fastMode = false, ...searchParams } = params;
+
+      // Use fast mode for initial loads (skip ChatGPT processing)
+      if (fastMode) {
+        return await this.searchWithGooglePlacesOnly(searchParams);
+      }
 
       // Always use hybrid system (Google Places + ChatGPT)
       return await this.searchWithHybridSystem(searchParams);
     } catch (error) {
       console.error('Error in hybrid restaurant search:', error);
+      throw error;
+    }
+  }
+
+  private async searchWithGooglePlacesOnly(params: Omit<HybridRestaurantSearchParams, 'useHybrid' | 'fastMode'>): Promise<{ restaurants: Restaurant[], nextPageToken?: string }> {
+    try {
+      // Only get restaurants from Google Places (skip ChatGPT processing)
+      const { data: googlePlacesData, error: googleError } = await supabase.functions.invoke('google-places', {
+        body: {
+          action: 'search-restaurants',
+          location: params.location,
+          radius: params.radius || 5000,
+          keyword: params.keyword,
+          minPrice: params.minPrice,
+          maxPrice: params.maxPrice,
+          openNow: params.openNow,
+          limit: params.limit || 20,
+          pageToken: params.pageToken
+        },
+      });
+
+      if (googleError) {
+        throw new Error(`Google Places API error: ${googleError.message}`);
+      }
+
+      if (!googlePlacesData || !googlePlacesData.restaurants) {
+        throw new Error('No restaurants returned from Google Places API');
+      }
+
+      console.log(`Found ${googlePlacesData.restaurants.length} restaurants from Google Places (fast mode)`);
+
+      // Return Google Places data directly without ChatGPT processing
+      return this.transformGooglePlacesData(googlePlacesData.restaurants);
+
+    } catch (error) {
+      console.error('Error in Google Places only search:', error);
       throw error;
     }
   }
