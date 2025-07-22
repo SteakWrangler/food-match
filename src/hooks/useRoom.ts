@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getHybridRestaurantsAPI } from '@/integrations/supabase/hybridRestaurants';
 import { getRoomService, RoomData } from '@/integrations/supabase/roomService';
+import { supabase } from '@/integrations/supabase/client';
 import { FilterState, defaultFilters } from '@/utils/restaurantFilters';
 
 export interface RoomState {
@@ -12,7 +13,8 @@ export interface RoomState {
     name: string;
     isOnline: boolean;
   }>;
-  currentRestaurantIndex: number;
+  currentRestaurantId?: string; // Changed from currentRestaurantIndex to currentRestaurantId
+  viewedRestaurantIds: string[]; // Track which restaurants user has seen
   restaurantSwipes: Record<string, Record<string, 'left' | 'right'>>;
   foodTypeSwipes: Record<string, Record<string, 'left' | 'right'>>;
   restaurants: any[];
@@ -27,6 +29,7 @@ const useRoom = () => {
   const [isHost, setIsHost] = useState(false);
   const [participantId] = useState(() => `user_${Math.random().toString(36).substr(2, 9)}`);
   const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
+  const [isLoadingMoreRestaurants, setIsLoadingMoreRestaurants] = useState(false); // Add separate state for background loading
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const roomService = getRoomService();
 
@@ -35,7 +38,8 @@ const useRoom = () => {
     id: roomData.id,
     hostId: roomData.host_id,
     participants: roomData.participants,
-    currentRestaurantIndex: roomData.current_restaurant_index,
+    currentRestaurantId: roomData.current_restaurant_id, // Changed from current_restaurant_index to current_restaurant_id
+    viewedRestaurantIds: roomData.viewed_restaurant_ids || [], // Changed from current_restaurant_index to viewed_restaurant_ids
     restaurantSwipes: roomData.restaurant_swipes,
     foodTypeSwipes: roomData.food_type_swipes,
     restaurants: roomData.restaurants,
@@ -86,17 +90,17 @@ const useRoom = () => {
 
       console.log(`Created room ${roomData.id} from ${location}`);
       
-      // Load restaurants first, then set room state
+      // Load initial 3 restaurants first, then set room state immediately
       const success = await loadInitialRestaurants(roomData.id, location, filters, true);
       
       if (success) {
-        // Only set room state after restaurants are loaded
+        // Set room state immediately after initial 3 restaurants are loaded
         const updatedRoomData = await roomService.getRoom(roomData.id);
         if (updatedRoomData) {
           const roomState = convertRoomDataToState(updatedRoomData);
           setRoomState(roomState);
           setIsHost(true);
-          console.log(`Room ready with ${updatedRoomData.restaurants?.length || 0} restaurants`);
+          console.log(`Room ready with ${updatedRoomData.restaurants?.length || 0} initial restaurants`);
         }
       } else {
         // If loading failed, still create the room but with empty restaurants
@@ -119,7 +123,7 @@ const useRoom = () => {
 
   const loadInitialRestaurants = async (roomId: string, location: string, filters?: FilterState, isInitialLoad: boolean = false) => {
     try {
-      console.log('Loading initial restaurants...');
+      console.log('🚀 STAGE 1: Loading initial 3 restaurants for quick room entry...');
       console.log('Applied filters:', filters);
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
@@ -128,7 +132,7 @@ const useRoom = () => {
         location,
         radius: (filters?.distance?.[0] || defaultFilters.distance[0]) * 1609, // Convert miles to meters, use filter distance or default
         openNow: filters?.openNow ?? false, // Changed default to false to get more results
-        limit: 20 // Load 20 restaurants initially
+        limit: 3 // Load only 3 restaurants initially for quick room entry
       };
 
       // Add price range filter - use "or-less" logic
@@ -144,32 +148,53 @@ const useRoom = () => {
       
       const result = await hybridRestaurantsAPI.searchRestaurants(apiParams);
       
-      console.log(`Fetched ${result.restaurants.length} initial restaurants from API`);
+      console.log(`✅ STAGE 1 COMPLETE: Fetched ${result.restaurants.length} initial restaurants from API`);
+      
+      // Handle insufficient restaurants by adding end card if needed
+      const processedRestaurants = handleInsufficientRestaurants(result.restaurants.length, result.restaurants);
       
       // Update room with restaurants (this still uses Supabase for data storage)
-      const updatedRoomData = await roomService.updateRestaurants(roomId, result.restaurants, result.nextPageToken);
+      const updatedRoomData = await roomService.updateRestaurants(roomId, processedRestaurants, result.nextPageToken);
+      
+      // Set initial current restaurant if this is the first load
+      if (isInitialLoad && result.restaurants.length > 0) {
+        const initialUpdateData = {
+          current_restaurant_id: result.restaurants[0].id,
+          viewed_restaurant_ids: [],
+          updated_at: new Date().toISOString()
+        };
+        
+        await supabase
+          .from('rooms')
+          .update(initialUpdateData)
+          .eq('id', roomId);
+      }
+      
       const updatedRoomState = convertRoomDataToState(updatedRoomData);
       setRoomState(updatedRoomState);
       
-      console.log(`Updated room ${roomId} with ${result.restaurants.length} restaurants`);
+      console.log(`✅ Room ready with ${result.restaurants.length} initial restaurants - User can enter room now!`);
       
-      // If this was the initial load, load more restaurants in the background
+      // If this was the initial load, start progressive loading in background
       if (isInitialLoad && result.nextPageToken) {
+        console.log('🔄 Starting STAGE 2: Loading next 6 restaurants in background...');
+        // Stage 2: Load next 6 restaurants in background
         setTimeout(() => {
-          loadMoreRestaurantsInBackground(roomId, location, filters, result.nextPageToken);
+          loadMoreRestaurantsInBackground(roomId, location, filters, result.nextPageToken, 6);
         }, 1000); // Wait 1 second before loading more
       }
       
       return true;
     } catch (error) {
-      console.error('Failed to load initial restaurants:', error);
+      console.error('❌ Failed to load initial restaurants:', error);
       return false;
     }
   };
 
-  const loadMoreRestaurantsInBackground = async (roomId: string, location: string, filters?: FilterState, pageToken?: string) => {
+  const loadMoreRestaurantsInBackground = async (roomId: string, location: string, filters?: FilterState, pageToken?: string, batchSize: number = 20) => {
     try {
-      console.log('Loading more restaurants in background...');
+      const stageName = batchSize === 6 ? 'STAGE 2' : batchSize === 11 ? 'STAGE 3' : 'BACKGROUND';
+      console.log(`🔄 ${stageName}: Loading ${batchSize} more restaurants in background...`);
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
       // Convert filters to API parameters
@@ -177,7 +202,7 @@ const useRoom = () => {
         location,
         radius: (filters?.distance?.[0] || defaultFilters.distance[0]) * 1609, // Convert miles to meters, use filter distance or default
         openNow: filters?.openNow ?? false,
-        limit: 20,
+        limit: batchSize,
         pageToken
       };
 
@@ -194,7 +219,7 @@ const useRoom = () => {
       
       const result = await hybridRestaurantsAPI.searchRestaurants(apiParams);
       
-      console.log(`Loaded ${result.restaurants.length} more restaurants in background`);
+      console.log(`✅ ${stageName} COMPLETE: Loaded ${result.restaurants.length} more restaurants in background`);
       
       if (result.restaurants.length > 0) {
         // Append new restaurants to current room state (preserve swipes)
@@ -212,18 +237,39 @@ const useRoom = () => {
           console.error('Failed to update room in database:', error);
         });
         
-        console.log(`Updated room with ${result.restaurants.length} additional restaurants`);
+        console.log(`✅ Room updated with ${result.restaurants.length} additional restaurants (total: ${updatedRestaurants.length})`);
       }
       
-      // Continue loading more if there are more pages
+      // Progressive loading logic: determine next stage based on current batch size
       if (result.nextPageToken) {
+        let nextBatchSize = batchSize;
+        let nextDelay = 1500; // Default delay
+        let nextStageName = 'BACKGROUND';
+        
+        // Progressive loading stages
+        if (batchSize === 6) {
+          // Stage 2 (6 restaurants) → Stage 3 (11 restaurants)
+          nextBatchSize = 11;
+          nextDelay = 2000; // Slightly longer delay for final stage
+          nextStageName = 'STAGE 3';
+          console.log('🔄 Progressive loading: Moving to STAGE 3 (11 restaurants)');
+        } else if (batchSize === 11) {
+          // Stage 3 (11 restaurants) → Continue with standard batches (20 restaurants)
+          nextBatchSize = 20;
+          nextDelay = 1500;
+          nextStageName = 'BACKGROUND';
+          console.log('🔄 Progressive loading: Moving to standard batch loading (20 restaurants)');
+        }
+        
         setTimeout(() => {
-          loadMoreRestaurantsInBackground(roomId, location, filters, result.nextPageToken);
-        }, 1500); // Wait 1.5 seconds before loading next batch
+          loadMoreRestaurantsInBackground(roomId, location, filters, result.nextPageToken, nextBatchSize);
+        }, nextDelay);
+      } else {
+        console.log('✅ Progressive loading complete - no more restaurants available');
       }
       
     } catch (error) {
-      console.error('Failed to load more restaurants in background:', error);
+      console.error('❌ Failed to load more restaurants in background:', error);
     }
   };
 
@@ -302,6 +348,39 @@ const useRoom = () => {
     }
   };
 
+  // Helper function to get the next unviewed restaurant
+  const getNextUnviewedRestaurant = (restaurants: any[], viewedIds: string[], currentId?: string) => {
+    const unviewed = restaurants.filter(r => !viewedIds.includes(r.id));
+    
+    // If we have a current restaurant, find the next one after it
+    if (currentId) {
+      const currentIndex = unviewed.findIndex(r => r.id === currentId);
+      if (currentIndex >= 0 && currentIndex < unviewed.length - 1) {
+        return unviewed[currentIndex + 1];
+      }
+    }
+    
+    // Otherwise return the first unviewed restaurant
+    return unviewed[0] || null;
+  };
+
+  // Helper function to update current restaurant and viewed restaurants
+  const updateRestaurantProgress = async (restaurantId: string) => {
+    if (!roomState) return;
+
+    const viewedIds = [...(roomState.viewedRestaurantIds || []), restaurantId];
+    const nextRestaurant = getNextUnviewedRestaurant(roomState.restaurants, viewedIds, restaurantId);
+
+    const updatedRoom: RoomState = {
+      ...roomState,
+      currentRestaurantId: nextRestaurant?.id,
+      viewedRestaurantIds: viewedIds,
+      lastUpdated: Date.now()
+    };
+
+    setRoomState(updatedRoom);
+  };
+
   const checkForMatch = (itemId: string, type: 'restaurant' | 'foodType' = 'restaurant'): boolean => {
     if (!roomState) return false;
 
@@ -336,10 +415,18 @@ const useRoom = () => {
       console.log('❌ loadMoreRestaurants: No room state or location');
       return false;
     }
+
+    // Prevent multiple simultaneous background loads
+    if (isLoadingMoreRestaurants) {
+      console.log('⚠️ Already loading more restaurants, skipping duplicate request');
+      return false;
+    }
     
     try {
       console.log('🚀 Starting to load more restaurants...');
       console.log('🔍 Applied filters:', filters);
+      
+      setIsLoadingMoreRestaurants(true);
       
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
@@ -383,20 +470,26 @@ const useRoom = () => {
       
       if (result.restaurants.length > 0) {
         console.log('✅ Adding new restaurants to room state');
+        
+        // Handle insufficient restaurants by adding end card if needed
+        const processedRestaurants = handleInsufficientRestaurants(result.restaurants.length, result.restaurants);
+        
         const updatedRoom: RoomState = {
           ...roomState,
-          restaurants: [...roomState.restaurants, ...result.restaurants], // Append the new restaurants
+          restaurants: [...roomState.restaurants, ...processedRestaurants], // Append the new restaurants
           filters: appliedFilters,
           nextPageToken: result.nextPageToken, // Store the nextPageToken for future pagination
           lastUpdated: Date.now(),
           // Preserve existing swipes to prevent losing likes
           restaurantSwipes: roomState.restaurantSwipes,
           foodTypeSwipes: roomState.foodTypeSwipes,
-          currentRestaurantIndex: roomState.currentRestaurantIndex
+          // Preserve current restaurant ID - don't change it when adding new restaurants
+          currentRestaurantId: roomState.currentRestaurantId,
+          viewedRestaurantIds: roomState.viewedRestaurantIds
         };
         
         setRoomState(updatedRoom);
-        // No need to update roomService here, as it's polled for updates
+        console.log(`✅ Smart loading: Added ${result.restaurants.length} new restaurants (total: ${updatedRoom.restaurants.length})`);
         return true;
       } else {
         console.log('⚠️ No restaurants returned from API');
@@ -405,6 +498,8 @@ const useRoom = () => {
     } catch (error) {
       console.error('💥 Failed to load more restaurants:', error);
       return false;
+    } finally {
+      setIsLoadingMoreRestaurants(false);
     }
   };
 
@@ -495,6 +590,16 @@ const useRoom = () => {
     }
   };
 
+  // Helper function to handle insufficient restaurants
+  const handleInsufficientRestaurants = (totalFound: number, restaurants: any[]) => {
+    if (totalFound < 20) {
+      console.log(`⚠️ Insufficient restaurants found: ${totalFound} (less than 20)`);
+      console.log('ℹ️ Users will see "No more restaurants" screen when they reach the end');
+    }
+    
+    return restaurants; // Return restaurants as-is, let SwipeInterface handle the end state
+  };
+
   const leaveRoom = async () => {
     if (roomState) {
       try {
@@ -512,6 +617,7 @@ const useRoom = () => {
     isHost,
     participantId,
     isLoadingRestaurantsFromHook: isLoadingRestaurants,
+    isLoadingMoreRestaurants, // Add the new loading state
     createRoom,
     joinRoom,
     addSwipe,

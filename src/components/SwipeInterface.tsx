@@ -28,7 +28,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   customOrder,
   onGenerateMore
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [showMatch, setShowMatch] = useState(false);
   const [matchedRestaurant, setMatchedRestaurant] = useState<Restaurant | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -36,6 +35,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoadingSpinner, setShowLoadingSpinner] = useState(false); // Add state for loading spinner
   const cardRef = useRef<HTMLDivElement>(null);
   const deviceType = useDeviceType();
 
@@ -79,10 +79,47 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     return [...ordered, ...unordered];
   }, [restaurants, customOrder]);
 
-  const currentRestaurant = orderedRestaurants[currentIndex];
+  // Get unviewed restaurants (restaurants not in viewedRestaurantIds)
+  const getUnviewedRestaurants = (restaurants: Restaurant[], viewedIds: string[]) => {
+    return restaurants.filter(r => !viewedIds.includes(r.id));
+  };
+
+  // Get current restaurant based on currentRestaurantId or first unviewed
+  const currentRestaurant = React.useMemo(() => {
+    const viewedIds = roomState?.viewedRestaurantIds || [];
+    const unviewedRestaurants = getUnviewedRestaurants(orderedRestaurants, viewedIds);
+    
+    // If we have a currentRestaurantId, find that restaurant
+    if (roomState?.currentRestaurantId) {
+      const current = orderedRestaurants.find(r => r.id === roomState.currentRestaurantId);
+      if (current && !viewedIds.includes(current.id)) {
+        return current;
+      }
+    }
+    
+    // Otherwise, return the first unviewed restaurant
+    return unviewedRestaurants[0] || null;
+  }, [orderedRestaurants, roomState?.currentRestaurantId, roomState?.viewedRestaurantIds]);
+
+  // Get remaining unviewed count
+  const remainingUnviewed = React.useMemo(() => {
+    const viewedIds = roomState?.viewedRestaurantIds || [];
+    return getUnviewedRestaurants(orderedRestaurants, viewedIds).length;
+  }, [orderedRestaurants, roomState?.viewedRestaurantIds]);
+
+  // Calculate delay based on remaining restaurants and loading state
+  const calculateDelay = (remainingRestaurants: number, isLoading: boolean) => {
+    if (!isLoading) return 0;
+    
+    if (remainingRestaurants <= 3) return 1500; // 1.5s
+    if (remainingRestaurants <= 5) return 1000; // 1s  
+    if (remainingRestaurants <= 8) return 500;  // 0.5s
+    
+    return 0; // No delay
+  };
 
   // Handle swipe
-  const handleSwipe = (direction: 'left' | 'right') => {
+  const handleSwipe = async (direction: 'left' | 'right') => {
     if (!currentRestaurant) return;
     
     // Call the parent's onSwipe function
@@ -106,11 +143,19 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     // Set the final position to animate the card off-screen
     setDragOffset({ x: finalOffset, y: dragOffset.y });
     
-    // Wait for the animation to complete, then move to next card
-    setTimeout(() => {
-      setCurrentIndex(prev => prev + 1);
+    // Wait for the animation to complete, then check for intelligent delay
+    setTimeout(async () => {
       setIsDragging(false);
       setDragOffset({ x: 0, y: 0 });
+      
+      // Check if we need to show loading spinner (intelligent delay system)
+      const delay = calculateDelay(remainingUnviewed - 1, isLoading); // -1 because we're about to move to next card
+      if (delay > 0) {
+        console.log(`🔄 Intelligent delay: ${delay}ms delay to buy time for background loading`);
+        setShowLoadingSpinner(true);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        setShowLoadingSpinner(false);
+      }
     }, 300); // Match the transition duration
   };
 
@@ -176,18 +221,39 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     setIsDragging(false);
   };
 
-  // Load more restaurants when running low - with better debouncing to prevent multiple calls
+  // Enhanced smart loading triggers with better state management
   useEffect(() => {
-    if (onGenerateMore && currentIndex >= orderedRestaurants.length - 8 && !isLoading) {
-      // Add a longer delay to prevent multiple rapid calls
+    // Only trigger if we have the onGenerateMore function and we're running low on restaurants
+    if (onGenerateMore && remainingUnviewed <= 8) {
+      console.log(`🔄 Smart loading trigger: ${remainingUnviewed} restaurants remaining`);
+      
+      // Add a delay to prevent multiple rapid calls
       const timeoutId = setTimeout(() => {
-        setIsLoading(true);
-        onGenerateMore().finally(() => setIsLoading(false));
-      }, 300);
+        if (!isLoading) {
+          console.log('🚀 Triggering smart loading of more restaurants...');
+          setIsLoading(true);
+          onGenerateMore().finally(() => {
+            setIsLoading(false);
+            console.log('✅ Smart loading completed');
+          });
+        } else {
+          console.log('⚠️ Already loading, skipping duplicate request');
+        }
+      }, 500); // Slightly longer delay for better debouncing
       
       return () => clearTimeout(timeoutId);
     }
-  }, [currentIndex, orderedRestaurants.length, onGenerateMore, isLoading]);
+  }, [remainingUnviewed, onGenerateMore, isLoading]);
+
+  // Log intelligent delay system status
+  useEffect(() => {
+    if (isLoading && remainingUnviewed <= 8) {
+      const delay = calculateDelay(remainingUnviewed, isLoading);
+      if (delay > 0) {
+        console.log(`🔄 Intelligent delay system active: ${remainingUnviewed} restaurants remaining, ${delay}ms delay`);
+      }
+    }
+  }, [remainingUnviewed, isLoading]);
 
   // Card style with drag transform
   const cardStyle: React.CSSProperties = {
@@ -198,12 +264,29 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   // No restaurants to show
   if (!currentRestaurant) {
+    // Check if we're loading more restaurants in the background
+    if (isLoading) {
+      return (
+        <div className="text-center py-12">
+          <div className="text-4xl sm:text-6xl mb-4">🍽️</div>
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Loading more restaurants...</h3>
+          <p className="text-sm sm:text-base text-gray-600 mb-4">
+            Finding more great places for you to discover.
+          </p>
+          <div className="flex justify-center">
+            <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </div>
+      );
+    }
+    
+    // No more restaurants and not loading
     return (
       <div className="text-center py-12">
         <div className="text-4xl sm:text-6xl mb-4">🍽️</div>
         <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">No more restaurants</h3>
         <p className="text-sm sm:text-base text-gray-600 mb-4">
-          You've seen all the restaurants in your area.
+          You've seen all the restaurants in your area. Try changing your location or filters to find more options.
         </p>
         {onGenerateMore && (
           <button
@@ -214,7 +297,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
             disabled={isLoading}
             className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium disabled:opacity-50"
           >
-            {isLoading ? 'Loading...' : 'Load More'}
+            {isLoading ? 'Loading...' : 'Try Loading More'}
           </button>
         )}
       </div>
@@ -234,8 +317,23 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       )}
       
       <div className="flex items-center justify-center min-h-[600px] sm:min-h-[700px] p-2 sm:p-4 relative w-full">
+        {/* Loading Spinner Between Cards (Intelligent Delay System) */}
+        {showLoadingSpinner && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+            <div className="bg-white/95 backdrop-blur-sm border border-orange-200 rounded-2xl p-8 shadow-lg">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Loading more restaurants...</h3>
+                  <p className="text-sm text-gray-600">Finding great places for you</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Background Cards - Hidden until they become the top card */}
-        {orderedRestaurants.slice(currentIndex + 1, currentIndex + 3).map((restaurant, index) => (
+        {orderedRestaurants.slice(orderedRestaurants.indexOf(currentRestaurant) + 1, orderedRestaurants.indexOf(currentRestaurant) + 3).map((restaurant, index) => (
           <div
             key={restaurant.id}
             className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"

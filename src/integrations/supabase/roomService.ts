@@ -12,7 +12,8 @@ export interface RoomData {
     name: string;
     isOnline: boolean;
   }>;
-  current_restaurant_index: number;
+  current_restaurant_id?: string; // Changed from current_restaurant_index to current_restaurant_id
+  viewed_restaurant_ids: string[]; // Track which restaurants user has seen
   restaurant_swipes: Record<string, Record<string, 'left' | 'right'>>;
   food_type_swipes: Record<string, Record<string, 'left' | 'right'>>;
   restaurants: any[];
@@ -44,6 +45,13 @@ export interface UpdateSwipeParams {
   type: 'restaurant' | 'foodType';
 }
 
+export interface UpdateRestaurantProgressParams {
+  roomId: string;
+  restaurantId: string;
+  viewedRestaurantIds: string[];
+  currentRestaurantId?: string;
+}
+
 export class RoomService {
   async createRoom(params: CreateRoomParams): Promise<RoomData> {
     const { hostId, hostName, location, filters } = params;
@@ -56,7 +64,8 @@ export class RoomService {
         name: hostName,
         isOnline: true
       }],
-      current_restaurant_index: 0,
+      current_restaurant_id: undefined, // Initialize as undefined
+      viewed_restaurant_ids: [], // Initialize as empty array
       restaurant_swipes: {},
       food_type_swipes: {},
       restaurants: [],
@@ -180,6 +189,14 @@ export class RoomService {
         }
       };
       updateData.restaurant_swipes = updatedRestaurantSwipes;
+      
+      // Also update restaurant progress for restaurant swipes
+      const viewedIds = [...(currentRoom.viewed_restaurant_ids || []), itemId];
+      const unviewedRestaurants = currentRoom.restaurants.filter((r: any) => !viewedIds.includes(r.id));
+      const nextRestaurant = unviewedRestaurants[0] || null;
+      
+      updateData.viewed_restaurant_ids = viewedIds;
+      updateData.current_restaurant_id = nextRestaurant?.id;
     } else {
       const updatedFoodTypeSwipes = {
         ...currentRoom.food_type_swipes,

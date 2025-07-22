@@ -640,9 +640,12 @@ serve(async (req: Request) => {
         console.log(`Deduplicated nearby search results: ${filteredNearbyResults.length} -> ${deduplicatedNearbyResults.length}`);
         
         // Transform the results to match our Restaurant interface
+        console.log(`🚀 Starting parallel processing for ${deduplicatedNearbyResults.slice(0, limit).length} restaurants...`);
+        const startTime = Date.now();
+        
         const restaurants: RestaurantData[] = await Promise.all(
           deduplicatedNearbyResults.slice(0, limit).map(async (place) => {
-            // Get additional details for each place
+            // Step 1: Get Place Details (required for everything else)
             const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,website,opening_hours,types,photos&key=${googlePlacesApiKey}`;
             
             let details: any = {};
@@ -688,45 +691,61 @@ serve(async (req: Request) => {
             const distance = calculateDistance(place.geometry.location.lat, place.geometry.location.lng, lat, lng);
             const estimatedTime = calculateEstimatedTime(distance);
 
-            // Get images from Google Places Photos API
-            let images: string[] = [];
-            if (details.photos && details.photos.length > 0) {
-              console.log(`Found ${details.photos.length} photos for ${place.name}`);
-              try {
-                // Get up to 5 photos - use photo references immediately as they expire
-                const photoPromises = details.photos.slice(0, 5).map(async (photo: any, index: number) => {
-                  console.log(`Processing photo ${index + 1} for ${place.name}:`, photo);
-                  
-                  // Use the correct Google Places Photo API URL format
-                  const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&maxheight=300&photoreference=${photo.photo_reference}&key=${googlePlacesApiKey}`;
-                  console.log(`Photo URL for ${place.name}: ${photoUrl}`);
-                  
-                  // Test if the photo URL is accessible
+            // Step 2: PARALLEL - Process Photos API calls and ChatGPT processing simultaneously
+            const [images, chatGPTResult] = await Promise.all([
+              // Photos API calls (can run in parallel)
+              (async () => {
+                let images: string[] = [];
+                if (details.photos && details.photos.length > 0) {
+                  console.log(`Found ${details.photos.length} photos for ${place.name}`);
                   try {
-                    const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
-                    console.log(`Photo response for ${place.name}: ${photoResponse.status}`);
-                    if (photoResponse.ok) {
-                      console.log(`✅ Photo accessible for ${place.name}`);
-                      return photoUrl;
-                    } else {
-                      console.log(`❌ Photo not accessible for ${place.name}: ${photoResponse.status}`);
-                      return null;
-                    }
+                    // Get up to 5 photos - use photo references immediately as they expire
+                    const photoPromises = details.photos.slice(0, 5).map(async (photo: any, index: number) => {
+                      console.log(`Processing photo ${index + 1} for ${place.name}:`, photo);
+                      
+                      // Use the correct Google Places Photo API URL format
+                      const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&maxheight=300&photoreference=${photo.photo_reference}&key=${googlePlacesApiKey}`;
+                      console.log(`Photo URL for ${place.name}: ${photoUrl}`);
+                      
+                      // Test if the photo URL is accessible
+                      try {
+                        const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
+                        console.log(`Photo response for ${place.name}: ${photoResponse.status}`);
+                        if (photoResponse.ok) {
+                          console.log(`✅ Photo accessible for ${place.name}`);
+                          return photoUrl;
+                        } else {
+                          console.log(`❌ Photo not accessible for ${place.name}: ${photoResponse.status}`);
+                          return null;
+                        }
+                      } catch (error) {
+                        console.log(`❌ Photo fetch failed for ${place.name}:`, error.message);
+                        return null;
+                      }
+                    });
+                    
+                    const photoResults = await Promise.all(photoPromises);
+                    images = photoResults.filter(url => url !== null);
+                    console.log(`Final images for ${place.name}:`, images);
                   } catch (error) {
-                    console.log(`❌ Photo fetch failed for ${place.name}:`, error.message);
-                    return null;
+                    console.log(`Places Photos API failed for ${place.name}:`, error.message);
                   }
-                });
-                
-                const photoResults = await Promise.all(photoPromises);
-                images = photoResults.filter(url => url !== null);
-                console.log(`Final images for ${place.name}:`, images);
-              } catch (error) {
-                console.log(`Places Photos API failed for ${place.name}:`, error.message);
-              }
-            } else {
-              console.log(`No photos found for ${place.name}`);
-            }
+                } else {
+                  console.log(`No photos found for ${place.name}`);
+                }
+                return images;
+              })(),
+              
+              // ChatGPT processing (can run in parallel with photos)
+              (async () => {
+                // For now, return a placeholder - ChatGPT processing will be handled by the hybrid system
+                // This is where we would call the ChatGPT function if needed
+                return {
+                  processedByChatGPT: false,
+                  chatGPTConfidence: undefined
+                };
+              })()
+            ]);
 
             // Use first image as main image, or fallback to a placeholder
             const mainImage = images.length > 0 ? images[0] : 'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop';
@@ -747,11 +766,16 @@ serve(async (req: Request) => {
               website: details.website,
               openingHours: details.opening_hours?.weekday_text || [],
               googleTypes: place.types,
-              processedByChatGPT: false, // Will be processed by ChatGPT function
-              chatGPTConfidence: undefined
+              processedByChatGPT: chatGPTResult.processedByChatGPT,
+              chatGPTConfidence: chatGPTResult.chatGPTConfidence
             };
           })
         );
+
+        const endTime = Date.now();
+        const processingTime = endTime - startTime;
+        console.log(`✅ Parallel processing completed in ${processingTime}ms for ${restaurants.length} restaurants`);
+        console.log(`🚀 Performance: ${processingTime / restaurants.length}ms per restaurant (parallel processing)`);
 
         return new Response(JSON.stringify({ 
           restaurants,
