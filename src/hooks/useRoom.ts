@@ -11,7 +11,6 @@ export interface RoomState {
   participants: Array<{
     id: string;
     name: string;
-    isOnline: boolean;
   }>;
   currentRestaurantId?: string; // Changed from currentRestaurantIndex to currentRestaurantId
   viewedRestaurantIds: string[]; // Track which restaurants user has seen
@@ -72,6 +71,69 @@ const useRoom = () => {
       };
     }
   }, [roomState?.id]);
+
+  // Periodic cleanup of empty rooms
+  useEffect(() => {
+    const cleanupInterval = setInterval(async () => {
+      try {
+        await roomService.cleanupEmptyRooms();
+      } catch (error) {
+        console.error('Error cleaning up empty rooms:', error);
+      }
+    }, 30000); // Run every 30 seconds
+
+    return () => {
+      clearInterval(cleanupInterval);
+    };
+  }, []);
+
+  // Handle page unload/refresh to ensure user leaves room
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (roomState) {
+        // Use synchronous storage to ensure this runs before page unloads
+        sessionStorage.setItem('foodie_leaving_room', roomState.id);
+        sessionStorage.setItem('foodie_participant_id', participantId);
+      }
+    };
+
+    const handlePageShow = () => {
+      // Check if we're returning to a page that was leaving a room
+      const leavingRoomId = sessionStorage.getItem('foodie_leaving_room');
+      const leavingParticipantId = sessionStorage.getItem('foodie_participant_id');
+      
+      if (leavingRoomId && leavingParticipantId) {
+        // Clean up the session storage
+        sessionStorage.removeItem('foodie_leaving_room');
+        sessionStorage.removeItem('foodie_participant_id');
+        
+        // Leave the room asynchronously
+        roomService.leaveRoom(leavingRoomId, leavingParticipantId).catch(error => {
+          console.error('Error leaving room on page return:', error);
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [roomState?.id, participantId]);
+
+  // Cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      if (roomState) {
+        // Leave room when component unmounts
+        roomService.leaveRoom(roomState.id, participantId).catch(error => {
+          console.error('Error leaving room on unmount:', error);
+        });
+      }
+    };
+  }, [roomState?.id, participantId]);
 
   const createRoom = async (hostName: string, location: string, filters?: FilterState) => {
     try {

@@ -7,7 +7,7 @@ import QRCode from 'qrcode';
 
 interface QRCodeModalProps {
   roomId: string;
-  participants: Array<{ id: string; name: string; isOnline: boolean }>;
+  participants: Array<{ id: string; name: string }>;
   onClose: () => void;
   onContinue?: () => void;
 }
@@ -99,10 +99,6 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ roomId, participants, onClose
                 {participants.map(participant => (
                   <div key={participant.id} className="flex items-center justify-between text-sm">
                     <span className="text-gray-800">{participant.name}</span>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${participant.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                      <span className="text-gray-600">{participant.isOnline ? 'Online' : 'Offline'}</span>
-                    </div>
                   </div>
                 ))}
               </div>

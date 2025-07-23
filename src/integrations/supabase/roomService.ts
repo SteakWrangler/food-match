@@ -4,13 +4,26 @@ import { FilterState } from '@/utils/restaurantFilters';
 // RESTORED: Use real database calls instead of mock data
 const USE_MOCK_ROOMS = false;
 
+/**
+ * Simplified Room Management
+ * 
+ * This system treats any disconnection as leaving the room:
+ * - Page refresh → leave room
+ * - Browser crash → leave room  
+ * - Internet drops → leave room
+ * - Tab closes → leave room
+ * - User clicks "Leave" → leave room
+ * 
+ * Rejoining always creates a new participant (no session persistence)
+ * Empty rooms are deleted immediately
+ * Name conflicts are resolved with number suffixes
+ */
 export interface RoomData {
   id: string;
   host_id: string;
   participants: Array<{
     id: string;
     name: string;
-    isOnline: boolean;
   }>;
   current_restaurant_id?: string; // Changed from current_restaurant_index to current_restaurant_id
   viewed_restaurant_ids: string[]; // Track which restaurants user has seen
@@ -53,6 +66,21 @@ export interface UpdateRestaurantProgressParams {
 }
 
 export class RoomService {
+  // Helper function to resolve name conflicts
+  private resolveNameConflict(name: string, existingParticipants: Array<{id: string, name: string}>): string {
+    const existingNames = existingParticipants.map(p => p.name);
+    if (!existingNames.includes(name)) {
+      return name;
+    }
+    
+    // Add a number suffix
+    let counter = 1;
+    while (existingNames.includes(`${name} (${counter})`)) {
+      counter++;
+    }
+    return `${name} (${counter})`;
+  }
+
   async createRoom(params: CreateRoomParams): Promise<RoomData> {
     const { hostId, hostName, location, filters } = params;
     
@@ -62,7 +90,6 @@ export class RoomService {
       participants: [{
         id: hostId,
         name: hostName,
-        isOnline: true
       }],
       current_restaurant_id: undefined, // Initialize as undefined
       viewed_restaurant_ids: [], // Initialize as empty array
@@ -112,58 +139,34 @@ export class RoomService {
       throw new Error('Room not found');
     }
 
-    // Check if participant is already in the room
-    const existingParticipant = currentRoom.participants.find(p => p.id === participantId);
-    if (existingParticipant) {
-      // Update existing participant
-      const updatedParticipants = currentRoom.participants.map(p => 
-        p.id === participantId ? { ...p, name: participantName, isOnline: true } : p
-      );
+    // Resolve name conflicts
+    const resolvedName = this.resolveNameConflict(participantName, currentRoom.participants);
 
-      const { data, error } = await supabase
-        .from('rooms')
-        .update({ 
-          participants: updatedParticipants,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', roomId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating room:', error);
-        throw new Error(`Failed to update room: ${error.message}`);
+    // Always add as new participant (no checking for existing participants)
+    const updatedParticipants = [
+      ...currentRoom.participants,
+      {
+        id: participantId,
+        name: resolvedName
       }
+    ];
 
-      return data;
-    } else {
-      // Add new participant
-      const updatedParticipants = [
-        ...currentRoom.participants,
-        {
-          id: participantId,
-          name: participantName,
-          isOnline: true
-        }
-      ];
+    const { data, error } = await supabase
+      .from('rooms')
+      .update({ 
+        participants: updatedParticipants,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', roomId)
+      .select()
+      .single();
 
-      const { data, error } = await supabase
-        .from('rooms')
-        .update({ 
-          participants: updatedParticipants,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', roomId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating room:', error);
-        throw new Error(`Failed to update room: ${error.message}`);
-      }
-
-      return data;
+    if (error) {
+      console.error('Error updating room:', error);
+      throw new Error(`Failed to update room: ${error.message}`);
     }
+
+    return data;
   }
 
   async updateSwipe(params: UpdateSwipeParams): Promise<RoomData> {
@@ -274,7 +277,7 @@ export class RoomService {
     const updatedParticipants = currentRoom.participants.filter(p => p.id !== participantId);
 
     if (updatedParticipants.length === 0) {
-      // If no participants left, delete the room
+      // If no participants left, delete the room immediately
       const { error } = await supabase
         .from('rooms')
         .delete()
@@ -301,18 +304,16 @@ export class RoomService {
     }
   }
 
-  async cleanupOldRooms(): Promise<void> {
-    // Delete rooms older than 24 hours
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    
+  async cleanupEmptyRooms(): Promise<void> {
+    // Delete rooms that have no participants
     const { error } = await supabase
       .from('rooms')
       .delete()
-      .lt('updated_at', twentyFourHoursAgo);
+      .eq('participants', '[]');
 
     if (error) {
-      console.error('Error cleaning up old rooms:', error);
-      throw new Error(`Failed to cleanup old rooms: ${error.message}`);
+      console.error('Error cleaning up empty rooms:', error);
+      throw new Error(`Failed to cleanup empty rooms: ${error.message}`);
     }
   }
 }
