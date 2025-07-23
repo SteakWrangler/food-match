@@ -100,17 +100,26 @@ const Index = () => {
       restaurants.forEach(restaurant => {
         if (shownMatches.has(restaurant.id)) return; // Already shown this match
 
-        const participantsWhoSwipedRight = allParticipants.filter(participant => {
+        // Check if all participants have actually swiped on this item
+        const participantsWhoSwiped = allParticipants.filter(participant => {
           const participantSwipes = restaurantSwipes[participant.id];
-          return participantSwipes && participantSwipes[restaurant.id] === 'right';
+          return participantSwipes && participantSwipes[restaurant.id];
         });
 
-        // If all participants swiped right, it's a match!
-        if (participantsWhoSwipedRight.length === allParticipants.length) {
-          console.log(`🎉 NEW MATCH DETECTED for ${restaurant.name}!`);
-          setMatchedRestaurant(restaurant);
-          setShowMatch(true);
-          setShownMatches(prev => new Set([...prev, restaurant.id]));
+        // Only consider it a match if ALL participants have swiped AND all swiped right
+        if (participantsWhoSwiped.length === allParticipants.length) {
+          const participantsWhoSwipedRight = participantsWhoSwiped.filter(participant => {
+            const participantSwipes = restaurantSwipes[participant.id];
+            return participantSwipes[restaurant.id] === 'right';
+          });
+
+          // If all participants swiped right, it's a match!
+          if (participantsWhoSwipedRight.length === allParticipants.length) {
+            console.log(`🎉 NEW MATCH DETECTED for ${restaurant.name}!`);
+            setMatchedRestaurant(restaurant);
+            setShowMatch(true);
+            setShownMatches(prev => new Set([...prev, restaurant.id]));
+          }
         }
       });
 
@@ -149,6 +158,21 @@ const Index = () => {
 
     checkForNewMatches();
   }, [roomState, participantId, restaurants, foodTypes, shownMatches]);
+
+  // Monitor participant count changes to clear matches when new people join
+  useEffect(() => {
+    if (!roomState || !participantId) return;
+
+    const allParticipants = roomState.participants;
+    if (allParticipants.length <= 1) return; // No matches with only one person
+
+    // When participant count increases, clear all existing matches
+    // This is because new participants haven't had a chance to swipe yet
+    if (shownMatches.size > 0) {
+      console.log(`👥 ${allParticipants.length} participants in room - clearing ${shownMatches.size} existing matches`);
+      setShownMatches(new Set());
+    }
+  }, [roomState?.participants?.length, shownMatches]);
 
   // Check for room parameter in URL
   useEffect(() => {
