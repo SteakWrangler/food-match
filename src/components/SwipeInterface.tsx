@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import RestaurantCard from './RestaurantCard';
-import MatchModal from './MatchModal';
-import EnhancedSwipeHistory from './EnhancedSwipeHistory';
 import { useDeviceType } from '@/hooks/use-mobile';
 import { Restaurant } from '@/data/restaurants';
 
@@ -28,13 +26,11 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   customOrder,
   onGenerateMore
 }) => {
-  const [showMatch, setShowMatch] = useState(false);
-  const [matchedRestaurant, setMatchedRestaurant] = useState<Restaurant | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(false);
+  const [viewedRestaurants, setViewedRestaurants] = useState<Set<string>>(new Set());
   const cardRef = useRef<HTMLDivElement>(null);
   const deviceType = useDeviceType();
 
@@ -78,33 +74,23 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     return [...ordered, ...unordered];
   }, [restaurants, customOrder]);
 
-  // Get unviewed restaurants (restaurants not in viewedRestaurantIds)
-  const getUnviewedRestaurants = (restaurants: Restaurant[], viewedIds: string[]) => {
-    return restaurants.filter(r => !viewedIds.includes(r.id));
+  // Get unviewed restaurants (restaurants not in viewedRestaurants)
+  const getUnviewedRestaurants = (restaurants: Restaurant[], viewedIds: Set<string>) => {
+    return restaurants.filter(r => !viewedIds.has(r.id));
   };
 
-  // Get current restaurant based on currentRestaurantId or first unviewed
+  // Get current restaurant based on first unviewed
   const currentRestaurant = React.useMemo(() => {
-    const viewedIds = roomState?.viewedRestaurantIds || [];
-    const unviewedRestaurants = getUnviewedRestaurants(orderedRestaurants, viewedIds);
+    const unviewedRestaurants = getUnviewedRestaurants(orderedRestaurants, viewedRestaurants);
     
-    // If we have a currentRestaurantId, find that restaurant
-    if (roomState?.currentRestaurantId) {
-      const current = orderedRestaurants.find(r => r.id === roomState.currentRestaurantId);
-      if (current && !viewedIds.includes(current.id)) {
-        return current;
-      }
-    }
-    
-    // Otherwise, return the first unviewed restaurant
+    // Return the first unviewed restaurant
     return unviewedRestaurants[0] || null;
-  }, [orderedRestaurants, roomState?.currentRestaurantId, roomState?.viewedRestaurantIds]);
+  }, [orderedRestaurants, viewedRestaurants]);
 
   // Get remaining unviewed count
   const remainingUnviewed = React.useMemo(() => {
-    const viewedIds = roomState?.viewedRestaurantIds || [];
-    return getUnviewedRestaurants(orderedRestaurants, viewedIds).length;
-  }, [orderedRestaurants, roomState?.viewedRestaurantIds]);
+    return getUnviewedRestaurants(orderedRestaurants, viewedRestaurants).length;
+  }, [orderedRestaurants, viewedRestaurants]);
 
 
 
@@ -112,15 +98,16 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (!currentRestaurant) return;
     
+    // Add current restaurant to viewed set
+    setViewedRestaurants(prev => new Set([...prev, currentRestaurant.id]));
+    
     // Call the parent's onSwipe function
     if (onSwipe) {
       onSwipe(currentRestaurant.id, direction);
     }
     
-    // Check for match
+    // Check for match - let the parent handle match display
     if (direction === 'right' && checkForMatch && checkForMatch(currentRestaurant.id)) {
-      setMatchedRestaurant(currentRestaurant);
-      setShowMatch(true);
       if (onMatch) {
         onMatch(currentRestaurant);
       }
@@ -202,6 +189,22 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     setIsDragging(false);
   };
 
+  // Handle bringing restaurant to front from history
+  useEffect(() => {
+    if (customOrder && customOrder.length > 0) {
+      // Remove the first restaurant in custom order from viewed set
+      // so it can be shown again
+      const restaurantToShow = customOrder[0];
+      if (restaurantToShow) {
+        setViewedRestaurants(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(restaurantToShow);
+          return newSet;
+        });
+      }
+    }
+  }, [customOrder]);
+
   // Enhanced smart loading triggers with better state management
   useEffect(() => {
     // Only trigger if we have the onGenerateMore function and we're running low on restaurants
@@ -281,7 +284,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     <div className="relative">
       {/* REMOVED: Background loading indicator - should be completely invisible to user */}
       
-      <div className="flex items-center justify-center min-h-[600px] sm:min-h-[700px] p-2 sm:p-4 relative w-full">
+      <div className="flex items-center justify-center min-h-[400px] sm:min-h-[500px] p-2 sm:p-4 relative w-full">
         
         {/* Background Cards - Hidden until they become the top card */}
         {orderedRestaurants.slice(orderedRestaurants.indexOf(currentRestaurant) + 1, orderedRestaurants.indexOf(currentRestaurant) + 3).map((restaurant, index) => (
@@ -317,16 +320,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* History Button - positioned relative to the card */}
-          <div className="absolute -top-2 -left-2 z-50">
-            <button
-              onClick={() => setShowHistory(true)}
-              className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full p-2 shadow-sm hover:bg-white transition-colors"
-            >
-              <span className="text-xs sm:text-sm">❤️ {Object.values(userSwipes).filter(s => s === 'right').length}</span>
-            </button>
-          </div>
-          
           <RestaurantCard
             key={`current-${currentRestaurant.id}`}
             restaurant={currentRestaurant}
@@ -352,25 +345,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         )}
       </div>
 
-      {/* Match Modal */}
-      {showMatch && matchedRestaurant && (
-        <MatchModal
-          restaurant={matchedRestaurant}
-          onClose={() => setShowMatch(false)}
-        />
-      )}
-
-      {/* History Modal */}
-      <EnhancedSwipeHistory
-        isOpen={showHistory}
-        onClose={() => setShowHistory(false)}
-        userSwipes={userSwipes}
-        roomState={roomState}
-        items={orderedRestaurants}
-        type="restaurants"
-        participantId={participantId || 'user'}
-        onBringToFront={onBringToFront}
-      />
     </div>
   );
 };

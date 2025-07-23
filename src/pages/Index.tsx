@@ -8,9 +8,10 @@ import QRCodeModal from '@/components/QRCodeModal';
 import MatchModal from '@/components/MatchModal';
 import LocationModal from '@/components/LocationModal';
 import LoadingScreen from '@/components/LoadingScreen';
+import EnhancedSwipeHistory from '@/components/EnhancedSwipeHistory';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Filter, Users, MapPin, QrCode, UserPlus, Loader2 } from 'lucide-react';
+import { Filter, Users, MapPin, QrCode, UserPlus, Loader2, BarChart3 } from 'lucide-react';
 import useRoom from '@/hooks/useRoom';
 import { useDeviceType } from '@/hooks/use-mobile';
 import { foodTypes } from '@/data/foodTypes';
@@ -25,6 +26,7 @@ const Index = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   const [showMatch, setShowMatch] = useState(false);
   const [showLocation, setShowLocation] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [matchedRestaurant, setMatchedRestaurant] = useState<Restaurant | null>(null);
   const [location, setLocation] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
@@ -115,10 +117,13 @@ const Index = () => {
 
           // If all participants swiped right, it's a match!
           if (participantsWhoSwipedRight.length === allParticipants.length) {
-            console.log(`🎉 NEW MATCH DETECTED for ${restaurant.name}!`);
-            setMatchedRestaurant(restaurant);
-            setShowMatch(true);
-            setShownMatches(prev => new Set([...prev, restaurant.id]));
+            // Double-check that we haven't already shown this match and that no modal is currently open
+            if (!shownMatches.has(restaurant.id) && !showMatch) {
+              console.log(`🎉 NEW MATCH DETECTED for ${restaurant.name}!`);
+              setMatchedRestaurant(restaurant);
+              setShowMatch(true);
+              setShownMatches(prev => new Set([...prev, restaurant.id]));
+            }
           }
         }
       });
@@ -135,29 +140,32 @@ const Index = () => {
 
         // If all participants swiped right, it's a match!
         if (participantsWhoSwipedRight.length === allParticipants.length) {
-          console.log(`🎉 NEW FOOD TYPE MATCH DETECTED for ${foodType.name}!`);
-          // Convert food type to restaurant-like object for the match modal
-          const restaurantMatch = {
-            id: foodType.id,
-            name: foodType.name,
-            cuisine: foodType.name,
-            image: foodType.image,
-            rating: 4.5,
-            priceRange: '$$',
-            distance: 'Food Type Match',
-            estimatedTime: 'Ready to explore!',
-            description: `You both want ${foodType.name}! Time to find a great place nearby.`,
-            tags: ['Match', 'Food Type']
-          };
-          setMatchedRestaurant(restaurantMatch);
-          setShowMatch(true);
-          setShownMatches(prev => new Set([...prev, foodType.id]));
+          // Double-check that we haven't already shown this match and that no modal is currently open
+          if (!shownMatches.has(foodType.id) && !showMatch) {
+            console.log(`🎉 NEW FOOD TYPE MATCH DETECTED for ${foodType.name}!`);
+            // Convert food type to restaurant-like object for the match modal
+            const restaurantMatch = {
+              id: foodType.id,
+              name: foodType.name,
+              cuisine: foodType.name,
+              image: foodType.image,
+              rating: 4.5,
+              priceRange: '$$',
+              distance: 'Food Type Match',
+              estimatedTime: 'Ready to explore!',
+              description: `You both want ${foodType.name}! Time to find a great place nearby.`,
+              tags: ['Match', 'Food Type']
+            };
+            setMatchedRestaurant(restaurantMatch);
+            setShowMatch(true);
+            setShownMatches(prev => new Set([...prev, foodType.id]));
+          }
         }
       });
     };
 
     checkForNewMatches();
-  }, [roomState, participantId, restaurants, foodTypes, shownMatches]);
+  }, [roomState, participantId, restaurants, foodTypes, shownMatches, showMatch]);
 
   // Monitor participant count changes to clear matches when new people join
   useEffect(() => {
@@ -172,7 +180,7 @@ const Index = () => {
       console.log(`👥 ${allParticipants.length} participants in room - clearing ${shownMatches.size} existing matches`);
       setShownMatches(new Set());
     }
-  }, [roomState?.participants?.length, shownMatches]);
+  }, [roomState?.participants?.length]);
 
   // Check for room parameter in URL
   useEffect(() => {
@@ -308,6 +316,7 @@ const Index = () => {
       // If all others swiped right and we're swiping right, it's a match!
       if (allOthersSwipedRight && otherParticipants.length > 0) {
         const matchedItem = restaurants.find(r => r.id === restaurantId);
+        // Double-check that we haven't already shown this match and that no modal is currently open
         if (matchedItem && !showMatch && !shownMatches.has(restaurantId)) {
           console.log(`🎉 MATCH FOUND for ${matchedItem.name}!`);
           setMatchedRestaurant(matchedItem);
@@ -340,6 +349,7 @@ const Index = () => {
       // If all others swiped right and we're swiping right, it's a match!
       if (allOthersSwipedRight && otherParticipants.length > 0) {
         const matchedItem = foodTypes.find(f => f.id === foodTypeId);
+        // Double-check that we haven't already shown this match and that no modal is currently open
         if (matchedItem && !showMatch && !shownMatches.has(foodTypeId)) {
           console.log(`🎉 IMMEDIATE MATCH FOUND for ${matchedItem.name}!`);
           // Convert food type to restaurant-like object for the match modal
@@ -369,22 +379,22 @@ const Index = () => {
   const getContainerClasses = () => {
     switch (deviceType) {
       case 'mobile':
-        return 'max-w-sm mx-auto px-3 py-4';
+        return 'max-w-sm mx-auto px-3 py-3';
       case 'tablet':
-        return 'max-w-2xl mx-auto px-6 py-6';
+        return 'max-w-2xl mx-auto px-6 py-4';
       default:
-        return 'max-w-md mx-auto px-4 py-6'; // Keep original desktop layout
+        return 'max-w-md mx-auto px-4 py-4'; // Keep original desktop layout
     }
   };
 
   const getHeaderClasses = () => {
     switch (deviceType) {
       case 'mobile':
-        return 'max-w-sm mx-auto px-3 py-3';
+        return 'max-w-sm mx-auto px-3 py-2';
       case 'tablet':
-        return 'max-w-2xl mx-auto px-6 py-4';
+        return 'max-w-2xl mx-auto px-6 py-3';
       default:
-        return 'max-w-md mx-auto px-4 py-4'; // Keep original desktop layout
+        return 'max-w-md mx-auto px-4 py-3'; // Keep original desktop layout
     }
   };
 
@@ -493,7 +503,7 @@ const Index = () => {
           /* Room Active */
           <>
             {/* Room Status Bar */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm border border-orange-100">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-3 sm:mb-4 shadow-sm border border-orange-100">
               <div className="flex items-center justify-between text-xs sm:text-sm">
                 <div className="flex items-center gap-2">
                   {isHost && (
@@ -528,7 +538,7 @@ const Index = () => {
             </div>
 
             {/* Tab System */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-2 sm:mb-3">
               <TabsList className="grid w-full grid-cols-2 bg-white/80 backdrop-blur-sm">
                 <TabsTrigger value="specific" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-xs sm:text-sm">
                   Restaurants
@@ -538,7 +548,20 @@ const Index = () => {
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="specific" className="mt-0">
+              {/* Room Stats Button */}
+              <div className="mt-2 flex justify-center">
+                <Button
+                  onClick={() => setShowHistory(true)}
+                  variant="outline"
+                  size="sm"
+                  className="border-orange-200 hover:bg-orange-50 text-orange-600"
+                >
+                  <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                  Room Stats
+                </Button>
+              </div>
+              
+              <TabsContent value="specific" className="mt-2">
                 {filteredRestaurants.length === 0 ? (
                   <div className="text-center py-8 sm:py-12">
                     <div className="text-4xl sm:text-6xl mb-4">🍽️</div>
@@ -581,6 +604,7 @@ const Index = () => {
                   foodTypes={foodTypes}
                   roomState={roomState}
                   onSwipe={handleFoodTypeSwipe}
+                  onMatch={setMatchedRestaurant}
                   checkForMatch={checkForMatch}
                   participantId={participantId}
                   onBringToFront={handleBringFoodTypeToFront}
@@ -590,7 +614,7 @@ const Index = () => {
             </Tabs>
 
             {/* Instructions */}
-            <div className="text-center mt-6 sm:mt-8 space-y-2">
+            <div className="text-center mt-3 sm:mt-4 space-y-1">
               <p className="text-gray-600 text-xs sm:text-sm">
                 {activeTab === 'specific' 
                   ? 'Swipe right if you want to eat there, left if you don\'t'
@@ -601,6 +625,23 @@ const Index = () => {
                 When everyone swipes right, it's a match! 🎉
               </p>
             </div>
+
+            {/* Room Stats Modal */}
+            {showHistory && roomState && (
+              <EnhancedSwipeHistory
+                isOpen={showHistory}
+                onClose={() => setShowHistory(false)}
+                userSwipes={activeTab === 'specific' 
+                  ? roomState.restaurantSwipes?.[participantId || ''] || {}
+                  : roomState.foodTypeSwipes?.[participantId || ''] || {}
+                }
+                roomState={roomState}
+                items={activeTab === 'specific' ? filteredRestaurants : foodTypes}
+                type={activeTab === 'specific' ? 'restaurants' : 'foodTypes'}
+                participantId={participantId || 'user'}
+                onBringToFront={activeTab === 'specific' ? handleBringRestaurantToFront : handleBringFoodTypeToFront}
+              />
+            )}
             
             {/* REMOVED: Background loading indicator - should be completely invisible to user */}
           </>
@@ -646,7 +687,13 @@ const Index = () => {
       {showMatch && matchedRestaurant && (
         <MatchModal
           restaurant={matchedRestaurant}
-          onClose={() => setShowMatch(false)}
+          onClose={() => {
+            setShowMatch(false);
+            // Add the matched restaurant to shownMatches so it won't show again
+            if (matchedRestaurant) {
+              setShownMatches(prev => new Set([...prev, matchedRestaurant.id]));
+            }
+          }}
         />
       )}
 

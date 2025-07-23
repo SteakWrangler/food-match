@@ -199,7 +199,7 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
             </TabsTrigger>
             <TabsTrigger value="others-likes" className="text-xs">
               <Users className="w-3 h-3 mr-1" />
-              Others ({othersLikes.length})
+              Others Liked ({othersLikes.length})
             </TabsTrigger>
           </TabsList>
           

@@ -190,13 +190,10 @@ export class RoomService {
       };
       updateData.restaurant_swipes = updatedRestaurantSwipes;
       
-      // Also update restaurant progress for restaurant swipes
-      const viewedIds = [...(currentRoom.viewed_restaurant_ids || []), itemId];
-      const unviewedRestaurants = currentRoom.restaurants.filter((r: any) => !viewedIds.includes(r.id));
-      const nextRestaurant = unviewedRestaurants[0] || null;
-      
-      updateData.viewed_restaurant_ids = viewedIds;
-      updateData.current_restaurant_id = nextRestaurant?.id;
+      // REMOVED: Global restaurant progress tracking
+      // Each user should have their own progress through the restaurant list
+      // The current_restaurant_id and viewed_restaurant_ids should be per-participant
+      // This was causing all users to see the same restaurant
     } else {
       const updatedFoodTypeSwipes = {
         ...currentRoom.food_type_swipes,
