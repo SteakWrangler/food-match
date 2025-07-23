@@ -86,6 +86,70 @@ const Index = () => {
     }
   }, [restaurants, filters, isInRoom]);
 
+  // Monitor room state changes for new matches
+  useEffect(() => {
+    if (!roomState || !participantId) return;
+
+    // Check for new matches when room state updates
+    const checkForNewMatches = () => {
+      const allParticipants = roomState.participants;
+      if (allParticipants.length <= 1) return; // No matches with only one person
+
+      // Check restaurant matches
+      const restaurantSwipes = roomState.restaurantSwipes;
+      restaurants.forEach(restaurant => {
+        if (shownMatches.has(restaurant.id)) return; // Already shown this match
+
+        const participantsWhoSwipedRight = allParticipants.filter(participant => {
+          const participantSwipes = restaurantSwipes[participant.id];
+          return participantSwipes && participantSwipes[restaurant.id] === 'right';
+        });
+
+        // If all participants swiped right, it's a match!
+        if (participantsWhoSwipedRight.length === allParticipants.length) {
+          console.log(`🎉 NEW MATCH DETECTED for ${restaurant.name}!`);
+          setMatchedRestaurant(restaurant);
+          setShowMatch(true);
+          setShownMatches(prev => new Set([...prev, restaurant.id]));
+        }
+      });
+
+      // Check food type matches
+      const foodTypeSwipes = roomState.foodTypeSwipes;
+      foodTypes.forEach(foodType => {
+        if (shownMatches.has(foodType.id)) return; // Already shown this match
+
+        const participantsWhoSwipedRight = allParticipants.filter(participant => {
+          const participantSwipes = foodTypeSwipes[participant.id];
+          return participantSwipes && participantSwipes[foodType.id] === 'right';
+        });
+
+        // If all participants swiped right, it's a match!
+        if (participantsWhoSwipedRight.length === allParticipants.length) {
+          console.log(`🎉 NEW FOOD TYPE MATCH DETECTED for ${foodType.name}!`);
+          // Convert food type to restaurant-like object for the match modal
+          const restaurantMatch = {
+            id: foodType.id,
+            name: foodType.name,
+            cuisine: foodType.name,
+            image: foodType.image,
+            rating: 4.5,
+            priceRange: '$$',
+            distance: 'Food Type Match',
+            estimatedTime: 'Ready to explore!',
+            description: `You both want ${foodType.name}! Time to find a great place nearby.`,
+            tags: ['Match', 'Food Type']
+          };
+          setMatchedRestaurant(restaurantMatch);
+          setShowMatch(true);
+          setShownMatches(prev => new Set([...prev, foodType.id]));
+        }
+      });
+    };
+
+    checkForNewMatches();
+  }, [roomState, participantId, restaurants, foodTypes, shownMatches]);
+
   // Check for room parameter in URL
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

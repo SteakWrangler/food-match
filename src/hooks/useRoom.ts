@@ -49,9 +49,7 @@ const useRoom = () => {
     lastUpdated: new Date(roomData.updated_at).getTime()
   });
 
-  // TEMPORARY: Disabled polling mechanism to use local state instead of API calls
-  // TODO: Restore polling by uncommenting this useEffect when ready to use API calls
-  /*
+  // Poll for room updates to detect matches from other participants
   useEffect(() => {
     if (roomState) {
       // Poll every 2 seconds to get updates from other participants
@@ -74,7 +72,6 @@ const useRoom = () => {
       };
     }
   }, [roomState?.id]);
-  */
 
   const createRoom = async (hostName: string, location: string, filters?: FilterState) => {
     try {
