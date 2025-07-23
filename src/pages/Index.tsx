@@ -491,11 +491,7 @@ const Index = () => {
                   Join Room
                 </Button>
                 
-                {!location && (
-                  <p className="text-xs sm:text-sm text-gray-500 mt-3 sm:mt-4">
-                    💡 Set your location first to get relevant restaurant suggestions
-                  </p>
-                )}
+
               </div>
             </div>
           </div>

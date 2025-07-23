@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, Copy, Users } from 'lucide-react';
+import { X, Copy } from 'lucide-react';
 import QRCode from 'qrcode';
 
 interface QRCodeModalProps {
@@ -15,6 +15,7 @@ interface QRCodeModalProps {
 const QRCodeModal: React.FC<QRCodeModalProps> = ({ roomId, participants, onClose, onContinue }) => {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const roomUrl = `${window.location.origin}?room=${roomId}`;
 
@@ -33,6 +34,12 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ roomId, participants, onClose
     navigator.clipboard.writeText(roomUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyRoomCode = () => {
+    navigator.clipboard.writeText(roomId);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   return (
@@ -67,6 +74,24 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ roomId, participants, onClose
                 </div>
               )}
 
+              {/* Room Code Section */}
+              <div className="bg-orange-50 rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Room Code</p>
+                    <p className="text-2xl font-bold text-gray-800 font-mono">{roomId}</p>
+                  </div>
+                  <Button
+                    onClick={copyRoomCode}
+                    size="sm"
+                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                  >
+                    <Copy className="w-4 h-4 mr-1" />
+                    {copiedCode ? 'Copied!' : 'Copy'}
+                  </Button>
+                </div>
+              </div>
+
               <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-700 font-mono break-all">
                 {roomUrl}
               </div>
@@ -89,20 +114,6 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ roomId, participants, onClose
                 Continue to Room
               </Button>
             )}
-
-            <div className="border-t pt-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                <Users className="w-4 h-4" />
-                <span>Participants ({participants.length})</span>
-              </div>
-              <div className="space-y-2">
-                {participants.map(participant => (
-                  <div key={participant.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-800">{participant.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </Card>
