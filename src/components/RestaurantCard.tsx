@@ -16,15 +16,12 @@ interface Restaurant {
   estimatedTime: string;
   description: string;
   // tags: string[]; // COMMENTED OUT - can be restored later
-  // NEW FIELDS FOR HYBRID SYSTEM
+  // Google Places API fields
   address?: string;
   phone?: string;
   website?: string;
   openingHours?: string[];
   googleTypes?: string[];
-  processedByChatGPT?: boolean;
-  chatGPTConfidence?: number;
-  // tagsWithConfidence?: Array<{tag: string, confidence: number}>; // COMMENTED OUT - can be restored later
 }
 
 interface RestaurantCardProps {
@@ -128,42 +125,45 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
           </div>
         </div>
 
-        {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto min-h-[100px] sm:min-h-[120px]">
-          <div className="p-4 sm:p-6">
-            {/* Description Section */}
-            {restaurant.description && (
-              <div className="mb-4">
-                <p className={`text-gray-600 ${textClasses.body} leading-relaxed`}>
-                  {restaurant.description}
-                </p>
-              </div>
-            )}
-            
-            {/* Contact Information Section */}
-            {(restaurant.address || restaurant.phone || restaurant.website) && (
-              <div className="space-y-2">
-                {restaurant.address && (
-                  <div className="flex items-start gap-2 text-xs sm:text-sm text-gray-600">
-                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mt-0.5 flex-shrink-0" />
-                    <span className="text-xs">{restaurant.address}</span>
-                  </div>
-                )}
-                {restaurant.phone && (
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                    <Phone className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="text-xs">{restaurant.phone}</span>
-                  </div>
-                )}
-                {restaurant.website && (
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                    <Globe className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="text-xs truncate">{restaurant.website}</span>
-                  </div>
-                )}
-              </div>
-            )}
+        {/* Contact Information Section - Always visible */}
+        {(restaurant.address || restaurant.phone || restaurant.website) && (
+          <div className="px-4 sm:px-6 py-3 border-b border-gray-100">
+            <div className="space-y-2">
+              {restaurant.address && (
+                <div className="flex items-start gap-2 text-xs sm:text-sm text-gray-600">
+                  <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mt-0.5 flex-shrink-0" />
+                  <span className="text-xs">{restaurant.address}</span>
+                </div>
+              )}
+              {restaurant.phone && (
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                  <Phone className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="text-xs">{restaurant.phone}</span>
+                </div>
+              )}
+              {restaurant.website && (
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                  <Globe className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="text-xs truncate">{restaurant.website}</span>
+                </div>
+              )}
+            </div>
           </div>
+        )}
+        
+        {/* Details Link - Always visible at bottom */}
+        <div className="px-4 sm:px-6 py-2 bg-gray-50">
+          <a
+            href={`https://www.google.com/search?q=${encodeURIComponent(restaurant.name)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm sm:text-base text-orange-600 hover:text-orange-700 font-medium transition-colors"
+          >
+            <span>View Details</span>
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
         </div>
       </Card>
 

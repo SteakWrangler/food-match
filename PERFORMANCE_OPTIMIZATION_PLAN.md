@@ -54,50 +54,43 @@ Total: ~18 seconds (vs 28 seconds currently)
 
 **The Problem**: Users currently wait for all 20 restaurants to load before they can enter the room. This creates a 28-second initial wait time that makes the app feel slow and unresponsive. Users expect to be able to start using the app quickly, not wait for everything to be ready.
 
-**The Solution**: We'll let users enter the room as soon as the first 3 restaurants are loaded (6 seconds). While they're swiping through those 3, we'll load the next 6 in the background. Then while they're looking at those 9, we'll load the final 11. This reduces initial wait time from 28 seconds to 6 seconds while ensuring users always have restaurants to swipe through.
+**The Solution**: We'll let users enter the room as soon as the first 10 restaurants are loaded (12 seconds). While they're swiping through those 10, we'll load the next 10 in the background. This reduces initial wait time from 28 seconds to 12 seconds while ensuring users always have restaurants to swipe through.
 
 **Implementation**:
-- **Room Creation**: Load first 3 restaurants (6 seconds) → Let user enter room
-- **Background Loading**: Load next 6 restaurants while user swipes through first 3
-- **Background Loading**: Load final 11 restaurants while user continues swiping
+- **Room Creation**: Load first 10 restaurants (12 seconds) → Let user enter room
+- **Background Loading**: Load next 10 restaurants while user swipes through first 10
 - **Always happens**: This batch loading occurs every time a room is created
 - **Location**: `src/hooks/useRoom.ts`
 
 **Progressive Loading Implementation**:
 ```
 ### Progressive Loading Implementation
-**Goal**: Load restaurants in stages (3 → 6 → 11) with proper pagination
+**Goal**: Load restaurants in stages (10 → 10) with proper pagination
 
 **Loading Stages**:
-- Initial Stage: limit = 3, loadingStage = 'initial' (user sees loading screen)
-- Background Stage: limit = 6, loadingStage = 'background' (seamless background loading)
-- Final Stage: limit = 11, loadingStage = 'final' (seamless background loading)
+- Initial Stage: limit = 10, loadingStage = 'initial' (user sees loading screen)
+- Background Stage: limit = 10, loadingStage = 'background' (seamless background loading)
 
 **Implementation**:
 - Add loadingStage parameter to HybridRestaurantSearchParams interface
-- Modify loadInitialRestaurants to use limit = 3 for initial load
-- Modify loadMoreRestaurantsInBackground to use limit = 6 for background load
-- Add loadFinalRestaurantsInBackground function with limit = 11
+- Modify loadInitialRestaurants to use limit = 10 for initial load
+- Modify loadMoreRestaurantsInBackground to use limit = 10 for background load
 - Use pageToken for proper pagination between stages
 - Each stage waits for completion before starting next stage (await approach)
 - All background stages are invisible to user (no loading indicators)
 
 **API Call Structure**:
-1. Initial: searchRestaurants({ limit: 3, loadingStage: 'initial' })
-2. Background: searchRestaurants({ limit: 6, loadingStage: 'background', pageToken: result.nextPageToken })
-3. Final: searchRestaurants({ limit: 11, loadingStage: 'final', pageToken: result.nextPageToken })
+1. Initial: searchRestaurants({ limit: 10, loadingStage: 'initial' })
+2. Background: searchRestaurants({ limit: 10, loadingStage: 'background', pageToken: result.nextPageToken })
 ```
 
 **Initial Room Loading Strategy**:
 ```typescript
-// Room Creation: First 3 restaurants (6 seconds)
-restaurants: [R1, R2, R3] // User can enter room immediately
+// Room Creation: First 10 restaurants (12 seconds)
+restaurants: [R1, R2, R3, R4, R5, R6, R7, R8, R9, R10] // User can enter room immediately
 
-// Background: Next 6 restaurants load while user swipes
-restaurants: [R1, R2, R3, R4, R5, R6, R7, R8, R9] // Seamlessly added
-
-// Background: Final 11 restaurants load while user continues
-restaurants: [R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, ..., R20] // Complete initial batch
+// Background: Next 10 restaurants load while user swipes
+restaurants: [R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12, ..., R20] // Seamlessly added
 ```
 
 **User Experience**:
@@ -240,7 +233,7 @@ const remainingUnviewed = getUnviewedRestaurants(restaurants, viewedRestaurantId
 - Visual seams between loading batches
 
 **After**:
-- 6-second initial load (first batch of restaurants)
+- 12-second initial load (first batch of restaurants)
 - Seamless background loading
 - Brief, predictable delays when needed
 - No more "wait walls"
@@ -321,7 +314,7 @@ const handleSwipe = async (direction: 'left' | 'right') => {
 
 ## Success Metrics
 
-- ✅ Initial room entry: 6 seconds (vs 28 seconds)
+- ✅ Initial room entry: 12 seconds (vs 28 seconds)
 - ✅ No visual seams between loading batches
 - ✅ No "wait walls" longer than 1.5 seconds
 - ✅ Continuous restaurant supply

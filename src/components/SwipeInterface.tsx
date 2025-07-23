@@ -153,7 +153,13 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       if (delay > 0) {
         console.log(`🔄 Intelligent delay: ${delay}ms delay to buy time for background loading`);
         setShowLoadingSpinner(true);
+        
+        // Ensure the card is hidden during the delay
+        await new Promise(resolve => setTimeout(resolve, 50)); // Small delay to ensure opacity change takes effect
+        
+        // Wait for the calculated delay
         await new Promise(resolve => setTimeout(resolve, delay));
+        
         setShowLoadingSpinner(false);
       }
     }, 300); // Match the transition duration
@@ -306,15 +312,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   return (
     <div className="relative">
-      {/* Single loading indicator for loading more restaurants */}
-      {isLoading && (
-        <div className="absolute top-4 right-4 z-50 bg-white/95 backdrop-blur-sm border border-orange-200 rounded-full px-4 py-2 shadow-lg">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm text-gray-700 font-medium">Loading more restaurants...</span>
-          </div>
-        </div>
-      )}
+      {/* REMOVED: Background loading indicator - should be completely invisible to user */}
       
       <div className="flex items-center justify-center min-h-[600px] sm:min-h-[700px] p-2 sm:p-4 relative w-full">
         {/* Loading Spinner Between Cards (Intelligent Delay System) */}
@@ -353,11 +351,17 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           </div>
         ))}
         
-        {/* Current Card */}
+        {/* Current Card - Hide during fake delay */}
         <div
           ref={cardRef}
           className="relative z-10"
-          style={cardStyle}
+          style={{
+            ...cardStyle,
+            opacity: showLoadingSpinner ? 0 : 1, // Hide card during fake delay
+            transition: showLoadingSpinner 
+              ? 'opacity 0.1s ease-out' // Faster transition when hiding
+              : cardStyle.transition
+          }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}

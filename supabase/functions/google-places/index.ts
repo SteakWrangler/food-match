@@ -60,8 +60,6 @@ interface RestaurantData {
   website?: string;
   openingHours?: string[];
   googleTypes?: string[];
-  processedByChatGPT?: boolean;
-  chatGPTConfidence?: number;
 }
 
 // Function to filter out non-restaurant places
@@ -544,9 +542,7 @@ serve(async (req: Request) => {
                   phone: details.formatted_phone_number,
                   website: details.website,
                   openingHours: details.opening_hours?.weekday_text || [],
-                  googleTypes: place.types,
-                  processedByChatGPT: false,
-                  chatGPTConfidence: undefined
+                  googleTypes: place.types
                 };
               })
             );
@@ -691,61 +687,39 @@ serve(async (req: Request) => {
             const distance = calculateDistance(place.geometry.location.lat, place.geometry.location.lng, lat, lng);
             const estimatedTime = calculateEstimatedTime(distance);
 
-            // Step 2: PARALLEL - Process Photos API calls and ChatGPT processing simultaneously
-            const [images, chatGPTResult] = await Promise.all([
-              // Photos API calls (can run in parallel)
-              (async () => {
-                let images: string[] = [];
-                if (details.photos && details.photos.length > 0) {
-                  console.log(`Found ${details.photos.length} photos for ${place.name}`);
-                  try {
-                    // Get up to 5 photos - use photo references immediately as they expire
-                    const photoPromises = details.photos.slice(0, 5).map(async (photo: any, index: number) => {
-                      console.log(`Processing photo ${index + 1} for ${place.name}:`, photo);
+            // Step 2: PARALLEL - Process Photos API calls
+            const [images] = await
+              Promise.all([
+                // Photos API calls
+                (async () => {
+                  let images: string[] = [];
+                  if (details.photos && details.photos.length > 0) {
+                    try {
+                      console.log(`Fetching ${Math.min(details.photos.length, 5)} photos for ${place.name}`);
                       
-                      // Use the correct Google Places Photo API URL format
-                      const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&maxheight=300&photoreference=${photo.photo_reference}&key=${googlePlacesApiKey}`;
-                      console.log(`Photo URL for ${place.name}: ${photoUrl}`);
-                      
-                      // Test if the photo URL is accessible
-                      try {
-                        const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
-                        console.log(`Photo response for ${place.name}: ${photoResponse.status}`);
-                        if (photoResponse.ok) {
-                          console.log(`✅ Photo accessible for ${place.name}`);
+                      const photoPromises = details.photos.slice(0, 5).map(async (photo: any, index: number) => {
+                        try {
+                          const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&maxheight=300&photo_reference=${photo.photo_reference}&key=${googlePlacesApiKey}`;
+                          console.log(`Photo ${index + 1} URL for ${place.name}: ${photoUrl}`);
                           return photoUrl;
-                        } else {
-                          console.log(`❌ Photo not accessible for ${place.name}: ${photoResponse.status}`);
+                        } catch (error) {
+                          console.log(`❌ Photo fetch failed for ${place.name}:`, error.message);
                           return null;
                         }
-                      } catch (error) {
-                        console.log(`❌ Photo fetch failed for ${place.name}:`, error.message);
-                        return null;
-                      }
-                    });
-                    
-                    const photoResults = await Promise.all(photoPromises);
-                    images = photoResults.filter(url => url !== null);
-                    console.log(`Final images for ${place.name}:`, images);
-                  } catch (error) {
-                    console.log(`Places Photos API failed for ${place.name}:`, error.message);
+                      });
+                      
+                      const photoResults = await Promise.all(photoPromises);
+                      images = photoResults.filter(url => url !== null);
+                      console.log(`Final images for ${place.name}:`, images);
+                    } catch (error) {
+                      console.log(`Places Photos API failed for ${place.name}:`, error.message);
+                    }
+                  } else {
+                    console.log(`No photos found for ${place.name}`);
                   }
-                } else {
-                  console.log(`No photos found for ${place.name}`);
-                }
-                return images;
-              })(),
-              
-              // ChatGPT processing (can run in parallel with photos)
-              (async () => {
-                // For now, return a placeholder - ChatGPT processing will be handled by the hybrid system
-                // This is where we would call the ChatGPT function if needed
-                return {
-                  processedByChatGPT: false,
-                  chatGPTConfidence: undefined
-                };
-              })()
-            ]);
+                  return images;
+                })()
+              ]);
 
             // Use first image as main image, or fallback to a placeholder
             const mainImage = images.length > 0 ? images[0] : 'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop';
@@ -759,15 +733,15 @@ serve(async (req: Request) => {
               priceRange: priceLevelToString(place.price_level),
               distance,
               estimatedTime,
-              description: `Restaurant in ${place.vicinity}`,
-              tags: [], // Let ChatGPT determine all tags
+              description: '', // No description needed
+              tags: place.types.filter((type: string) => 
+                ['restaurant', 'food', 'establishment'].includes(type)
+              ),
               address: place.vicinity,
               phone: details.formatted_phone_number,
               website: details.website,
               openingHours: details.opening_hours?.weekday_text || [],
-              googleTypes: place.types,
-              processedByChatGPT: chatGPTResult.processedByChatGPT,
-              chatGPTConfidence: chatGPTResult.chatGPTConfidence
+              googleTypes: place.types
             };
           })
         );

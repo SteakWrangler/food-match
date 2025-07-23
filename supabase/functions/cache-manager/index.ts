@@ -8,13 +8,12 @@ const corsHeaders = {
 };
 
 interface CacheEntry {
+  id: string;
   restaurant_name: string;
   google_place_id?: string;
-  cuisine?: string;
-  tags?: string[];
-  description?: string;
-  confidence_score?: number;
-  raw_chatgpt_response?: any;
+  data: any;
+  created_at: string;
+  updated_at: string;
 }
 
 interface CacheStats {
@@ -59,7 +58,6 @@ serve(async (req: Request) => {
       }
 
       try {
-        // Note: ChatGPT cache has been removed, only checking restaurant_cache
         const { data: restaurantData, error: restaurantError } = await supabase
           .from('restaurant_cache')
           .select('*')
@@ -112,7 +110,6 @@ serve(async (req: Request) => {
     // Get cache statistics
     if (action === 'get-stats') {
       try {
-        // Note: ChatGPT cache has been removed, only checking restaurant_cache
         const { count: restaurantCount, error: restaurantError } = await supabase
           .from('restaurant_cache')
           .select('*', { count: 'exact', head: true });
@@ -154,7 +151,6 @@ serve(async (req: Request) => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        // Note: ChatGPT cache has been removed, only cleaning restaurant_cache
         const { data: restaurantDeleted, error: restaurantError } = await supabase
           .from('restaurant_cache')
           .delete()

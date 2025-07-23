@@ -12,15 +12,12 @@ export interface Restaurant {
   description: string;
   tags: string[];
   
-  // NEW FIELDS FOR HYBRID SYSTEM
+  // Google Places API fields
   address?: string;
   phone?: string;
   website?: string;
   openingHours?: string[];
   googleTypes?: string[]; // Google Places API types
-  processedByChatGPT?: boolean; // Track if ChatGPT processed this
-  chatGPTConfidence?: number; // Confidence score from ChatGPT
-  tagsWithConfidence?: Array<{tag: string, confidence: number}>; // Tags with confidence scores for filtering
 }
 
 export const restaurants: Restaurant[] = [

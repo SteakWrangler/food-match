@@ -32,7 +32,7 @@ export interface HybridRestaurantSearchParams {
   limit?: number;
   useHybrid?: boolean;
   pageToken?: string; // Add pageToken parameter
-  fastMode?: boolean; // Add fast mode to skip ChatGPT processing initially
+  fastMode?: boolean; // Add fast mode for initial loads
 }
 
 export class HybridRestaurantsAPI {
@@ -40,12 +40,12 @@ export class HybridRestaurantsAPI {
     try {
       const { useHybrid = true, fastMode = false, ...searchParams } = params;
 
-      // Use fast mode for initial loads (skip ChatGPT processing)
+      // Use fast mode for initial loads
       if (fastMode) {
         return await this.searchWithGooglePlacesOnly(searchParams);
       }
 
-      // Always use hybrid system (Google Places + ChatGPT)
+      // Always use hybrid system (Google Places)
       return await this.searchWithHybridSystem(searchParams);
     } catch (error) {
       console.error('Error in hybrid restaurant search:', error);
@@ -55,7 +55,7 @@ export class HybridRestaurantsAPI {
 
   private async searchWithGooglePlacesOnly(params: Omit<HybridRestaurantSearchParams, 'useHybrid' | 'fastMode'>): Promise<{ restaurants: Restaurant[], nextPageToken?: string }> {
     try {
-      // Only get restaurants from Google Places (skip ChatGPT processing)
+      // Only get restaurants from Google Places
       const { data: googlePlacesData, error: googleError } = await supabase.functions.invoke('google-places', {
         body: {
           action: 'search-restaurants',
@@ -80,7 +80,7 @@ export class HybridRestaurantsAPI {
 
       console.log(`Found ${googlePlacesData.restaurants.length} restaurants from Google Places (fast mode)`);
 
-      // Return Google Places data directly without ChatGPT processing
+      // Return Google Places data directly
       return this.transformGooglePlacesData(googlePlacesData.restaurants);
 
     } catch (error) {
@@ -117,30 +117,11 @@ export class HybridRestaurantsAPI {
       console.log(`Found ${googlePlacesData.restaurants.length} restaurants from Google Places`);
       console.log('Sample restaurant data:', googlePlacesData.restaurants[0]);
 
-      // Step 2: Process with ChatGPT (with caching)
-      const { data: chatGPTData, error: chatGPTError } = await supabase.functions.invoke('chatgpt-processor', {
-        body: {
-          action: 'process-restaurants',
-          restaurants: googlePlacesData.restaurants,
-          google_place_id: params.location
-        },
-      });
-
-      if (chatGPTError) {
-        console.warn('ChatGPT processing failed, using Google Places data only:', chatGPTError.message);
-        return this.transformGooglePlacesData(googlePlacesData.restaurants);
-      }
-
-      if (!chatGPTData || !chatGPTData.restaurants) {
-        console.warn('No ChatGPT data returned, using Google Places data only');
-        return this.transformGooglePlacesData(googlePlacesData.restaurants);
-      }
-
-      console.log(`Processed ${chatGPTData.processed_count} restaurants with ChatGPT`);
-      console.log('Sample ChatGPT processed data:', chatGPTData.restaurants[0]);
+      // Step 2: Processing removed - just return Google Places data
+      console.log('Processing removed - using Google Places data only');
 
       // Step 3: Transform and return final data with nextPageToken
-      const transformedData = this.transformHybridData(chatGPTData.restaurants);
+      const transformedData = this.transformGooglePlacesData(googlePlacesData.restaurants);
       return {
         restaurants: transformedData.restaurants,
         nextPageToken: googlePlacesData.nextPageToken // Pass through the nextPageToken from Google Places
@@ -164,16 +145,13 @@ export class HybridRestaurantsAPI {
         priceRange: restaurant.priceRange || '',
         distance: restaurant.distance || '',
         estimatedTime: restaurant.estimatedTime || '',
-        description: restaurant.description || '',
+        description: '', // No description needed
         tags: restaurant.tags || [],
-        tagsWithConfidence: [], // Empty array when ChatGPT fails
         address: restaurant.address,
         phone: restaurant.phone,
         website: restaurant.website,
         openingHours: restaurant.openingHours,
-        googleTypes: restaurant.googleTypes,
-        processedByChatGPT: false,
-        chatGPTConfidence: 0
+        googleTypes: restaurant.googleTypes
       })),
       nextPageToken: undefined // Google Places doesn't return a page token directly in this response
     };
@@ -191,18 +169,15 @@ export class HybridRestaurantsAPI {
         priceRange: restaurant.priceRange || '',
         distance: restaurant.distance || '',
         estimatedTime: restaurant.estimatedTime || '',
-        description: restaurant.description || '',
+        description: '', // No description needed
         tags: restaurant.tags || [],
-        tagsWithConfidence: restaurant.tags_with_confidence || [],
         address: restaurant.address,
         phone: restaurant.phone,
         website: restaurant.website,
         openingHours: restaurant.openingHours,
-        googleTypes: restaurant.googleTypes,
-        processedByChatGPT: restaurant.processedByChatGPT || false,
-        chatGPTConfidence: restaurant.chatGPTConfidence || 0
+        googleTypes: restaurant.googleTypes
       })),
-      nextPageToken: undefined // ChatGPT doesn't return a page token directly in this response
+      nextPageToken: undefined // No page token in this response
     };
   }
 

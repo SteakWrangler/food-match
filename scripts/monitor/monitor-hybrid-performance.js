@@ -21,7 +21,6 @@ class HybridSystemMonitor {
       averageResponseTime: 0,
       cacheHits: 0,
       cacheMisses: 0,
-      aiEnhancedCount: 0,
       totalRestaurants: 0
     };
     this.responseTimes = [];
@@ -77,15 +76,13 @@ class HybridSystemMonitor {
       this.metrics.successfulRequests++;
       this.metrics.totalRequests++;
       this.metrics.totalRestaurants += data.restaurants.length;
-      this.metrics.aiEnhancedCount += data.restaurants.filter(r => r.processedByChatGPT).length;
 
       // Update average response time
       this.metrics.averageResponseTime = this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length;
 
       return {
         restaurants: data.restaurants,
-        responseTime,
-        aiEnhancedCount: data.restaurants.filter(r => r.processedByChatGPT).length
+        responseTime
       };
     } catch (error) {
       this.metrics.failedRequests++;
@@ -105,7 +102,7 @@ class HybridSystemMonitor {
       const result = await this.testHybridSystem();
       if (result) {
         results.push(result);
-        console.log(`✅ Response time: ${result.responseTime}ms, AI enhanced: ${result.aiEnhancedCount}/${result.restaurants.length}`);
+        console.log(`✅ Response time: ${result.responseTime}ms, Restaurants: ${result.restaurants.length}`);
       } else {
         console.log('❌ Test failed');
       }
@@ -136,8 +133,7 @@ class HybridSystemMonitor {
       console.log('\n🔧 Hybrid System Health:');
       console.log(`   Response time: ${hybridResult.responseTime}ms`);
       console.log(`   Restaurants returned: ${hybridResult.restaurants.length}`);
-      console.log(`   AI enhanced: ${hybridResult.aiEnhancedCount}`);
-      console.log(`   AI enhancement rate: ${Math.round((hybridResult.aiEnhancedCount / hybridResult.restaurants.length) * 100)}%`);
+      console.log(`   Total restaurants processed: ${this.metrics.totalRestaurants}`);
     }
 
     // Overall metrics
@@ -146,7 +142,6 @@ class HybridSystemMonitor {
     console.log(`   Success rate: ${this.metrics.totalRequests > 0 ? Math.round((this.metrics.successfulRequests / this.metrics.totalRequests) * 100) : 0}%`);
     console.log(`   Average response time: ${Math.round(this.metrics.averageResponseTime)}ms`);
     console.log(`   Total restaurants processed: ${this.metrics.totalRestaurants}`);
-    console.log(`   Total AI enhanced: ${this.metrics.aiEnhancedCount}`);
   }
 
   async runContinuousMonitoring(intervalMs = 30000) {
@@ -208,4 +203,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = HybridSystemMonitor; 
+module.exports = HybridSystemMonitor;

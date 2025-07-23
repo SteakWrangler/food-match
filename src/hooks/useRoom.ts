@@ -123,7 +123,7 @@ const useRoom = () => {
 
   const loadInitialRestaurants = async (roomId: string, location: string, filters?: FilterState, isInitialLoad: boolean = false) => {
     try {
-      console.log('🚀 STAGE 1: Loading initial 3 restaurants for quick room entry...');
+      console.log('🚀 STAGE 1: Loading initial 10 restaurants for quick room entry...');
       console.log('Applied filters:', filters);
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
@@ -132,7 +132,7 @@ const useRoom = () => {
         location,
         radius: (filters?.distance?.[0] || defaultFilters.distance[0]) * 1609, // Convert miles to meters, use filter distance or default
         openNow: filters?.openNow ?? false, // Changed default to false to get more results
-        limit: 3 // Load only 3 restaurants initially for quick room entry
+        limit: 10 // Load 10 restaurants initially for quick room entry
       };
 
       // Add price range filter - use "or-less" logic
@@ -177,10 +177,10 @@ const useRoom = () => {
       
       // If this was the initial load, start progressive loading in background
       if (isInitialLoad && result.nextPageToken) {
-        console.log('🔄 Starting STAGE 2: Loading next 6 restaurants in background...');
-        // Stage 2: Load next 6 restaurants in background
+        console.log('🔄 Starting STAGE 2: Loading next 10 restaurants in background...');
+        // Stage 2: Load next 10 restaurants in background
         setTimeout(() => {
-          loadMoreRestaurantsInBackground(roomId, location, filters, result.nextPageToken, 6);
+          loadMoreRestaurantsInBackground(roomId, location, filters, result.nextPageToken, 10);
         }, 1000); // Wait 1 second before loading more
       }
       
@@ -193,7 +193,7 @@ const useRoom = () => {
 
   const loadMoreRestaurantsInBackground = async (roomId: string, location: string, filters?: FilterState, pageToken?: string, batchSize: number = 20) => {
     try {
-      const stageName = batchSize === 6 ? 'STAGE 2' : batchSize === 11 ? 'STAGE 3' : 'BACKGROUND';
+      const stageName = batchSize === 10 ? 'STAGE 2' : 'BACKGROUND';
       console.log(`🔄 ${stageName}: Loading ${batchSize} more restaurants in background...`);
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
@@ -224,6 +224,11 @@ const useRoom = () => {
       if (result.restaurants.length > 0) {
         // Append new restaurants to current room state (preserve swipes)
         const updatedRestaurants = [...roomState.restaurants, ...result.restaurants];
+        
+        // Add a small delay to prevent user from seeing individual restaurants being added
+        // This makes the batch loading appear more seamless
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const updatedRoom: RoomState = {
           ...roomState,
           restaurants: updatedRestaurants,
@@ -246,15 +251,9 @@ const useRoom = () => {
         let nextDelay = 1500; // Default delay
         let nextStageName = 'BACKGROUND';
         
-        // Progressive loading stages
-        if (batchSize === 6) {
-          // Stage 2 (6 restaurants) → Stage 3 (11 restaurants)
-          nextBatchSize = 11;
-          nextDelay = 2000; // Slightly longer delay for final stage
-          nextStageName = 'STAGE 3';
-          console.log('🔄 Progressive loading: Moving to STAGE 3 (11 restaurants)');
-        } else if (batchSize === 11) {
-          // Stage 3 (11 restaurants) → Continue with standard batches (20 restaurants)
+        // Progressive loading stages - simplified to just 10→10
+        if (batchSize === 10) {
+          // Stage 2 (10 restaurants) → Continue with standard batches (20 restaurants)
           nextBatchSize = 20;
           nextDelay = 1500;
           nextStageName = 'BACKGROUND';
@@ -473,6 +472,10 @@ const useRoom = () => {
         
         // Handle insufficient restaurants by adding end card if needed
         const processedRestaurants = handleInsufficientRestaurants(result.restaurants.length, result.restaurants);
+        
+        // Add a small delay to prevent user from seeing individual restaurants being added
+        // This makes the batch loading appear more seamless
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         const updatedRoom: RoomState = {
           ...roomState,

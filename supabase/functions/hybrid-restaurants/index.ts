@@ -24,8 +24,6 @@ interface RestaurantData {
   website?: string;
   openingHours?: string[];
   googleTypes?: string[];
-  processedByChatGPT?: boolean;
-  chatGPTConfidence?: number;
 }
 
 serve(async (req: Request) => {
@@ -102,48 +100,16 @@ serve(async (req: Request) => {
 
       console.log(`Found ${googlePlacesData.restaurants.length} restaurants from Google Places`);
 
-      // Step 2: Process with ChatGPT (with caching)
-      const { data: chatGPTData, error: chatGPTError } = await supabase.functions.invoke('chatgpt-processor', {
-        body: {
-          action: 'process-restaurants',
-          restaurants: googlePlacesData.restaurants,
-          google_place_id: location
-        },
-      });
-
-      if (chatGPTError) {
-        console.warn('ChatGPT processing failed, using Google Places data only:', chatGPTError.message);
-        return new Response(JSON.stringify({
-          restaurants: googlePlacesData.restaurants,
-          processed_count: 0,
-          cache_hits: 0,
-          cache_misses: googlePlacesData.restaurants.length
-        }), {
-          headers: corsHeaders
-        });
-      }
-
-      if (!chatGPTData || !chatGPTData.restaurants) {
-        console.warn('No ChatGPT data returned, using Google Places data only');
-        return new Response(JSON.stringify({
-          restaurants: googlePlacesData.restaurants,
-          processed_count: 0,
-          cache_hits: 0,
-          cache_misses: googlePlacesData.restaurants.length
-        }), {
-          headers: corsHeaders
-        });
-      }
-
-      console.log(`Processed ${chatGPTData.processed_count} restaurants with ChatGPT`);
+      // Step 2: Processing removed - just return Google Places data
+      console.log('Processing removed - using Google Places data only');
 
       // Step 3: Return final data
       return new Response(JSON.stringify({
-        restaurants: chatGPTData.restaurants,
-        processed_count: chatGPTData.processed_count || 0,
-        cache_hits: chatGPTData.cache_hits || 0,
-        cache_misses: chatGPTData.cache_misses || 0,
-        total_restaurants: chatGPTData.restaurants.length
+        restaurants: googlePlacesData.restaurants,
+        processed_count: 0,
+        cache_hits: 0,
+        cache_misses: googlePlacesData.restaurants.length,
+        total_restaurants: googlePlacesData.restaurants.length
       }), {
         headers: corsHeaders
       });

@@ -514,17 +514,7 @@ const Index = () => {
               </p>
             </div>
             
-            {/* Non-blocking loading indicator for initial restaurant loading */}
-            {isLoadingRestaurantsFromHook && roomState && (
-              <div className="fixed top-2 right-2 z-50 bg-white/90 backdrop-blur-sm border border-orange-200 rounded-lg px-3 py-1.5 shadow-md">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-xs text-gray-600 font-medium">
-                    {roomState.restaurants.length <= 8 ? 'Loading...' : 'Loading more...'}
-                  </span>
-                </div>
-              </div>
-            )}
+            {/* REMOVED: Background loading indicator - should be completely invisible to user */}
           </>
         )}
       </main>
