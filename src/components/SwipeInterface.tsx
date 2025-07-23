@@ -35,7 +35,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(false);
-  const [showLoadingSpinner, setShowLoadingSpinner] = useState(false); // Add state for loading spinner
   const cardRef = useRef<HTMLDivElement>(null);
   const deviceType = useDeviceType();
 
@@ -107,16 +106,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     return getUnviewedRestaurants(orderedRestaurants, viewedIds).length;
   }, [orderedRestaurants, roomState?.viewedRestaurantIds]);
 
-  // Calculate delay based on remaining restaurants and loading state
-  const calculateDelay = (remainingRestaurants: number, isLoading: boolean) => {
-    if (!isLoading) return 0;
-    
-    if (remainingRestaurants <= 3) return 1500; // 1.5s
-    if (remainingRestaurants <= 5) return 1000; // 1s  
-    if (remainingRestaurants <= 8) return 500;  // 0.5s
-    
-    return 0; // No delay
-  };
+
 
   // Handle swipe
   const handleSwipe = async (direction: 'left' | 'right') => {
@@ -143,25 +133,10 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     // Set the final position to animate the card off-screen
     setDragOffset({ x: finalOffset, y: dragOffset.y });
     
-    // Wait for the animation to complete, then check for intelligent delay
-    setTimeout(async () => {
+    // Wait for the animation to complete
+    setTimeout(() => {
       setIsDragging(false);
       setDragOffset({ x: 0, y: 0 });
-      
-      // Check if we need to show loading spinner (intelligent delay system)
-      const delay = calculateDelay(remainingUnviewed - 1, isLoading); // -1 because we're about to move to next card
-      if (delay > 0) {
-        console.log(`🔄 Intelligent delay: ${delay}ms delay to buy time for background loading`);
-        setShowLoadingSpinner(true);
-        
-        // Ensure the card is hidden during the delay
-        await new Promise(resolve => setTimeout(resolve, 50)); // Small delay to ensure opacity change takes effect
-        
-        // Wait for the calculated delay
-        await new Promise(resolve => setTimeout(resolve, delay));
-        
-        setShowLoadingSpinner(false);
-      }
     }, 300); // Match the transition duration
   };
 
@@ -251,15 +226,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     }
   }, [remainingUnviewed, onGenerateMore, isLoading]);
 
-  // Log intelligent delay system status
-  useEffect(() => {
-    if (isLoading && remainingUnviewed <= 8) {
-      const delay = calculateDelay(remainingUnviewed, isLoading);
-      if (delay > 0) {
-        console.log(`🔄 Intelligent delay system active: ${remainingUnviewed} restaurants remaining, ${delay}ms delay`);
-      }
-    }
-  }, [remainingUnviewed, isLoading]);
+
 
   // Card style with drag transform
   const cardStyle: React.CSSProperties = {
@@ -315,20 +282,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       {/* REMOVED: Background loading indicator - should be completely invisible to user */}
       
       <div className="flex items-center justify-center min-h-[600px] sm:min-h-[700px] p-2 sm:p-4 relative w-full">
-        {/* Loading Spinner Between Cards (Intelligent Delay System) */}
-        {showLoadingSpinner && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
-            <div className="bg-white/95 backdrop-blur-sm border border-orange-200 rounded-2xl p-8 shadow-lg">
-              <div className="flex flex-col items-center space-y-4">
-                <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Loading more restaurants...</h3>
-                  <p className="text-sm text-gray-600">Finding great places for you</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
         
         {/* Background Cards - Hidden until they become the top card */}
         {orderedRestaurants.slice(orderedRestaurants.indexOf(currentRestaurant) + 1, orderedRestaurants.indexOf(currentRestaurant) + 3).map((restaurant, index) => (
@@ -351,17 +304,11 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           </div>
         ))}
         
-        {/* Current Card - Hide during fake delay */}
+        {/* Current Card */}
         <div
           ref={cardRef}
           className="relative z-10"
-          style={{
-            ...cardStyle,
-            opacity: showLoadingSpinner ? 0 : 1, // Hide card during fake delay
-            transition: showLoadingSpinner 
-              ? 'opacity 0.1s ease-out' // Faster transition when hiding
-              : cardStyle.transition
-          }}
+          style={cardStyle}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}

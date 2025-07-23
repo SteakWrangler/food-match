@@ -124,42 +124,30 @@ restaurants: [R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12, ..., R20] // Se
 - No hard-coded delays - natural flow based on completion
 ```
 
-### 4. **Intelligent Delay System (Fake Loading)**
-**Goal**: Prevent "wait walls" with subtle delays
+### 4. **Smart Loading Triggers** (Updated)
+**Goal**: Maintain continuous restaurant supply without artificial delays
 
-**The Problem**: Even with proactive loading, there may be scenarios where users reach the end of available restaurants before new ones finish loading. This creates a "wait wall" where users can't swipe anymore and must wait, which breaks the smooth user experience and makes the app feel unresponsive.
+**The Problem**: After the initial 20 restaurants are exhausted, users hit a loading screen while waiting for more restaurants to load. This creates a jarring break in the user experience where they go from smooth swiping to waiting, which makes the app feel unresponsive and breaks the flow.
 
-**The Solution**: We'll implement intelligent delays that subtly slow down the user's swiping speed when they're approaching the end and new restaurants are still loading. These delays (0.5s, 1s, 1.5s) are short enough to feel natural but long enough to give background loading time to complete, preventing users from ever hitting a complete stop.
-
-**Implementation**:
-- Add loading spinner between cards when near end AND loading
-- Progressive delays: 0.5s (8 remaining) → 1s (5 remaining) → 1.5s (3 remaining)
-- Only activate when actually loading more restaurants
-- **Location**: `src/components/SwipeInterface.tsx`
-
-**Fake Loading Implementation Details**:
-```
-### Intelligent Delay System (Fake Loading)
-**Goal**: Prevent users from outpacing background loading with brief visual delays
+**The Solution**: We'll proactively monitor when users are approaching the end of their current batch (when they have 8 restaurants remaining) and automatically start loading the next batch of 20 restaurants in the background. This ensures new restaurants are ready by the time users reach the end, maintaining continuous flow without artificial delays.
 
 **Implementation**:
-- Show loading spinner instead of next card when approaching end
-- Delay duration: 0.5s (8 remaining) → 1s (5 remaining) → 1.5s (3 remaining)
-- Purpose: Buy time for background loading, not to slow down actual loading process
-- Animation: Card swipes off → Loading spinner appears → After delay → Next card appears
-```
+- Monitor when user reaches "last 8" of current available restaurants
+- Automatically load next batch of 20 restaurants
+- Append new batches to existing array structure
+- **Location**: `src/hooks/useRoom.ts`
 
-**Delay Logic**:
-```typescript
-const calculateDelay = (remainingRestaurants: number, isLoading: boolean) => {
-  if (!isLoading) return 0;
-  
-  if (remainingRestaurants <= 3) return 1500; // 1.5s
-  if (remainingRestaurants <= 5) return 1000; // 1s  
-  if (remainingRestaurants <= 8) return 500;  // 0.5s
-  
-  return 0; // No delay
-};
+**Background Loading Strategy**:
+```
+### Background Loading Strategy
+**Goal**: Load restaurants sequentially without race conditions
+
+**Implementation**:
+- Wait for each batch to complete before starting the next
+- Use nextPageToken from previous call for pagination
+- Prevent multiple simultaneous background loads
+- Handle errors gracefully without breaking the chain
+- No artificial delays - natural flow based on completion
 ```
 
 ## 🔧 Technical Implementation Steps
@@ -235,7 +223,7 @@ const remainingUnviewed = getUnviewedRestaurants(restaurants, viewedRestaurantId
 **After**:
 - 12-second initial load (first batch of restaurants)
 - Seamless background loading
-- Brief, predictable delays when needed
+- No artificial delays
 - No more "wait walls"
 
 ## 🎭 User Experience Flow
@@ -243,7 +231,7 @@ const remainingUnviewed = getUnviewedRestaurants(restaurants, viewedRestaurantId
 1. **User creates room** → Immediately sees available cards (only real data)
 2. **User starts swiping** → More cards become available as data loads
 3. **User continues swiping** → Seamless experience with no empty cards
-4. **User approaches end** → Brief loading spinner, more restaurants load
+4. **User continues swiping** → Seamless experience with no delays
 5. **User never hits a wall** → Continuous, smooth experience
 
 ## 🎨 Visual Implementation
@@ -251,10 +239,10 @@ const remainingUnviewed = getUnviewedRestaurants(restaurants, viewedRestaurantId
 ### Loading Strategy
 ```
 ### Loading Strategy
-- **Initial Loading**: Full-screen loading screen until first 3 restaurants are ready
+- **Initial Loading**: Full-screen loading screen until first 10 restaurants are ready
 - **Background Loading**: Completely seamless - no visual indicators
-- **End Loading**: Brief fake loading spinner between cards when user reaches end and more restaurants are still loading
-- **Fake Loading Purpose**: Buy time for background loading, not to slow down actual loading process
+- **Smart Loading**: Proactive loading when user approaches end of current batch
+- **No Artificial Delays**: Natural flow without fake loading spinners
 ```
 
 ### Array Management
@@ -287,36 +275,38 @@ const availableRestaurants = getAvailableRestaurants(restaurants);
 ))}
 ```
 
-### Loading Spinner Between Cards
+### Smart Loading Triggers
 ```typescript
 // In SwipeInterface.tsx
-const handleSwipe = async (direction: 'left' | 'right') => {
-  // Handle the swipe
-  onSwipe(currentRestaurant.id, direction);
-  
-  // Check if we need to slow down the transition
-  if (shouldSlowDownUser()) {
-    setIsTransitioning(true);
-    setShowLoadingSpinner(true);
+useEffect(() => {
+  // Only trigger if we have the onGenerateMore function and we're running low on restaurants
+  if (onGenerateMore && remainingUnviewed <= 8) {
+    console.log(`🔄 Smart loading trigger: ${remainingUnviewed} restaurants remaining`);
     
-    // Show spinner for calculated delay
-    const delay = calculateDelay(availableRestaurants.length - currentIndex, isLoadingMore);
-    await new Promise(resolve => setTimeout(resolve, delay));
+    // Add a delay to prevent multiple rapid calls
+    const timeoutId = setTimeout(() => {
+      if (!isLoading) {
+        console.log('🚀 Triggering smart loading of more restaurants...');
+        setIsLoading(true);
+        onGenerateMore().finally(() => {
+          setIsLoading(false);
+          console.log('✅ Smart loading completed');
+        });
+      } else {
+        console.log('⚠️ Already loading, skipping duplicate request');
+      }
+    }, 500); // Slightly longer delay for better debouncing
     
-    setShowLoadingSpinner(false);
-    setIsTransitioning(false);
+    return () => clearTimeout(timeoutId);
   }
-  
-  // Move to next card
-  setCurrentIndex(currentIndex + 1);
-};
+}, [remainingUnviewed, onGenerateMore, isLoading]);
 ```
 
 ## Success Metrics
 
 - ✅ Initial room entry: 12 seconds (vs 28 seconds)
 - ✅ No visual seams between loading batches
-- ✅ No "wait walls" longer than 1.5 seconds
+- ✅ No artificial delays or "wait walls"
 - ✅ Continuous restaurant supply
 - ✅ Smooth, responsive feel
 - ✅ Maintained ChatGPT descriptions
@@ -328,7 +318,7 @@ const handleSwipe = async (direction: 'left' | 'right') => {
 - **Simple array management** - just append as data loads
 - **Seamless user experience** with no loading gaps
 - **Smart resource management** with progressive loading
-- **Graceful degradation** with intelligent delays
+- **Graceful degradation** with smart loading triggers
 - **Predictable performance** with consistent timing
 - **Clean state management** - no complex null handling
 
