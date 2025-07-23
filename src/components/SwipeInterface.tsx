@@ -331,6 +331,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
             key={`current-${currentRestaurant.id}`}
             restaurant={currentRestaurant}
             onSwipe={handleSwipe}
+            roomLocation={roomState?.location}
           />
         </div>
 

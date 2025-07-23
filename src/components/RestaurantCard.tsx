@@ -29,9 +29,10 @@ interface RestaurantCardProps {
   onSwipe: (direction: 'left' | 'right') => void;
   style?: React.CSSProperties;
   showButtons?: boolean;
+  roomLocation?: string; // Add room location for Google Maps search
 }
 
-const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, style, showButtons = true }) => {
+const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, style, showButtons = true, roomLocation }) => {
   const deviceType = useDeviceType();
   
   // Responsive card sizing
@@ -132,7 +133,14 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
               {restaurant.address && (
                 <div className="flex items-start gap-2 text-xs sm:text-sm text-gray-600">
                   <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mt-0.5 flex-shrink-0" />
-                  <span className="text-xs">{restaurant.address}</span>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs cursor-pointer"
+                  >
+                    {restaurant.address}
+                  </a>
                 </div>
               )}
               {restaurant.phone && (
@@ -144,7 +152,14 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
               {restaurant.website && (
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
                   <Globe className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="text-xs truncate">{restaurant.website}</span>
+                  <a
+                    href={restaurant.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs truncate cursor-pointer"
+                  >
+                    {restaurant.website}
+                  </a>
                 </div>
               )}
             </div>
@@ -152,9 +167,12 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
         )}
         
         {/* Details Link - Always visible at bottom */}
-        <div className="px-4 sm:px-6 py-2 bg-gray-50">
+        <div className="px-4 sm:px-6 py-2 bg-gray-50 flex items-center justify-center">
           <a
-            href={`https://www.google.com/search?q=${encodeURIComponent(restaurant.name)}`}
+            href={roomLocation 
+              ? `https://www.google.com/maps/search/${encodeURIComponent(restaurant.name)}/@${encodeURIComponent(roomLocation)}`
+              : `https://www.google.com/maps/search/${encodeURIComponent(restaurant.name)}`
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-sm sm:text-base text-orange-600 hover:text-orange-700 font-medium transition-colors"
