@@ -565,7 +565,7 @@ const Index = () => {
                   Find food together!
                 </h2>
                 <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-6 sm:mb-8 md:mb-10 leading-relaxed">
-                  Swipe on restaurants with your dining partner and get matched when you both like the same place.
+                  Swipe on restaurants with your dining partners and get matched when you all like the same place.
                 </p>
                 
                 <div className="space-y-3 sm:space-y-4 md:space-y-5">
