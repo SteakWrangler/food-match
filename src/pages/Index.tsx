@@ -43,6 +43,21 @@ const Index = () => {
   
   const deviceType = useDeviceType();
   
+  // Helper function to check if location is coordinates and return appropriate display text
+  const getLocationDisplayText = (location: string | null, formattedLocation: string | null) => {
+    if (formattedLocation) {
+      return formattedLocation;
+    }
+    if (!location) {
+      return 'Set Location';
+    }
+    // Check if location looks like coordinates (contains comma and numbers)
+    if (location.includes(',') && /\d/.test(location)) {
+      return 'Location set'; // Don't show coordinates to user
+    }
+    return location;
+  };
+  
   const {
     roomState,
     isHost,
@@ -500,8 +515,8 @@ const Index = () => {
                 }`}
               >
                 <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{formattedLocation || location || 'Set Location'}</span>
-                <span className="sm:hidden">{formattedLocation || location ? 'Location' : 'Set'}</span>
+                <span className="hidden sm:inline">{getLocationDisplayText(location, formattedLocation)}</span>
+                <span className="sm:hidden">{location || formattedLocation ? 'Location' : 'Set'}</span>
               </button>
               {activeTab === 'specific' && (
                 <Button

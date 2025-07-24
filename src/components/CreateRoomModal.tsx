@@ -97,7 +97,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           console.error('Reverse geocoding failed:', error);
           // Fallback to coordinates
           setLocation(address);
-          setDisplayLocation('Coordinates entered');
+          setDisplayLocation('Location set'); // Changed from 'Coordinates entered'
           setFormattedAddress(null);
         } else {
           // Store coordinates, display formatted address
@@ -108,7 +108,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       } catch (error) {
         console.error('Reverse geocoding error:', error);
         setLocation(address);
-        setDisplayLocation('Coordinates entered');
+        setDisplayLocation('Location set'); // Changed from 'Coordinates entered'
       }
     } else {
       // It's an address, try to geocode it using OpenCage
@@ -165,7 +165,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         // Fallback to coordinates if reverse geocoding fails
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        setDisplayLocation('Current Location');
+        setDisplayLocation('Current Location'); // Already good, but ensuring consistency
         setFormattedAddress(null);
       } else {
         // Store coordinates for API calls, formatted address for display

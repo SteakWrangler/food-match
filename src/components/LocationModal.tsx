@@ -104,6 +104,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
           console.error('Reverse geocoding failed:', error);
           // Fallback to coordinates
           setLocation(address);
+          setDisplayLocation('Location set'); // Don't show coordinates to user
           setFormattedAddress(null);
         } else {
           // Store coordinates for API calls, formatted address for display
@@ -121,6 +122,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
       } catch (error) {
         console.error('Reverse geocoding error:', error);
         setLocation(address);
+        setDisplayLocation('Location set'); // Don't show coordinates to user
       }
     } else {
       // It's an address, try to geocode it
