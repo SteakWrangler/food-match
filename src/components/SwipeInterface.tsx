@@ -255,6 +255,19 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     }
   }, [customOrder]);
 
+  // Prevent body scrolling when dragging
+  useEffect(() => {
+    if (isDragging) {
+      document.body.classList.add('swipe-interface-active');
+    } else {
+      document.body.classList.remove('swipe-interface-active');
+    }
+
+    return () => {
+      document.body.classList.remove('swipe-interface-active');
+    };
+  }, [isDragging]);
+
   // Enhanced smart loading triggers with better state management
   useEffect(() => {
     // Only trigger if we have the onGenerateMore function and we're running very low on restaurants
@@ -340,10 +353,10 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   }
 
   return (
-    <div className="relative">
+    <div className="relative touch-none"> {/* Add touch-none to the entire container */}
       {/* REMOVED: Background loading indicator - should be completely invisible to user */}
       
-      <div className="flex items-center justify-center min-h-[300px] sm:min-h-[350px] md:min-h-[500px] p-2 sm:p-4 relative w-full">
+      <div className="flex items-center justify-center min-h-[280px] sm:min-h-[320px] md:min-h-[500px] p-1 sm:p-2 md:p-4 relative w-full"> {/* Further reduced heights and padding */}
         
         {/* Background Cards - Hidden until they become the top card */}
         {orderedRestaurants.slice(orderedRestaurants.indexOf(currentRestaurant) + 1, orderedRestaurants.indexOf(currentRestaurant) + 3).map((restaurant, index) => (
@@ -369,7 +382,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         {/* Current Card */}
         <div
           ref={cardRef}
-          className="relative z-10 touch-none" // Add touch-none to prevent touch events from bubbling
+          className="relative z-10 touch-none select-none swipe-card" // Added swipe-card class for better touch handling
           style={cardStyle}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -378,6 +391,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd} // Add touch cancel handler
         >
           <RestaurantCard
             key={`current-${currentRestaurant.id}`}
