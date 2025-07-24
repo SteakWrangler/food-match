@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { Star, MapPin } from 'lucide-react';
+import { Star, MapPin, ExternalLink } from 'lucide-react';
 
 import { useDeviceType } from '@/hooks/use-mobile';
 
@@ -118,9 +118,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
             className="inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-orange-600 hover:text-orange-700 font-medium transition-colors"
           >
             <span>View Details</span>
-            <svg className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
+            <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
           </a>
         </div>
       </Card>

@@ -303,32 +303,15 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     };
   }, [isDragging]);
 
-  // NEW: Simple trigger system
+  // Simple trigger system
   useEffect(() => {
-    console.log('🔍 TRIGGER CHECK: remainingUnviewed =', remainingUnviewed, 'hasReachedEnd =', hasReachedEndFromHook, 'isLoading =', isLoading);
-    
     // Only trigger if we have the function and we're getting low on restaurants
-    if (!onGenerateMore) {
-      console.log('❌ TRIGGER BLOCKED: No onGenerateMore function');
-      return;
-    }
-    
-    if (hasReachedEndFromHook) {
-      console.log('❌ TRIGGER BLOCKED: Already reached end');
-      return;
-    }
-    
-    if (isLoading) {
-      console.log('❌ TRIGGER BLOCKED: Already loading');
-      return;
-    }
+    if (!onGenerateMore || hasReachedEndFromHook || isLoading) return;
     
     // Trigger only when we hit exactly 5 restaurants remaining
     if (remainingUnviewed === 5) {
-      console.log('🚀 TRIGGER ACTIVATED: Exactly 5 restaurants remaining, starting timer');
       // Small delay to prevent rapid calls
       const timer = setTimeout(() => {
-        console.log('🔄 TRIGGER EXECUTING: Calling onGenerateMore');
         onGenerateMore();
       }, 300);
       
@@ -384,9 +367,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   return (
     <div className="relative"> {/* Removed touch-none from main container */}
-      {/* Background extension to hide container bottom */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-50 dark:to-gray-900 pointer-events-none"></div>
-      
       <div className="flex flex-col items-center justify-start pt-8 min-h-[280px] sm:min-h-[320px] md:min-h-[400px] p-1 sm:p-2 md:p-4 relative w-full pb-8"> {/* Changed to justify-start to reduce empty space */}
         
         {/* Background Cards - Hidden until they become the top card */}

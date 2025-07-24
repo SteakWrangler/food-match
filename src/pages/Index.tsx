@@ -310,20 +310,12 @@ const Index = () => {
   };
 
   const handleGenerateMore = async () => {
-    console.log('🔄 HANDLER: handleGenerateMore called');
-    
-    if (!roomState) {
-      console.log('❌ HANDLER FAILED: No room state');
-      return false;
-    }
+    if (!roomState) return false;
     
     try {
-      console.log('🔄 HANDLER: Calling loadMoreRestaurants');
-      const result = await loadMoreRestaurants();
-      console.log('✅ HANDLER: loadMoreRestaurants returned', result);
-      return result;
+      return await loadMoreRestaurants();
     } catch (err) {
-      console.error('❌ HANDLER ERROR: Failed to load more:', err);
+      console.error('Failed to load more restaurants:', err);
       return false;
     }
   };
@@ -600,7 +592,7 @@ const Index = () => {
           /* Room Active */
           <>
             {/* Room Status Bar */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-3 sm:mb-4 shadow-sm border border-orange-100">
+            <div className="bg-transparent rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-3 sm:mb-4 shadow-sm border border-orange-100">
               <div className="flex items-center justify-between text-xs sm:text-sm">
                 <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
                   {isHost && (
@@ -636,11 +628,11 @@ const Index = () => {
 
             {/* Tab System */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-2 sm:mb-3">
-              <TabsList className="grid w-full grid-cols-2 bg-white/80 backdrop-blur-sm">
-                <TabsTrigger value="specific" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-xs sm:text-sm py-2 sm:py-3">
+              <TabsList className="grid w-full grid-cols-2 bg-transparent">
+                <TabsTrigger value="specific" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-none text-xs sm:text-sm py-2 sm:py-3 rounded-md">
                   Restaurants
                 </TabsTrigger>
-                <TabsTrigger value="general" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-xs sm:text-sm py-2 sm:py-3">
+                <TabsTrigger value="general" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-none text-xs sm:text-sm py-2 sm:py-3 rounded-md">
                   Food Types
                 </TabsTrigger>
               </TabsList>
