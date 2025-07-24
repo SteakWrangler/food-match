@@ -13,6 +13,7 @@ interface SwipeInterfaceProps {
   onBringToFront?: (restaurantId: string) => void;
   customOrder?: string[];
   onGenerateMore?: () => Promise<boolean>;
+  onTakeSecondLook?: () => void;
 }
 
 const SwipeInterface: React.FC<SwipeInterfaceProps> = ({ 
@@ -24,13 +25,16 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   participantId,
   onBringToFront,
   customOrder,
-  onGenerateMore
+  onGenerateMore,
+  onTakeSecondLook
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(false);
   const [viewedRestaurants, setViewedRestaurants] = useState<Set<string>>(new Set());
+  const [hasReachedEnd, setHasReachedEnd] = useState(false);
+  const [isSecondLookMode, setIsSecondLookMode] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const deviceType = useDeviceType();
 
@@ -46,6 +50,13 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   useEffect(() => {
     console.log('SwipeInterface - roomState changed:', roomState);
   }, [roomState]);
+
+  // Reset hasReachedEnd when new restaurants are added
+  useEffect(() => {
+    if (restaurants.length > 0) {
+      setHasReachedEnd(false);
+    }
+  }, [restaurants.length]);
 
   // Order restaurants based on custom order or default
   const orderedRestaurants = React.useMemo(() => {
@@ -79,20 +90,51 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     return restaurants.filter(r => !viewedIds.has(r.id));
   };
 
+  // Get restaurants that haven't been liked yet (for second look mode)
+  const getUnlikedRestaurants = (restaurants: Restaurant[]) => {
+    if (!roomState || !participantId) return restaurants;
+    
+    const userSwipes = roomState.restaurantSwipes?.[participantId] || {};
+    const unliked = restaurants.filter(restaurant => {
+      const swipe = userSwipes[restaurant.id];
+      return swipe !== 'right'; // Return restaurants that weren't swiped right (liked)
+    });
+    
+    return unliked;
+  };
+
   // Get current restaurant based on first unviewed
   const currentRestaurant = React.useMemo(() => {
-    const unviewedRestaurants = getUnviewedRestaurants(orderedRestaurants, viewedRestaurants);
-    
-    // Return the first unviewed restaurant
-    return unviewedRestaurants[0] || null;
-  }, [orderedRestaurants, viewedRestaurants]);
+    if (isSecondLookMode) {
+      // In second look mode, show restaurants that haven't been liked yet
+      const unlikedRestaurants = getUnlikedRestaurants(orderedRestaurants);
+      return unlikedRestaurants[0] || null;
+    } else {
+      // Normal mode - show unviewed restaurants
+      const unviewedRestaurants = getUnviewedRestaurants(orderedRestaurants, viewedRestaurants);
+      return unviewedRestaurants[0] || null;
+    }
+  }, [orderedRestaurants, viewedRestaurants, isSecondLookMode, roomState, participantId]);
 
   // Get remaining unviewed count
   const remainingUnviewed = React.useMemo(() => {
-    return getUnviewedRestaurants(orderedRestaurants, viewedRestaurants).length;
-  }, [orderedRestaurants, viewedRestaurants]);
+    if (isSecondLookMode) {
+      const unlikedRestaurants = getUnlikedRestaurants(orderedRestaurants);
+      return unlikedRestaurants.length;
+    } else {
+      return getUnviewedRestaurants(orderedRestaurants, viewedRestaurants).length;
+    }
+  }, [orderedRestaurants, viewedRestaurants, isSecondLookMode, roomState, participantId]);
 
-
+  // Handle entering second look mode
+  const handleTakeSecondLook = () => {
+    setIsSecondLookMode(true);
+    setViewedRestaurants(new Set()); // Reset viewed restaurants for second look
+    setHasReachedEnd(false); // Reset end state
+    if (onTakeSecondLook) {
+      onTakeSecondLook();
+    }
+  };
 
   // Handle swipe
   const handleSwipe = async (direction: 'left' | 'right') => {
@@ -207,29 +249,34 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   // Enhanced smart loading triggers with better state management
   useEffect(() => {
-    // Only trigger if we have the onGenerateMore function and we're running low on restaurants
-    if (onGenerateMore && remainingUnviewed <= 8) {
+    // Only trigger if we have the onGenerateMore function and we're running very low on restaurants
+    // and we haven't reached the end of available restaurants
+    if (onGenerateMore && remainingUnviewed <= 3 && remainingUnviewed > 0 && !hasReachedEnd && !isLoading) {
       console.log(`🔄 Smart loading trigger: ${remainingUnviewed} restaurants remaining`);
       
       // Add a delay to prevent multiple rapid calls
       const timeoutId = setTimeout(() => {
         if (!isLoading) {
           console.log('🚀 Triggering smart loading of more restaurants...');
-          setIsLoading(true);
-          onGenerateMore().finally(() => {
-            setIsLoading(false);
-            console.log('✅ Smart loading completed');
+          // Don't set isLoading to true - keep it invisible to user
+          onGenerateMore().then((success) => {
+            // If loading failed or returned false, we've reached the end
+            if (!success) {
+              setHasReachedEnd(true);
+              console.log('🏁 Reached end of available restaurants');
+            }
+          }).catch((error) => {
+            console.error('❌ Smart loading failed:', error);
+            setHasReachedEnd(true);
           });
         } else {
           console.log('⚠️ Already loading, skipping duplicate request');
         }
-      }, 500); // Slightly longer delay for better debouncing
+      }, 1000); // Longer delay to prevent rapid triggering
       
       return () => clearTimeout(timeoutId);
     }
-  }, [remainingUnviewed, onGenerateMore, isLoading]);
-
-
+  }, [remainingUnviewed, onGenerateMore, isLoading, hasReachedEnd]);
 
   // Card style with drag transform
   const cardStyle: React.CSSProperties = {
@@ -240,35 +287,39 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   // No restaurants to show
   if (!currentRestaurant) {
-    // Check if we're loading more restaurants in the background
-    if (isLoading) {
-      return (
-        <div className="text-center py-12">
-          <div className="text-4xl sm:text-6xl mb-4">🍽️</div>
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Loading more restaurants...</h3>
-          <p className="text-sm sm:text-base text-gray-600 mb-4">
-            Finding more great places for you to discover.
-          </p>
-          <div className="flex justify-center">
-            <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        </div>
-      );
-    }
-    
-    // No more restaurants and not loading
+    // No more restaurants - show the end screen
     return (
       <div className="text-center py-12">
         <div className="text-4xl sm:text-6xl mb-4">🍽️</div>
         <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">No more restaurants</h3>
         <p className="text-sm sm:text-base text-gray-600 mb-4">
-          You've seen all the restaurants in your area. Try changing your location or filters to find more options.
+          {isSecondLookMode 
+            ? "You've seen all the restaurants again. Try changing your location or filters to find more options."
+            : "You've seen all the restaurants in your area. Try changing your location or filters to find more options."
+          }
         </p>
-        {onGenerateMore && (
+        
+        {/* Show "Take a second look" if not in second look mode and there are unliked restaurants */}
+        {!isSecondLookMode && onTakeSecondLook && getUnlikedRestaurants(orderedRestaurants).length > 0 && (
+          <button
+            onClick={handleTakeSecondLook}
+            className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium mb-3"
+          >
+            Take a second look ({getUnlikedRestaurants(orderedRestaurants).length} restaurants)
+          </button>
+        )}
+        
+        {/* Only show "Try Loading More" if there are no unliked restaurants and we have the function */}
+        {!isSecondLookMode && onGenerateMore && getUnlikedRestaurants(orderedRestaurants).length === 0 && (
           <button
             onClick={() => {
               setIsLoading(true);
-              onGenerateMore().finally(() => setIsLoading(false));
+              setHasReachedEnd(false); // Reset end state when manually trying to load more
+              onGenerateMore().then((success) => {
+                if (!success) {
+                  setHasReachedEnd(true);
+                }
+              }).finally(() => setIsLoading(false));
             }}
             disabled={isLoading}
             className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium disabled:opacity-50"

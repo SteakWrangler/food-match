@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 const USE_MOCK_LOCATION = false;
 
 interface CreateRoomModalProps {
-  onCreateRoom: (name: string, location?: string) => void;
+  onCreateRoom: (name: string, location?: string, formattedAddress?: string) => void;
   onClose: () => void;
   isLoading?: boolean;
   currentLocation?: string | null;
@@ -33,11 +33,94 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     e.preventDefault();
     if (name.trim() && !isLoading) {
       if (needsLocation && location.trim()) {
-        // If we need location and have it, pass both
+        // Just pass the current location - geocoding should have already been done
         onCreateRoom(name.trim(), location.trim());
       } else if (!needsLocation) {
         // If we don't need location, just pass name
         onCreateRoom(name.trim());
+      }
+    }
+  };
+
+  const handleGeocode = async (name: string, address: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('google-places', {
+        body: {
+          action: 'geocode',
+          location: address
+        },
+      });
+
+      if (error || !data?.lat || !data?.lng) {
+        console.error('Geocoding failed:', error);
+        // Fallback to using the address as-is
+        onCreateRoom(name, address, address);
+      } else {
+        // Use coordinates for API calls, formatted address for display
+        const coordinates = `${data.lat}, ${data.lng}`;
+        const formattedAddress = data.formatted_address || address;
+        onCreateRoom(name, coordinates, formattedAddress);
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      // Fallback to using the address as-is
+      onCreateRoom(name, address, address);
+    }
+  };
+
+  const handleAddressInput = async (address: string) => {
+    // Check if it's coordinates
+    const coordMatch = address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+    
+    if (coordMatch) {
+      // It's coordinates, try to get formatted address
+      try {
+        const [lat, lng] = address.split(',').map(coord => parseFloat(coord.trim()));
+        
+        const { data, error } = await supabase.functions.invoke('google-places', {
+          body: {
+            action: 'reverse-geocode',
+            lat,
+            lng
+          },
+        });
+
+        if (error || !data?.address) {
+          console.error('Reverse geocoding failed:', error);
+          // Fallback to coordinates
+          setLocation(address);
+        } else {
+          // Store coordinates, display formatted address
+          setLocation(address);
+          // We'll pass the formatted address when submitting
+        }
+      } catch (error) {
+        console.error('Reverse geocoding error:', error);
+        setLocation(address);
+      }
+    } else {
+      // It's an address, try to geocode it
+      try {
+        const { data, error } = await supabase.functions.invoke('google-places', {
+          body: {
+            action: 'geocode',
+            location: address
+          },
+        });
+
+        if (error || !data?.lat || !data?.lng) {
+          console.error('Geocoding failed:', error);
+          // Fallback to using address as-is
+          setLocation(address);
+        } else {
+          // Store coordinates for API calls
+          const coordinates = `${data.lat}, ${data.lng}`;
+          setLocation(coordinates);
+          // We'll pass the formatted address when submitting
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        setLocation(address);
       }
     }
   };
@@ -64,9 +147,17 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       if (error || !data?.address) {
         console.error('Reverse geocoding failed:', error);
         // Fallback to coordinates if reverse geocoding fails
-        setLocation(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`);
+        const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
+        setLocation(coordinates);
       } else {
-        setLocation(data.address);
+        // Store coordinates for API calls but display the formatted address
+        const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
+        setLocation(coordinates);
+        // Store the formatted address for later use
+        const formattedAddress = data.address;
+        
+        // Call the callback immediately with both coordinates and formatted address
+        onCreateRoom(name, coordinates, formattedAddress);
       }
     } catch (error) {
       console.error('Error getting location:', error);
@@ -121,6 +212,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
+                    onBlur={(e) => handleAddressInput(e.target.value)}
                     placeholder="e.g., San Francisco, CA or 94102"
                     className="mt-1"
                     disabled={isLoading}

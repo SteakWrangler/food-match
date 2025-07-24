@@ -182,23 +182,21 @@ const useRoom = () => {
 
   const loadInitialRestaurants = async (roomId: string, location: string, filters?: FilterState, isInitialLoad: boolean = false) => {
     try {
-      console.log('🚀 STAGE 1: Loading initial 10 restaurants for quick room entry...');
+      console.log('🚀 Loading 20 restaurants for room entry...');
       console.log('Applied filters:', filters);
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
       // Convert filters to API parameters
       const apiParams: any = {
         location,
-        radius: (filters?.distance?.[0] || defaultFilters.distance[0]) * 1609, // Convert miles to meters, use filter distance or default
-        openNow: filters?.openNow ?? false, // Changed default to false to get more results
-        limit: 10 // Load 10 restaurants initially for quick room entry
+        radius: filters.distance[0] * 1609, // Convert miles to meters, use filter distance
+        openNow: filters.openNow, // Use filter value directly
+        limit: 20 // Load 20 restaurants initially since API is now fast
       };
 
       // Add price range filter - use "or-less" logic
-      if (filters?.priceRange && filters.priceRange.length > 0) {
-        apiParams.minPrice = 0; // Start from lowest price (Google uses 0-4)
-        apiParams.maxPrice = filters.priceRange[0]; // Use the selected price level directly, not -1
-      }
+      apiParams.minPrice = 0; // Start from lowest price (Google uses 0-4)
+      apiParams.maxPrice = filters.priceRange[0]; // Use the selected price level directly
 
       // Add cuisine keyword if specified
       if (filters?.selectedCuisines && filters.selectedCuisines.length > 0) {
@@ -207,7 +205,7 @@ const useRoom = () => {
       
       const result = await hybridRestaurantsAPI.searchRestaurants(apiParams);
       
-      console.log(`✅ STAGE 1 COMPLETE: Fetched ${result.restaurants.length} initial restaurants from API`);
+      console.log(`✅ COMPLETE: Fetched ${result.restaurants.length} restaurants from API`);
       
       // Handle insufficient restaurants by adding end card if needed
       const processedRestaurants = handleInsufficientRestaurants(result.restaurants.length, result.restaurants);
@@ -234,14 +232,8 @@ const useRoom = () => {
       
       console.log(`✅ Room ready with ${result.restaurants.length} initial restaurants - User can enter room now!`);
       
-      // If this was the initial load, start progressive loading in background
-      if (isInitialLoad && result.nextPageToken) {
-        console.log('🔄 Starting STAGE 2: Loading next 10 restaurants in background...');
-        // Stage 2: Load next 10 restaurants in background
-        setTimeout(() => {
-          loadMoreRestaurantsInBackground(roomId, location, filters, result.nextPageToken, 10);
-        }, 1000); // Wait 1 second before loading more
-      }
+      // No longer need background loading since we load all 20 upfront
+      // The smart loading in SwipeInterface will handle loading more when needed
       
       return true;
     } catch (error) {
@@ -259,17 +251,15 @@ const useRoom = () => {
       // Convert filters to API parameters
       const apiParams: any = {
         location,
-        radius: (filters?.distance?.[0] || defaultFilters.distance[0]) * 1609, // Convert miles to meters, use filter distance or default
-        openNow: filters?.openNow ?? false,
+        radius: filters.distance[0] * 1609, // Convert miles to meters, use filter distance
+        openNow: filters.openNow, // Use filter value directly
         limit: batchSize,
         pageToken
       };
 
       // Add price range filter
-      if (filters?.priceRange && filters.priceRange.length > 0) {
-        apiParams.minPrice = 0;
-        apiParams.maxPrice = filters.priceRange[0];
-      }
+      apiParams.minPrice = 0;
+      apiParams.maxPrice = filters.priceRange[0];
 
       // Add cuisine keyword if specified
       if (filters?.selectedCuisines && filters.selectedCuisines.length > 0) {
@@ -495,16 +485,14 @@ const useRoom = () => {
       // Convert filters to API parameters
       const apiParams: any = {
         location: roomState.location,
-        radius: (appliedFilters?.distance?.[0] || defaultFilters.distance[0]) * 1609, // Convert miles to meters, use filter distance or default
-        openNow: appliedFilters?.openNow ?? false, // Changed default to false to get more results
+        radius: appliedFilters.distance[0] * 1609, // Convert miles to meters, use filter distance
+        openNow: appliedFilters.openNow, // Use filter value directly
         limit: 20 // Load 20 restaurants per request for proper pagination
       };
 
       // Add price range filter - use "or-less" logic
-      if (appliedFilters?.priceRange && appliedFilters.priceRange.length > 0) {
-        apiParams.minPrice = 0; // Start from lowest price (Google uses 0-4)
-        apiParams.maxPrice = appliedFilters.priceRange[0]; // Use the selected price level directly, not -1
-      }
+      apiParams.minPrice = 0; // Start from lowest price (Google uses 0-4)
+      apiParams.maxPrice = appliedFilters.priceRange[0]; // Use the selected price level directly
 
       // Add cuisine keyword if specified
       if (appliedFilters?.selectedCuisines && appliedFilters.selectedCuisines.length > 0) {

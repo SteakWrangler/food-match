@@ -1,11 +1,11 @@
 # Project Structure
 
-This document outlines the organization and architecture of the Foodie Find Match application.
+This document outlines the organization and architecture of the Toss or Taste application.
 
 ## 📁 Root Directory
 
 ```
-foodie-find-match/
+toss-or-taste/
 ├── src/                    # Source code
 ├── public/                 # Static assets
 ├── supabase/              # Supabase configuration and migrations

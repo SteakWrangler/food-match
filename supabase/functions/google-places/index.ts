@@ -410,360 +410,96 @@ serve(async (req: Request) => {
           const geocodeData = await geocodeResponse.json();
           
           if (geocodeData.status !== 'OK' || !geocodeData.results || geocodeData.results.length === 0) {
-            // If geocoding fails, try using text search instead
-            console.log('Geocoding failed, trying text search instead');
-            const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=restaurants+in+${encodeURIComponent(location)}&key=${googlePlacesApiKey}${pageToken ? `&pagetoken=${pageToken}` : ''}`;
-            
-            const textSearchResponse = await fetch(textSearchUrl);
-            
-            if (!textSearchResponse.ok) {
-              throw new Error(`Text search failed: HTTP ${textSearchResponse.status}`);
-            }
-
-            const textSearchData = await textSearchResponse.json();
-            
-            if (textSearchData.status !== 'OK' || !textSearchData.results || textSearchData.results.length === 0) {
-              return new Response(JSON.stringify({ 
-                error: "No restaurants found for the given location",
-                status: textSearchData.status
-              }), {
-                status: 400,
-                headers: corsHeaders
-              });
-            }
-
-            // Filter out non-restaurant places from text search results
-            const filteredTextResults = textSearchData.results.filter(place => !shouldExcludePlace(place));
-            console.log(`Filtered text search results: ${textSearchData.results.length} -> ${filteredTextResults.length}`);
-            
-            // Remove duplicate chain restaurants
-            const deduplicatedTextResults = removeDuplicateChains(filteredTextResults);
-            console.log(`Deduplicated text search results: ${filteredTextResults.length} -> ${deduplicatedTextResults.length}`);
-            
-            // Transform text search results
-            const restaurants: RestaurantData[] = await Promise.all(
-              deduplicatedTextResults.slice(0, limit).map(async (place: any) => {
-                const priceLevelToString = (level?: number): string => {
-                  if (!level) return '';
-                  return '$'.repeat(level);
-                };
-
-                // Get additional details for each place including photos
-                const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,website,opening_hours,types,photos&key=${googlePlacesApiKey}`;
-                
-                let details: any = {};
-                try {
-                  const detailsResponse = await fetch(detailsUrl);
-                  if (detailsResponse.ok) {
-                    const detailsData = await detailsResponse.json();
-                    if (detailsData.status === 'OK' && detailsData.result) {
-                      details = detailsData.result;
-                    }
-                  }
-                } catch (error) {
-                  console.log(`Failed to get details for ${place.name}:`, error.message);
-                }
-
-                // Get images from Google Places Photos API
-                let images: string[] = [];
-                if (details.photos && details.photos.length > 0) {
-                  try {
-                    // Get up to 5 photos - use photo references immediately as they expire
-                    const photoPromises = details.photos.slice(0, 5).map(async (photo: any) => {
-                      // Use the correct Google Places Photo API URL format
-                      const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&maxheight=300&photoreference=${photo.photo_reference}&key=${googlePlacesApiKey}`;
-                      
-                      // Test if the photo URL is accessible
-                      try {
-                        const photoResponse = await fetch(photoUrl, { method: 'HEAD' });
-                        if (photoResponse.ok) {
-                          return photoUrl;
-                        } else {
-                          return null;
-                        }
-                      } catch (error) {
-                        return null;
-                      }
-                    });
-                    
-                    const photoResults = await Promise.all(photoPromises);
-                    images = photoResults.filter(url => url !== null);
-                  } catch (error) {
-                    console.log(`Places Photos API failed for ${place.name}:`, error.message);
-                  }
-                }
-
-                // Use first image as main image, or fallback to a placeholder
-                const mainImage = images.length > 0 ? images[0] : 'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop';
-
-                // Try to calculate real distance if we have search coordinates, otherwise use placeholder
-                let distance = '0.5 mi'; // Default placeholder
-                let estimatedTime = '15 min'; // Default placeholder
-                
-                // If we have search coordinates (from geocoding), calculate real distance
-                if (typeof lat === 'number' && typeof lng === 'number') {
-                  const calculateDistance = (placeLat: number, placeLng: number, searchLat: number, searchLng: number): string => {
-                    const R = 3959; // Earth's radius in miles
-                    const dLat = (placeLat - searchLat) * Math.PI / 180;
-                    const dLng = (placeLng - searchLng) * Math.PI / 180;
-                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                             Math.cos(searchLat * Math.PI / 180) * Math.cos(placeLat * Math.PI / 180) *
-                             Math.sin(dLng/2) * Math.sin(dLng/2);
-                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                    const distance = R * c;
-                    return `${distance.toFixed(1)} mi`;
-                  };
-
-                  const calculateEstimatedTime = (distance: string): string => {
-                    const distanceNum = parseFloat(distance.replace(' mi', ''));
-                    // Assume average speed of 25 mph in city traffic
-                    const timeInMinutes = Math.round(distanceNum * 60 / 25);
-                    return `${timeInMinutes} min`;
-                  };
-
-                  distance = calculateDistance(place.geometry.location.lat, place.geometry.location.lng, lat, lng);
-                  estimatedTime = calculateEstimatedTime(distance);
-                }
-
-                return {
-                  id: place.place_id,
-                  name: place.name,
-                  image: mainImage,
-                  images: images,
-                  rating: place.rating,
-                  priceRange: priceLevelToString(place.price_level),
-                  distance,
-                  estimatedTime,
-                  description: `Restaurant in ${place.formatted_address || place.vicinity}`,
-                  tags: place.types.filter((type: string) => 
-                    ['restaurant', 'food', 'establishment'].includes(type)
-                  ),
-                  address: place.formatted_address || place.vicinity,
-                  phone: details.formatted_phone_number,
-                  website: details.website,
-                  openingHours: details.opening_hours?.weekday_text || [],
-                  googleTypes: place.types
-                };
-              })
-            );
-
             return new Response(JSON.stringify({ 
-              restaurants,
-              count: restaurants.length,
-              status: textSearchData.status,
-              nextPageToken: textSearchData.next_page_token // Include nextPageToken in response
+              error: "Location not found",
+              status: geocodeData.status
             }), {
+              status: 400,
               headers: corsHeaders
             });
           }
 
+          // Use the first result's coordinates
           const result = geocodeData.results[0];
           lat = result.geometry.location.lat;
           lng = result.geometry.location.lng;
         }
 
-        // Build the Places API search URL
-        const searchParams = new URLSearchParams({
-          location: `${lat},${lng}`,
-          radius: radius.toString(),
-          type: type,
-          key: googlePlacesApiKey
-        });
-
-        if (keyword) {
-          searchParams.append('keyword', keyword);
-        }
-
-        if (minPrice !== undefined) {
-          searchParams.append('minprice', minPrice.toString());
-        }
-
-        if (maxPrice !== undefined) {
-          searchParams.append('maxprice', maxPrice.toString());
-        }
-
-        if (openNow) {
-          searchParams.append('opennow', 'true');
-        }
-
-        if (pageToken) {
-          searchParams.append('pagetoken', pageToken);
-        }
-
-        const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?${searchParams.toString()}`;
+        // Use Nearby Search instead of Text Search
+        const nearbySearchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius || 5000}&type=restaurant&minprice=${minPrice || 0}&maxprice=${maxPrice || 4}&opennow=${openNow || false}&key=${googlePlacesApiKey}${pageToken ? `&pagetoken=${pageToken}` : ''}`;
         
-        console.log(`Searching for restaurants at: ${placesUrl}`);
-        console.log(`Search parameters: radius=${radius}, type=${type}, keyword=${keyword}, minPrice=${minPrice}, maxPrice=${maxPrice}, openNow=${openNow}`);
+        const nearbySearchResponse = await fetch(nearbySearchUrl);
         
-        const placesResponse = await fetch(placesUrl);
-        
-        if (!placesResponse.ok) {
-          throw new Error(`Places API failed: HTTP ${placesResponse.status}`);
+        if (!nearbySearchResponse.ok) {
+          throw new Error(`Nearby search failed: HTTP ${nearbySearchResponse.status}`);
         }
 
-        const placesData: GooglePlacesResponse = await placesResponse.json();
+        const nearbySearchData = await nearbySearchResponse.json();
         
-        console.log(`Google Places API returned ${placesData.results?.length || 0} results`);
-        if (placesData.results && placesData.results.length > 0) {
-          console.log('Sample results:', placesData.results.slice(0, 3).map(r => r.name));
-        }
-        
-        if (placesData.status !== 'OK' && placesData.status !== 'ZERO_RESULTS') {
+        if (nearbySearchData.status !== 'OK' || !nearbySearchData.results || nearbySearchData.results.length === 0) {
           return new Response(JSON.stringify({ 
-            error: `Places API error: ${placesData.status}`,
-            status: placesData.status
+            error: "No restaurants found for the given location",
+            status: nearbySearchData.status
           }), {
             status: 400,
             headers: corsHeaders
           });
         }
 
-        if (!placesData.results || placesData.results.length === 0) {
-          return new Response(JSON.stringify({ 
-            restaurants: [],
-            message: "No restaurants found"
-          }), {
-            headers: corsHeaders
-          });
-        }
-
-        // Filter out non-restaurant places from nearby search results
-        const filteredNearbyResults = placesData.results.filter(place => !shouldExcludePlace(place));
-        console.log(`Filtered nearby search results: ${placesData.results.length} -> ${filteredNearbyResults.length}`);
+        // Filter out non-restaurant places
+        const filteredResults = nearbySearchData.results.filter(place => !shouldExcludePlace(place));
+        console.log(`Filtered nearby search results: ${nearbySearchData.results.length} -> ${filteredResults.length}`);
         
         // Remove duplicate chain restaurants
-        const deduplicatedNearbyResults = removeDuplicateChains(filteredNearbyResults);
-        console.log(`Deduplicated nearby search results: ${filteredNearbyResults.length} -> ${deduplicatedNearbyResults.length}`);
+        const deduplicatedResults = removeDuplicateChains(filteredResults);
+        console.log(`Deduplicated nearby search results: ${filteredResults.length} -> ${deduplicatedResults.length}`);
         
-        // Transform the results to match our Restaurant interface
-        console.log(`🚀 Starting parallel processing for ${deduplicatedNearbyResults.slice(0, limit).length} restaurants...`);
-        const startTime = Date.now();
-        
-        const restaurants: RestaurantData[] = await Promise.all(
-          deduplicatedNearbyResults.slice(0, limit).map(async (place) => {
-            // Step 1: Get Place Details (required for everything else)
-            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,website,opening_hours,types,photos&key=${googlePlacesApiKey}`;
-            
-            let details: any = {};
-            try {
-              const detailsResponse = await fetch(detailsUrl);
-              if (detailsResponse.ok) {
-                const detailsData = await detailsResponse.json();
-                if (detailsData.status === 'OK' && detailsData.result) {
-                  details = detailsData.result;
-                }
-              }
-            } catch (error) {
-              console.log(`Failed to get details for ${place.name}:`, error.message);
-            }
+        // Transform nearby search results to match your existing format
+        const restaurants: RestaurantData[] = deduplicatedResults.slice(0, limit || 20).map((place: any) => {
+          const priceLevelToString = (level?: number): string => {
+            if (!level) return '';
+            return '$'.repeat(level);
+          };
 
-            // Convert price level to string
-            const priceLevelToString = (level?: number): string => {
-              if (!level) return '';
-              return '$'.repeat(level);
-            };
+          // Get main image from photos
+          let mainImage = 'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop'; // placeholder
+          if (place.photos && place.photos.length > 0) {
+            mainImage = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&maxheight=300&photoreference=${place.photos[0].photo_reference}&key=${googlePlacesApiKey}`;
+          }
 
-            // Calculate distance based on search radius and location
-            const calculateDistance = (placeLat: number, placeLng: number, searchLat: number, searchLng: number): string => {
-              const R = 3959; // Earth's radius in miles
-              const dLat = (placeLat - searchLat) * Math.PI / 180;
-              const dLng = (placeLng - searchLng) * Math.PI / 180;
-              const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                       Math.cos(searchLat * Math.PI / 180) * Math.cos(placeLat * Math.PI / 180) *
-                       Math.sin(dLng/2) * Math.sin(dLng/2);
-              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-              const distance = R * c;
-              return `${distance.toFixed(1)} mi`;
-            };
+          return {
+            id: place.place_id,
+            name: place.name,
+            image: mainImage,
+            rating: place.rating || 0,
+            priceRange: priceLevelToString(place.price_level),
+            vicinity: place.vicinity,
+            openingHours: place.opening_hours?.weekday_text || [],
+            // Remove fields that aren't in Nearby Search
+            cuisine: undefined,
+            images: undefined,
+            distance: undefined,
+            estimatedTime: undefined,
+            description: undefined,
+            tags: [],
+            address: undefined,
+            phone: undefined,
+            website: undefined,
+            googleTypes: undefined
+          };
+        });
 
-            const calculateEstimatedTime = (distance: string): string => {
-              const distanceNum = parseFloat(distance.replace(' mi', ''));
-              // Assume average speed of 25 mph in city traffic
-              const timeInMinutes = Math.round(distanceNum * 60 / 25);
-              return `${timeInMinutes} min`;
-            };
-
-            // Calculate real distance and time
-            const distance = calculateDistance(place.geometry.location.lat, place.geometry.location.lng, lat, lng);
-            const estimatedTime = calculateEstimatedTime(distance);
-
-            // Step 2: PARALLEL - Process Photos API calls
-            const [images] = await
-              Promise.all([
-                // Photos API calls
-                (async () => {
-                  let images: string[] = [];
-                  if (details.photos && details.photos.length > 0) {
-                    try {
-                      console.log(`Fetching ${Math.min(details.photos.length, 5)} photos for ${place.name}`);
-                      
-                      const photoPromises = details.photos.slice(0, 5).map(async (photo: any, index: number) => {
-                        try {
-                          const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&maxheight=300&photo_reference=${photo.photo_reference}&key=${googlePlacesApiKey}`;
-                          console.log(`Photo ${index + 1} URL for ${place.name}: ${photoUrl}`);
-                          return photoUrl;
-                        } catch (error) {
-                          console.log(`❌ Photo fetch failed for ${place.name}:`, error.message);
-                          return null;
-                        }
-                      });
-                      
-                      const photoResults = await Promise.all(photoPromises);
-                      images = photoResults.filter(url => url !== null);
-                      console.log(`Final images for ${place.name}:`, images);
-                    } catch (error) {
-                      console.log(`Places Photos API failed for ${place.name}:`, error.message);
-                    }
-                  } else {
-                    console.log(`No photos found for ${place.name}`);
-                  }
-                  return images;
-                })()
-              ]);
-
-            // Use first image as main image, or fallback to a placeholder
-            const mainImage = images.length > 0 ? images[0] : 'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop';
-
-            return {
-              id: place.place_id,
-              name: place.name,
-              image: mainImage,
-              images: images,
-              rating: place.rating,
-              priceRange: priceLevelToString(place.price_level),
-              distance,
-              estimatedTime,
-              description: '', // No description needed
-              tags: place.types.filter((type: string) => 
-                ['restaurant', 'food', 'establishment'].includes(type)
-              ),
-              address: place.vicinity,
-              phone: details.formatted_phone_number,
-              website: details.website,
-              openingHours: details.opening_hours?.weekday_text || [],
-              googleTypes: place.types
-            };
-          })
-        );
-
-        const endTime = Date.now();
-        const processingTime = endTime - startTime;
-        console.log(`✅ Parallel processing completed in ${processingTime}ms for ${restaurants.length} restaurants`);
-        console.log(`🚀 Performance: ${processingTime / restaurants.length}ms per restaurant (parallel processing)`);
-
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           restaurants,
-          count: restaurants.length,
-          status: placesData.status,
-          nextPageToken: placesData.next_page_token // Include nextPageToken in response
+          nextPageToken: nearbySearchData.next_page_token
         }), {
           headers: corsHeaders
         });
 
       } catch (error) {
-        console.error('Error in Google Places search:', error);
+        console.error('Error in nearby search:', error);
         return new Response(JSON.stringify({ 
-          error: "Failed to search restaurants",
+          error: "Restaurant search failed",
           details: error.message
         }), {
           status: 500,

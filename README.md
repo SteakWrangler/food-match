@@ -1,4 +1,4 @@
-# 🍽️ Food Match
+# 🍽️ Toss or Taste
 
 A real-time collaborative restaurant discovery app that helps groups find dining spots together through an intuitive swipe interface.
 
@@ -67,8 +67,8 @@ This project was developed using modern AI-assisted coding tools, including **Cu
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/foodie-find-match.git
-   cd foodie-find-match
+   git clone https://github.com/yourusername/toss-or-taste.git
+cd toss-or-taste
    ```
 
 2. **Install dependencies**

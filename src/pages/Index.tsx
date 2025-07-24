@@ -15,7 +15,7 @@ import { Filter, Users, MapPin, QrCode, UserPlus, Loader2, BarChart3 } from 'luc
 import useRoom from '@/hooks/useRoom';
 import { useDeviceType } from '@/hooks/use-mobile';
 import { foodTypes } from '@/data/foodTypes';
-import { restaurants, Restaurant } from '@/data/restaurants';
+import { Restaurant } from '@/data/restaurants';
 import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
 
 const Index = () => {
@@ -29,6 +29,7 @@ const Index = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [matchedRestaurant, setMatchedRestaurant] = useState<Restaurant | null>(null);
   const [location, setLocation] = useState<string | null>(null);
+  const [formattedLocation, setFormattedLocation] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [shownMatches, setShownMatches] = useState<Set<string>>(new Set());
   const [restaurantOrder, setRestaurantOrder] = useState<string[]>([]);
@@ -192,7 +193,7 @@ const Index = () => {
     }
   }, [roomState]);
 
-  const handleCreateRoom = async (name: string, locationToUse?: string) => {
+  const handleCreateRoom = async (name: string, locationToUse?: string, formattedAddress?: string) => {
     if (isCreatingRoom) return; // Prevent multiple submissions
     
     const locationToSet = locationToUse || location;
@@ -206,6 +207,7 @@ const Index = () => {
     // Update the location state if a new location was provided
     if (locationToUse && locationToUse !== location) {
       setLocation(locationToUse);
+      setFormattedLocation(formattedAddress || null);
     }
     
     // Close the modal immediately when room creation starts
@@ -251,8 +253,9 @@ const Index = () => {
     leaveRoom();
   };
 
-  const handleLocationChange = (newLocation: string) => {
+  const handleLocationChange = (newLocation: string, formattedAddress?: string) => {
     setLocation(newLocation);
+    setFormattedLocation(formattedAddress || null);
     setShowLocation(false);
   };
 
@@ -428,7 +431,7 @@ const Index = () => {
                 <span className="text-white font-bold text-xs sm:text-sm">F</span>
               </div>
               <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-                FoodMatch
+                Toss or Taste
               </h1>
             </div>
             
@@ -442,8 +445,8 @@ const Index = () => {
                 }`}
               >
                 <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{location || 'Set Location'}</span>
-                <span className="sm:hidden">{location ? 'Location' : 'Set'}</span>
+                <span className="hidden sm:inline">{formattedLocation || location || 'Set Location'}</span>
+                <span className="sm:hidden">{formattedLocation || location ? 'Location' : 'Set'}</span>
               </button>
               {activeTab === 'specific' && (
                 <Button
@@ -591,6 +594,10 @@ const Index = () => {
                     onBringToFront={handleBringRestaurantToFront}
                     customOrder={restaurantOrder}
                     onGenerateMore={handleGenerateMore}
+                    onTakeSecondLook={() => {
+                      // This will be handled by the SwipeInterface component
+                      console.log('Taking a second look at restaurants');
+                    }}
                   />
                 )}
               </TabsContent>

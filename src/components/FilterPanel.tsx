@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { X, Filter } from 'lucide-react';
 import { FilterState, defaultFilters } from '@/utils/restaurantFilters';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 // import { Badge } from '@/components/ui/badge'; // COMMENTED OUT - can be restored later
 // import { Switch } from '@/components/ui/switch'; // COMMENTED OUT - can be restored later
 
@@ -69,7 +71,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           {/* Price Range */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Price Range {filters.priceRange.length === 0 && <span className="text-gray-500">(All)</span>}
+              Price Range
             </label>
             <div className="flex gap-2">
               {priceLabels.map((label, index) => (
@@ -91,8 +93,22 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Select a price range to see restaurants at that price or less. Leave unselected to see all prices.
+              Select a price range to see restaurants at that price or less. Default is $$.
             </p>
+          </div>
+
+          {/* Open Now Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium text-gray-700">Open Now</Label>
+              <p className="text-xs text-gray-500">
+                Only show restaurants that are currently open
+              </p>
+            </div>
+            <Switch
+              checked={filters.openNow}
+              onCheckedChange={(checked) => updateFilters({ openNow: checked })}
+            />
           </div>
 
 

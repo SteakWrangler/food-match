@@ -138,20 +138,11 @@ export class HybridRestaurantsAPI {
       restaurants: restaurants.map(restaurant => ({
         id: restaurant.id,
         name: restaurant.name,
-        cuisine: restaurant.cuisine || 'Unknown',
         image: restaurant.image || '',
-        images: restaurant.images || [],
         rating: restaurant.rating || 0,
         priceRange: restaurant.priceRange || '',
-        distance: restaurant.distance || '',
-        estimatedTime: restaurant.estimatedTime || '',
-        description: '', // No description needed
-        tags: restaurant.tags || [],
-        address: restaurant.address,
-        phone: restaurant.phone,
-        website: restaurant.website,
-        openingHours: restaurant.openingHours,
-        googleTypes: restaurant.googleTypes
+        vicinity: restaurant.vicinity,
+        openingHours: restaurant.openingHours
       })),
       nextPageToken: undefined // Google Places doesn't return a page token directly in this response
     };

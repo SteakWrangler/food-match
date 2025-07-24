@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2024-01-01
 
 ### Added
-- Initial release of Foodie Find Match
+- Initial release of Toss or Taste
 - Core restaurant discovery functionality
 - Real-time collaboration features
 - Modern UI with shadcn/ui components

@@ -1,6 +1,6 @@
-# Contributing to Foodie Find Match
+# Contributing to Toss or Taste
 
-Thank you for your interest in contributing to Foodie Find Match! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Toss or Taste! This document provides guidelines and information for contributors.
 
 ## 🚀 Getting Started
 
@@ -13,8 +13,8 @@ Thank you for your interest in contributing to Foodie Find Match! This document 
 
 1. **Fork the repository**
    ```bash
-   git clone https://github.com/yourusername/foodie-find-match.git
-   cd foodie-find-match
+   git clone https://github.com/yourusername/toss-or-taste.git
+cd toss-or-taste
    ```
 
 2. **Install dependencies**
@@ -184,4 +184,4 @@ By contributing to this project, you agree that your contributions will be licen
 
 ---
 
-Thank you for contributing to Foodie Find Match! 🍽️ 
+Thank you for contributing to Toss or Taste! 🍽️ 

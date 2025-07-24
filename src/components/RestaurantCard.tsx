@@ -1,27 +1,17 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { Star, MapPin, Clock, Phone, Globe } from 'lucide-react';
-import RestaurantImageCarousel from './RestaurantImageCarousel';
+import { Star, MapPin } from 'lucide-react';
+
 import { useDeviceType } from '@/hooks/use-mobile';
 
 interface Restaurant {
   id: string;
   name: string;
-  cuisine: string;
   image: string;
-  images?: string[];
   rating: number;
   priceRange: string;
-  distance: string;
-  estimatedTime: string;
-  description: string;
-  // tags: string[]; // COMMENTED OUT - can be restored later
-  // Google Places API fields
-  address?: string;
-  phone?: string;
-  website?: string;
+  vicinity?: string;
   openingHours?: string[];
-  googleTypes?: string[];
 }
 
 interface RestaurantCardProps {
@@ -35,15 +25,15 @@ interface RestaurantCardProps {
 const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, style, showButtons = true, roomLocation }) => {
   const deviceType = useDeviceType();
   
-  // Responsive card sizing
+  // Responsive card sizing with fixed width to prevent shrinking
   const getCardClasses = () => {
     switch (deviceType) {
       case 'mobile':
-        return 'w-full max-w-[320px] h-[500px]';
+        return 'w-full max-w-[320px] min-w-[320px] h-[420px]';
       case 'tablet':
-        return 'w-full max-w-[400px] h-[550px]';
+        return 'w-full max-w-[400px] min-w-[400px] h-[460px]';
       default:
-        return 'w-full max-w-[400px] h-[600px]';
+        return 'w-full max-w-[400px] min-w-[400px] h-[480px]';
     }
   };
 
@@ -73,101 +63,50 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
   const textClasses = getTextClasses();
   
   return (
-    <div className={`${getCardClasses()} mx-auto flex flex-col`}>
+    <div className={`${getCardClasses()} mx-auto flex flex-col w-full`}>
       <Card 
-        className={`w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex flex-col border-0`}
+        className={`w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex flex-col border-0 min-w-full h-full`}
         style={style}
       >
-        {/* Main Image with Carousel Support */}
-        <div className="relative">
-          {(() => {
-            const carouselImages = restaurant.images && restaurant.images.length > 0 
-              ? restaurant.images 
-              : [restaurant.image];
-            
-            // Debug logging for image arrays
-            console.log(`Restaurant ${restaurant.name}:`, {
-              mainImage: restaurant.image,
-              imagesArray: restaurant.images,
-              carouselImages: carouselImages,
-              totalImages: carouselImages.length
-            });
-            
-            return (
-              <RestaurantImageCarousel 
-                images={carouselImages}
-                restaurantName={restaurant.name}
-              />
-            );
-          })()}
-          
-          {/* Top Info - Only rating */}
-          <div className="absolute top-4 right-4 flex justify-end items-start z-10">
-            <div className="flex items-center gap-1 bg-white/90 px-2 py-1 rounded-full">
-              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-              <span className="text-xs font-medium text-gray-800">{restaurant.rating}</span>
-            </div>
-          </div>
+        {/* Single Image with fixed aspect ratio */}
+        <div className="relative w-full h-40 sm:h-44 flex-shrink-0">
+          <img
+            src={restaurant.image}
+            alt={restaurant.name}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to a placeholder if image fails to load
+              const target = e.target as HTMLImageElement;
+              target.src = '/placeholder.svg';
+            }}
+          />
         </div>
 
         {/* Restaurant Name and Basic Info */}
-        <div className="px-4 sm:px-6 pt-4 pb-2 border-b border-gray-100">
-          <h2 className={`${textClasses.title} font-bold mb-2 text-gray-900`}>{restaurant.name}</h2>
-          <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
+        <div className="px-4 sm:px-6 pt-3 pb-2 flex-1 flex flex-col">
+          <h2 className={`${textClasses.title} font-bold mb-2 text-gray-900 line-clamp-2`}>{restaurant.name}</h2>
+          
+          {/* Rating and Price - Clean horizontal layout */}
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1">
-              <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>{restaurant.distance}</span>
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+              <span className="text-sm font-medium text-gray-700">{restaurant.rating}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>{restaurant.estimatedTime}</span>
-            </div>
-            <span className="font-medium">{restaurant.priceRange}</span>
+            <span className="text-sm font-semibold text-gray-800">{restaurant.priceRange}</span>
           </div>
+          
+          {/* Location - Clean single line */}
+          {restaurant.vicinity && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="truncate">{restaurant.vicinity}</span>
+            </div>
+          )}
         </div>
 
-        {/* Contact Information Section - Always visible */}
-        {(restaurant.address || restaurant.phone || restaurant.website) && (
-          <div className="px-4 sm:px-6 py-3 border-b border-gray-100">
-            <div className="space-y-2">
-              {restaurant.address && (
-                <div className="flex items-start gap-2 text-xs sm:text-sm text-gray-600">
-                  <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mt-0.5 flex-shrink-0" />
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.address)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs cursor-pointer"
-                  >
-                    {restaurant.address}
-                  </a>
-                </div>
-              )}
-              {restaurant.phone && (
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                  <Phone className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="text-xs">{restaurant.phone}</span>
-                </div>
-              )}
-              {restaurant.website && (
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                  <Globe className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <a
-                    href={restaurant.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs truncate cursor-pointer"
-                  >
-                    {restaurant.website}
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
         
         {/* Details Link - Always visible at bottom */}
-        <div className="px-4 sm:px-6 py-2 bg-gray-50 flex items-center justify-center">
+        <div className="px-4 sm:px-6 py-1.5 bg-gray-50 flex items-center justify-center flex-shrink-0">
           <a
             href={roomLocation 
               ? `https://www.google.com/maps/search/${encodeURIComponent(restaurant.name)}/@${encodeURIComponent(roomLocation)}`

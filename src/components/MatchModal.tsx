@@ -7,14 +7,17 @@ import { MapPin, Clock, Star, ExternalLink } from 'lucide-react';
 interface Restaurant {
   id: string;
   name: string;
-  cuisine: string;
   image: string;
   rating: number;
   priceRange: string;
-  distance: string;
-  estimatedTime: string;
-  description: string;
-  tags: string[];
+  vicinity?: string;
+  openingHours?: string[];
+  // Optional properties that might not be available from API
+  cuisine?: string;
+  distance?: string;
+  estimatedTime?: string;
+  description?: string;
+  tags?: string[];
 }
 
 interface MatchModalProps {
@@ -43,7 +46,7 @@ const MatchModal: React.FC<MatchModalProps> = ({ restaurant, onClose }) => {
             />
             <div className="flex-1">
               <h3 className="text-xl font-bold text-gray-800">{restaurant.name}</h3>
-              <p className="text-gray-600">{restaurant.cuisine}</p>
+              <p className="text-gray-600">{restaurant.cuisine || 'Restaurant'}</p>
               <div className="flex items-center gap-2 mt-1">
                 <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                 <span className="text-sm font-medium">{restaurant.rating}</span>
@@ -56,12 +59,14 @@ const MatchModal: React.FC<MatchModalProps> = ({ restaurant, onClose }) => {
           <div className="flex items-center gap-4 text-sm text-gray-600 mb-6">
             <div className="flex items-center gap-1">
               <MapPin className="w-4 h-4" />
-              <span>{restaurant.distance}</span>
+              <span>{restaurant.distance || restaurant.vicinity || 'Location available'}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              <span>{restaurant.estimatedTime}</span>
-            </div>
+            {restaurant.estimatedTime && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                <span>{restaurant.estimatedTime}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3">
