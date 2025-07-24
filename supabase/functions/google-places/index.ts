@@ -1,10 +1,93 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Content-Type": "application/json"
 };
+
+// Rate limiting configuration
+const RATE_LIMIT_CONFIG = {
+  maxRequests: 100, // 100 requests per day
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+  keyPrefix: 'google_places'
+};
+
+// Rate limiting helper function
+async function checkRateLimit(req: Request): Promise<{
+  allowed: boolean;
+  remaining: number;
+  resetTime: number;
+  error?: string;
+}> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  // Get client identifier
+  let identifier = "unknown";
+  const authHeader = req.headers.get("authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.substring(7);
+      const { data: { user } } = await supabase.auth.getUser(token);
+      if (user) {
+        identifier = `user:${user.id}`;
+      }
+    } catch (error) {
+      console.log("Could not extract user from token, using IP");
+    }
+  }
+  
+  if (identifier === "unknown") {
+    const forwardedFor = req.headers.get("x-forwarded-for");
+    const realIp = req.headers.get("x-real-ip");
+    const ip = forwardedFor?.split(",")[0] || realIp || "unknown";
+    identifier = `ip:${ip}`;
+  }
+
+  const key = `${RATE_LIMIT_CONFIG.keyPrefix}:${identifier}`;
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_CONFIG.windowMs;
+
+  try {
+    // Get current usage from database
+    const { data: usage, error } = await supabase
+      .from('api_usage')
+      .select('*')
+      .eq('key', key)
+      .gte('timestamp', new Date(windowStart).toISOString())
+      .order('timestamp', { ascending: false });
+
+    if (error) {
+      console.error('Error checking rate limit:', error);
+      return { allowed: true, remaining: RATE_LIMIT_CONFIG.maxRequests, resetTime: now + RATE_LIMIT_CONFIG.windowMs };
+    }
+
+    const currentUsage = usage?.length || 0;
+    const remaining = Math.max(0, RATE_LIMIT_CONFIG.maxRequests - currentUsage);
+    const allowed = currentUsage < RATE_LIMIT_CONFIG.maxRequests;
+    const resetTime = now + RATE_LIMIT_CONFIG.windowMs;
+
+    // Record this request if allowed
+    if (allowed) {
+      await supabase
+        .from('api_usage')
+        .insert({
+          key,
+          timestamp: new Date().toISOString(),
+          user_agent: req.headers.get('user-agent') || 'unknown'
+        });
+    }
+
+    return { allowed, remaining, resetTime };
+  } catch (error) {
+    console.error('Rate limit check failed:', error);
+    // Fail open - allow request if rate limiting fails
+    return { allowed: true, remaining: RATE_LIMIT_CONFIG.maxRequests, resetTime: now + RATE_LIMIT_CONFIG.windowMs };
+  }
+}
 
 interface GooglePlacesSearchParams {
   location: string;
@@ -238,6 +321,19 @@ serve(async (req: Request) => {
     // Handle CORS preflight requests
     if (req.method === "OPTIONS") {
       return new Response("ok", { headers: corsHeaders });
+    }
+
+    // Check rate limit
+    const rateLimitResult = await checkRateLimit(req);
+    if (!rateLimitResult.allowed) {
+      return new Response(JSON.stringify({
+        error: "Rate limit exceeded. Please try again later.",
+        remaining: rateLimitResult.remaining,
+        resetTime: rateLimitResult.resetTime
+      }), {
+        status: 429, // HTTP Status for Rate Limiting
+        headers: corsHeaders
+      });
     }
 
     const googlePlacesApiKey = Deno.env.get("GOOGLE_PLACES_API_KEY");

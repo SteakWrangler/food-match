@@ -92,20 +92,20 @@ const useRoom = () => {
     const handleBeforeUnload = () => {
       if (roomState) {
         // Use synchronous storage to ensure this runs before page unloads
-        sessionStorage.setItem('foodie_leaving_room', roomState.id);
-        sessionStorage.setItem('foodie_participant_id', participantId);
+        sessionStorage.setItem('toss_leaving_room', roomState.id);
+        sessionStorage.setItem('toss_participant_id', participantId);
       }
     };
 
     const handlePageShow = () => {
       // Check if we're returning to a page that was leaving a room
-      const leavingRoomId = sessionStorage.getItem('foodie_leaving_room');
-      const leavingParticipantId = sessionStorage.getItem('foodie_participant_id');
+      const leavingRoomId = sessionStorage.getItem('toss_leaving_room');
+      const leavingParticipantId = sessionStorage.getItem('toss_participant_id');
       
       if (leavingRoomId && leavingParticipantId) {
         // Clean up the session storage
-        sessionStorage.removeItem('foodie_leaving_room');
-        sessionStorage.removeItem('foodie_participant_id');
+        sessionStorage.removeItem('toss_leaving_room');
+        sessionStorage.removeItem('toss_participant_id');
         
         // Leave the room asynchronously
         roomService.leaveRoom(leavingRoomId, leavingParticipantId).catch(error => {
