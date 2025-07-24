@@ -109,3 +109,7 @@ temp/
 # Test files
 test-*.js
 test-*.ts
+
+# Capacitor mobile platforms
+android/
+ios/
