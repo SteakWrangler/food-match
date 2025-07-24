@@ -69,7 +69,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ roomId, participants, onClose
                   <img 
                     src={qrCodeUrl} 
                     alt="Room QR Code"
-                    className="w-48 h-48 sm:w-56 sm:h-56 border-2 border-gray-200 rounded-xl sm:rounded-2xl"
+                    className="w-32 h-32 sm:w-48 sm:h-48 md:w-56 md:h-56 border-2 border-gray-200 rounded-xl sm:rounded-2xl"
                   />
                 </div>
               )}

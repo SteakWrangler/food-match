@@ -353,7 +353,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   }
 
   return (
-    <div className="relative touch-none"> {/* Add touch-none to the entire container */}
+    <div className="relative"> {/* Removed touch-none from main container */}
       {/* REMOVED: Background loading indicator - should be completely invisible to user */}
       
       <div className="flex items-center justify-center min-h-[280px] sm:min-h-[320px] md:min-h-[500px] p-1 sm:p-2 md:p-4 relative w-full"> {/* Further reduced heights and padding */}
@@ -382,7 +382,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         {/* Current Card */}
         <div
           ref={cardRef}
-          className="relative z-10 touch-none select-none swipe-card" // Added swipe-card class for better touch handling
+          className="relative z-10 touch-none select-none swipe-card" // Keep touch-none only on the card
           style={cardStyle}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}

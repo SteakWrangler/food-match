@@ -50,29 +50,67 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   };
 
   const handleGeocode = async (name: string, address: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('geocoding', {
-        body: {
-          action: 'geocode',
-          address: address
-        },
-      });
+    if (!address.trim()) return;
 
-      if (error || !data?.lat || !data?.lng) {
-        console.error('Geocoding failed:', error);
-        // Don't create room if geocoding fails - show error to user
-        alert('Unable to find that location. Please try a different address or use "Use Current Location".');
-        return;
-      } else {
-        // Use coordinates for API calls, formatted address for display
-        const coordinates = `${data.lat}, ${data.lng}`;
-        const formattedAddress = data.formatted_address || address;
-        onCreateRoom(name, coordinates, formattedAddress);
+    // Check if it's coordinates
+    if (address.includes(',') && /\d/.test(address)) {
+      // It's coordinates, try to get formatted address using OpenCage
+      try {
+        const [lat, lng] = address.split(',').map(coord => parseFloat(coord.trim()));
+        
+        const { data, error } = await supabase.functions.invoke('geocoding', {
+          body: {
+            action: 'reverse-geocode',
+            lat,
+            lng
+          },
+        });
+
+        if (error || !data?.address) {
+          console.error('Reverse geocoding failed:', error);
+          // Fallback to coordinates
+          setLocation(address);
+          setDisplayLocation('Loading location...'); // Show loading instead of coordinates
+          setFormattedAddress(null);
+        } else {
+          // Store coordinates, display formatted address
+          setLocation(address);
+          setDisplayLocation(data.address);
+          setFormattedAddress(data.address);
+        }
+      } catch (error) {
+        console.error('Reverse geocoding error:', error);
+        setLocation(address);
+        setDisplayLocation('Loading location...'); // Show loading instead of coordinates
       }
-    } catch (error) {
-      console.error('Geocoding error:', error);
-      // Don't create room if geocoding fails - show error to user
-      alert('Unable to find that location. Please try a different address or use "Use Current Location".');
+    } else {
+      // It's an address, try to geocode it using OpenCage
+      try {
+        const { data, error } = await supabase.functions.invoke('geocoding', {
+          body: {
+            action: 'geocode',
+            address: address
+          },
+        });
+
+        if (error || !data?.lat || !data?.lng) {
+          console.error('Geocoding failed:', error);
+          // Fallback to using address as-is
+          setLocation(address);
+          setDisplayLocation(address);
+          setFormattedAddress(null);
+        } else {
+          // Store coordinates for API calls, formatted address for display
+          const coordinates = `${data.lat}, ${data.lng}`;
+          setLocation(coordinates);
+          setDisplayLocation(data.formatted_address || address);
+          setFormattedAddress(data.formatted_address || address);
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        setLocation(address);
+        setDisplayLocation(address);
+      }
     }
   };
 
@@ -97,7 +135,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           console.error('Reverse geocoding failed:', error);
           // Fallback to coordinates
           setLocation(address);
-          setDisplayLocation('Location set'); // Changed from 'Coordinates entered'
+          setDisplayLocation('Loading location...'); // Show loading instead of coordinates
           setFormattedAddress(null);
         } else {
           // Store coordinates, display formatted address
@@ -108,7 +146,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       } catch (error) {
         console.error('Reverse geocoding error:', error);
         setLocation(address);
-        setDisplayLocation('Location set'); // Changed from 'Coordinates entered'
+        setDisplayLocation('Loading location...'); // Show loading instead of coordinates
       }
     } else {
       // It's an address, try to geocode it using OpenCage

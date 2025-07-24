@@ -53,7 +53,7 @@ const Index = () => {
     }
     // Check if location looks like coordinates (contains comma and numbers)
     if (location.includes(',') && /\d/.test(location)) {
-      return 'Location set'; // Don't show coordinates to user
+      return 'Loading location...'; // Show loading instead of coordinates
     }
     return location;
   };
@@ -224,8 +224,14 @@ const Index = () => {
     if (locationToUse && locationToUse !== location) {
       console.log('Setting location:', locationToUse);
       console.log('Setting formatted location:', formattedAddress);
-      setLocation(locationToUse);
-      setFormattedLocation(formattedAddress || null);
+      // Only set location if we have a formatted address, otherwise wait
+      if (formattedAddress) {
+        setLocation(locationToUse);
+        setFormattedLocation(formattedAddress);
+      } else {
+        // Don't set location yet - wait for geocoding to complete
+        console.log('Waiting for geocoding to complete before setting location');
+      }
     }
     
     // Close the modal immediately when room creation starts
