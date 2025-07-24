@@ -392,52 +392,62 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
               pointerEvents: 'none' // Prevent interaction with background cards
             }}
           >
-            <RestaurantCard
-              key={`background-${restaurant.id}`}
-              restaurant={restaurant}
-              onSwipe={() => {}}
-              showButtons={false}
-            />
+            <div className="flex flex-col items-center overflow-hidden">
+              <RestaurantCard
+                key={`background-${restaurant.id}`}
+                restaurant={restaurant}
+                onSwipe={() => {}}
+                showButtons={false}
+              />
+              {/* Background buttons (hidden) */}
+              <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mt-1 sm:mt-2 md:mt-4 opacity-0 pointer-events-none">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14"></div>
+                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14"></div>
+              </div>
+            </div>
           </div>
         ))}
         
-        {/* Current Card */}
-        <div
-          ref={cardRef}
-          className="relative z-10 touch-none select-none swipe-card"
-          style={cardStyle}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd}
-        >
-          <RestaurantCard
-            key={`current-${currentRestaurant.id}`}
-            restaurant={currentRestaurant}
-            onSwipe={handleSwipe}
-            roomLocation={roomState?.location}
-            showButtons={false} // Hide buttons since we'll add them outside
-          />
-        </div>
+        {/* Outer Container - Contains card and buttons visually together */}
+        <div className="flex flex-col items-center overflow-hidden">
+          {/* Swipeable Card Area - Only the card is swipeable */}
+          <div
+            ref={cardRef}
+            className="relative z-10 touch-none select-none swipe-card"
+            style={cardStyle}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+          >
+            <RestaurantCard
+              key={`current-${currentRestaurant.id}`}
+              restaurant={currentRestaurant}
+              onSwipe={handleSwipe}
+              roomLocation={roomState?.location}
+              showButtons={false} // Hide buttons since we'll add them outside
+            />
+          </div>
 
-        {/* Non-swipeable Button Area - Outside the swipeable container */}
-        <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mt-1 sm:mt-2 md:mt-4 touch-auto pointer-events-auto" style={{ touchAction: 'manipulation' }}>
-          <button
-            onClick={() => handleSwipe('left')}
-            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
-          >
-            <span className="text-lg sm:text-xl md:text-2xl group-hover:scale-110 transition-transform">✕</span>
-          </button>
-          <button
-            onClick={() => handleSwipe('right')}
-            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group"
-          >
-            <span className="text-lg sm:text-xl md:text-2xl group-hover:scale-110 transition-transform">♥</span>
-          </button>
+          {/* Non-swipeable Button Area - Positioned below card */}
+          <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mt-1 sm:mt-2 md:mt-4 touch-auto pointer-events-auto" style={{ touchAction: 'manipulation' }}>
+            <button
+              onClick={() => handleSwipe('left')}
+              className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
+            >
+              <span className="text-lg sm:text-xl md:text-2xl group-hover:scale-110 transition-transform">✕</span>
+            </button>
+            <button
+              onClick={() => handleSwipe('right')}
+              className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group"
+            >
+              <span className="text-lg sm:text-xl md:text-2xl group-hover:scale-110 transition-transform">♥</span>
+            </button>
+          </div>
         </div>
 
         {/* Swipe Indicators */}
