@@ -308,6 +308,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           console.log('🚀 Triggering smart loading of more restaurants...');
           // Don't set isLoading to true - keep it invisible to user
           onGenerateMore().then((success) => {
+            console.log('🔍 onGenerateMore returned:', success);
             // If loading failed or returned false, we've reached the end
             if (!success) {
               // setHasReachedEnd(true); // This line is removed as per the edit hint
@@ -339,11 +340,10 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     if (isLoadingMoreRestaurants) {
       return (
         <div className="text-center py-12">
-          <div className="text-4xl sm:text-6xl mb-4">🍽️</div>
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Loading more restaurants...</h3>
-          <p className="text-sm sm:text-base text-gray-600 mb-4">
-            Finding more great places for you to discover.
-          </p>
+          <div className="flex justify-center mb-4">
+            <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-sm text-gray-600">Loading more restaurants...</p>
         </div>
       );
     }

@@ -670,12 +670,10 @@ const useRoom = () => {
 
   // Helper function to handle insufficient restaurants
   const handleInsufficientRestaurants = (totalFound: number, restaurants: any[]) => {
-    if (totalFound < 20) {
-      console.log(`⚠️ Insufficient restaurants found: ${totalFound} (less than 20)`);
-      console.log('ℹ️ Users will see "No more restaurants" screen when they reach the end');
-    }
+    // Only log the count, don't treat it as insufficient
+    console.log(`📊 Found ${totalFound} restaurants from API`);
     
-    return restaurants; // Return restaurants as-is, let SwipeInterface handle the end state
+    return restaurants; // Return restaurants as-is, let the nextPageToken determine if we've reached the end
   };
 
   const leaveRoom = async () => {
