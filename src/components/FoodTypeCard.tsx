@@ -37,11 +37,11 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style, s
   const getCardClasses = () => {
     switch (deviceType) {
       case 'mobile':
-        return 'w-full max-w-[320px] h-[240px]'; // Smaller than RestaurantCard's 280px
+        return 'w-full max-w-[320px] h-[320px]'; // Increased from 240px to 320px
       case 'tablet':
-        return 'w-full max-w-[400px] h-[300px]'; // Smaller than RestaurantCard's 360px
+        return 'w-full max-w-[400px] h-[400px]'; // Increased from 300px to 400px
       default:
-        return 'w-full max-w-[400px] h-[380px]'; // Smaller than RestaurantCard's 480px
+        return 'w-full max-w-[400px] h-[480px]'; // Increased from 380px to 480px
     }
   };
 
@@ -73,8 +73,8 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style, s
         className="w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex flex-col h-full"
         style={style}
       >
-        {/* Main Image - Increased height significantly */}
-        <div className="relative h-40 sm:h-48"> {/* Increased from h-24 sm:h-28 to h-40 sm:h-48 */}
+        {/* Main Image - Takes up most of the card space */}
+        <div className="relative h-56 sm:h-64"> {/* Increased significantly to take up most of the card */}
           {imageLoading && (
             <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
               <div className="text-gray-400 text-sm">Loading...</div>
@@ -100,20 +100,20 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style, s
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
         </div>
 
-        {/* Content - Reduced padding and spacing */}
-        <div className="flex-1 p-2 sm:p-2 flex flex-col"> {/* Reduced from p-2 sm:p-3 to p-2 sm:p-2 */}
-          <h2 className={`${textClasses.title} font-bold text-gray-900 mb-1 sm:mb-2`}> {/* Reduced from mb-2 sm:mb-3 to mb-1 sm:mb-2 */}
+        {/* Content - Compact section at the bottom */}
+        <div className="p-2 sm:p-3 flex flex-col"> {/* Removed flex-1, made it a fixed compact section */}
+          <h2 className={`${textClasses.title} font-bold text-gray-900 mb-1`}>
             {foodType.name}
           </h2>
           
           {foodType.description && (
-            <p className={`${textClasses.body} text-gray-600 leading-tight flex-1`}> {/* Changed from leading-relaxed to leading-tight */}
+            <p className={`${textClasses.body} text-gray-600 leading-tight`}> {/* Removed flex-1 */}
               {foodType.description}
             </p>
           )}
           
           {!foodType.description && (
-            <p className={`${textClasses.body} text-gray-600 leading-tight flex-1`}> {/* Changed from leading-relaxed to leading-tight */}
+            <p className={`${textClasses.body} text-gray-600 leading-tight`}> {/* Removed flex-1 */}
               Discover amazing {foodType.name.toLowerCase()} restaurants near you!
             </p>
           )}
