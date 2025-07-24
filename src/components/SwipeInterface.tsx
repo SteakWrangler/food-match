@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import RestaurantCard from './RestaurantCard';
 import { useDeviceType } from '@/hooks/use-mobile';
 import { Restaurant } from '@/data/restaurants';
-import { Card } from '@/components/ui/card';
-import { Star, MapPin } from 'lucide-react';
 
 interface SwipeInterfaceProps {
   restaurants: Restaurant[];
@@ -403,10 +401,10 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           </div>
         ))}
         
-        {/* Current Card - Only the card content is swipeable */}
+        {/* Current Card */}
         <div
           ref={cardRef}
-          className="relative z-10 touch-none select-none swipe-card" // Restored touch-none to prevent page scrolling
+          className="relative z-10 touch-none select-none swipe-card"
           style={cardStyle}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -415,67 +413,15 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd} // Add touch cancel handler
+          onTouchCancel={handleTouchEnd}
         >
-          {/* Only render the Card component (not the buttons) */}
-          <div className="w-full">
-            <Card 
-              className="w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex flex-col border-0 min-w-full h-full"
-            >
-              {/* Single Image with fixed aspect ratio */}
-              <div className="relative w-full h-28 sm:h-32 md:h-44 flex-shrink-0">
-                <img
-                  src={currentRestaurant.image}
-                  alt={currentRestaurant.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = '/placeholder.svg';
-                  }}
-                />
-              </div>
-
-              {/* Restaurant Name and Basic Info */}
-              <div className="px-2 sm:px-4 md:px-6 pt-1 pb-1 flex-1 flex flex-col">
-                <h2 className="text-xl sm:text-2xl font-bold mb-1 text-gray-900 line-clamp-2">{currentRestaurant.name}</h2>
-                
-                {/* Rating and Price - Clean horizontal layout */}
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-xs sm:text-sm font-medium text-gray-700">{currentRestaurant.rating}</span>
-                  </div>
-                  <span className="text-xs sm:text-sm font-semibold text-gray-800">{currentRestaurant.priceRange}</span>
-                </div>
-                
-                {/* Location - Clean single line */}
-                {currentRestaurant.vicinity && (
-                  <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600">
-                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
-                    <span className="truncate">{currentRestaurant.vicinity}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Details Link - Always visible at bottom */}
-              <div className="px-2 sm:px-4 md:px-6 py-1 bg-gray-50 flex items-center justify-center flex-shrink-0">
-                <a
-                  href={roomState?.location 
-                    ? `https://www.google.com/maps/search/${encodeURIComponent(currentRestaurant.name)}/@${encodeURIComponent(roomState.location)}`
-                    : `https://www.google.com/maps/search/${encodeURIComponent(currentRestaurant.name)}`
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-orange-600 hover:text-orange-700 font-medium transition-colors"
-                >
-                  <span>View Details</span>
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              </div>
-            </Card>
-          </div>
+          <RestaurantCard
+            key={`current-${currentRestaurant.id}`}
+            restaurant={currentRestaurant}
+            onSwipe={handleSwipe}
+            roomLocation={roomState?.location}
+            showButtons={false} // Hide buttons since we'll add them outside
+          />
         </div>
 
         {/* Non-swipeable Button Area - Outside the swipeable container */}

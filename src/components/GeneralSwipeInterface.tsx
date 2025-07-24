@@ -3,7 +3,6 @@ import FoodTypeCard from './FoodTypeCard';
 import { FoodType } from '@/data/foodTypes';
 import { randomizeFoodTypesByTiers } from '@/utils/foodTypeRandomizer';
 import { useDeviceType } from '@/hooks/use-mobile';
-import { Card } from '@/components/ui/card';
 
 interface GeneralSwipeInterfaceProps {
   foodTypes: FoodType[];
@@ -273,7 +272,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
           </div>
         ))}
         
-        {/* Current Card - Only the card content is swipeable */}
+        {/* Current Card */}
         <div
           className="relative z-10 touch-none select-none swipe-card"
           style={cardStyle}
@@ -284,48 +283,14 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd} // Add touch cancel handler
+          onTouchCancel={handleTouchEnd}
         >
-          {/* Only render the Card component (not the buttons) */}
-          <div className="w-full">
-            <Card 
-              className="w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex flex-col"
-            >
-              {/* Main Image */}
-              <div className="relative h-48 sm:h-56">
-                <img
-                  src={currentFoodType.image}
-                  alt={currentFoodType.name}
-                  className="w-full h-full object-cover"
-                  onError={() => {
-                    console.log(`Image failed to load for ${currentFoodType.name}: ${currentFoodType.image}`);
-                  }}
-                />
-                
-                {/* Overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 p-4 sm:p-6 flex flex-col">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
-                  {currentFoodType.name}
-                </h2>
-                
-                {currentFoodType.description && (
-                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed flex-1">
-                    {currentFoodType.description}
-                  </p>
-                )}
-                
-                {!currentFoodType.description && (
-                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed flex-1">
-                    Discover amazing {currentFoodType.name.toLowerCase()} restaurants near you!
-                  </p>
-                )}
-              </div>
-            </Card>
-          </div>
+          <FoodTypeCard
+            key={`current-${currentFoodType.id}`}
+            foodType={currentFoodType}
+            onSwipe={handleSwipe}
+            showButtons={false} // Hide buttons since we'll add them outside
+          />
         </div>
 
         {/* Non-swipeable Button Area - Outside the swipeable container */}
