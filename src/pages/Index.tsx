@@ -39,6 +39,7 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
+  const [isLeavingRoom, setIsLeavingRoom] = useState(false);
   
   const deviceType = useDeviceType();
   
@@ -251,8 +252,22 @@ const Index = () => {
     }
   };
 
-  const handleLeaveRoom = () => {
-    leaveRoom();
+  const handleLeaveRoom = async () => {
+    if (isLeavingRoom) return; // Prevent multiple calls
+    
+    setIsLeavingRoom(true);
+    try {
+      // Clean up session storage
+      sessionStorage.removeItem('toss_leaving_room');
+      sessionStorage.removeItem('toss_participant_id');
+      
+      await leaveRoom();
+    } catch (error) {
+      console.error('Error leaving room:', error);
+      setError('Failed to leave room. Please try again.');
+    } finally {
+      setIsLeavingRoom(false);
+    }
   };
 
   const handleLocationChange = (newLocation: string, formattedAddress?: string) => {
@@ -431,11 +446,20 @@ const Index = () => {
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => {
-                  if (isInRoom) {
-                    handleLeaveRoom();
+                  if (isInRoom && !isLeavingRoom) {
+                    // Show confirmation dialog before leaving room
+                    if (window.confirm('Are you sure you want to leave the room? This will take you back to the home page.')) {
+                      handleLeaveRoom();
+                    }
                   }
                 }}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                disabled={isLeavingRoom}
+                className={`flex items-center gap-2 transition-opacity ${
+                  isInRoom 
+                    ? 'hover:opacity-80 cursor-pointer' 
+                    : 'hover:opacity-80'
+                } ${isLeavingRoom ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={isInRoom ? 'Click to leave room and go home' : undefined}
               >
                 <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full flex items-center justify-center relative overflow-hidden">
                   {/* Connected T shapes - one upright, one upside-down */}
@@ -453,6 +477,12 @@ const Index = () => {
                       <span className="text-white font-bold text-[6px] sm:text-[8px] leading-none bg-gradient-to-r from-orange-500 to-pink-500 px-1 rounded">OR</span>
                     </div>
                   </div>
+                  {/* Loading spinner when leaving room */}
+                  {isLeavingRoom && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
                 </div>
                 <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
                   Toss or Taste

@@ -110,6 +110,13 @@ const LocationModal: React.FC<LocationModalProps> = ({
           setLocation(address);
           setDisplayLocation(data.address);
           setFormattedAddress(data.address);
+          
+          // Immediately call the callback to update the parent component
+          if (isCreatingRoom && onLocationSetForRoom) {
+            onLocationSetForRoom(address, data.address);
+          } else {
+            onLocationChange(address, data.address);
+          }
         }
       } catch (error) {
         console.error('Reverse geocoding error:', error);
@@ -137,6 +144,13 @@ const LocationModal: React.FC<LocationModalProps> = ({
           setLocation(coordinates);
           setDisplayLocation(data.formatted_address || address);
           setFormattedAddress(data.formatted_address || address);
+          
+          // Immediately call the callback to update the parent component
+          if (isCreatingRoom && onLocationSetForRoom) {
+            onLocationSetForRoom(coordinates, data.formatted_address || address);
+          } else {
+            onLocationChange(coordinates, data.formatted_address || address);
+          }
         }
       } catch (error) {
         console.error('Geocoding error:', error);
@@ -223,8 +237,11 @@ const LocationModal: React.FC<LocationModalProps> = ({
               <Input
                 id="location"
                 type="text"
-                value={displayLocation}
-                onChange={(e) => setLocation(e.target.value)}
+                value={location}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  setDisplayLocation(e.target.value);
+                }}
                 onBlur={(e) => handleAddressInput(e.target.value)}
                 placeholder="e.g., San Francisco, CA or 94102"
                 className="mt-1"

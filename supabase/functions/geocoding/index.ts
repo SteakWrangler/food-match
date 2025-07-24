@@ -82,7 +82,7 @@ serve(async (req: Request) => {
       }
 
       try {
-        const geocodeUrl = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(address)}&key=${opencageApiKey}&limit=1`;
+        const geocodeUrl = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(address)}&key=${opencageApiKey}&limit=1&countrycode=us`;
         const response = await fetch(geocodeUrl);
         
         if (!response.ok) {

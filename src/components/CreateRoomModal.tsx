@@ -226,8 +226,11 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   <Input
                     id="location"
                     type="text"
-                    value={displayLocation}
-                    onChange={(e) => setLocation(e.target.value)}
+                    value={location}
+                    onChange={(e) => {
+                      setLocation(e.target.value);
+                      setDisplayLocation(e.target.value);
+                    }}
                     onBlur={(e) => handleAddressInput(e.target.value)}
                     placeholder="e.g., San Francisco, CA or 94102"
                     className="mt-1 text-sm sm:text-base"

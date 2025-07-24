@@ -324,17 +324,17 @@ serve(async (req: Request) => {
     }
 
     // Check rate limit
-    const rateLimitResult = await checkRateLimit(req);
-    if (!rateLimitResult.allowed) {
-      return new Response(JSON.stringify({
-        error: "Rate limit exceeded. Please try again later.",
-        remaining: rateLimitResult.remaining,
-        resetTime: rateLimitResult.resetTime
-      }), {
-        status: 429, // HTTP Status for Rate Limiting
-        headers: corsHeaders
-      });
-    }
+    // const rateLimitResult = await checkRateLimit(req);
+    // if (!rateLimitResult.allowed) {
+    //   return new Response(JSON.stringify({
+    //     error: "Rate limit exceeded. Please try again later.",
+    //     remaining: rateLimitResult.remaining,
+    //     resetTime: rateLimitResult.resetTime
+    //   }), {
+    //     status: 429, // HTTP Status for Rate Limiting
+    //     headers: corsHeaders
+    //   });
+    // }
 
     const googlePlacesApiKey = Deno.env.get("GOOGLE_PLACES_API_KEY");
     
@@ -382,7 +382,7 @@ serve(async (req: Request) => {
       }
 
       try {
-        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${googlePlacesApiKey}`;
+        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${googlePlacesApiKey}&region=us`;
         const response = await fetch(geocodeUrl);
         
         if (!response.ok) {
@@ -498,7 +498,7 @@ serve(async (req: Request) => {
           lng = parseFloat(coordMatch[2]);
         } else {
           // Try to geocode the location
-          const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${googlePlacesApiKey}`;
+          const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${googlePlacesApiKey}&region=us`;
           const geocodeResponse = await fetch(geocodeUrl);
           
           if (!geocodeResponse.ok) {
