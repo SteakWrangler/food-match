@@ -62,6 +62,17 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     }
   }, [restaurants.length]);
 
+  // Reset viewed restaurants when new restaurants are added
+  useEffect(() => {
+    const currentRestaurantIds = new Set(restaurants.map(r => r.id));
+    setViewedRestaurants(prev => {
+      // Only keep IDs that still exist in the current restaurant list
+      const validViewedIds = new Set([...prev].filter(id => currentRestaurantIds.has(id)));
+      console.log(`🔍 Updated viewed restaurants: kept ${validViewedIds.size} out of ${prev.size} previously viewed, total restaurants: ${restaurants.length}`);
+      return validViewedIds;
+    });
+  }, [restaurants.length]);
+
   // Order restaurants based on custom order or default
   const orderedRestaurants = React.useMemo(() => {
     if (!customOrder || customOrder.length === 0) {
