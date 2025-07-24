@@ -37,7 +37,6 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       if (needsLocation && location.trim()) {
         // If we have a formatted address, use it; otherwise, try to geocode first
         if (formattedAddress) {
-          console.log('Creating room with coordinates:', location, 'and formatted address:', formattedAddress);
           onCreateRoom(name.trim(), location.trim(), formattedAddress);
         } else {
           // Try to geocode the location before submitting
@@ -187,7 +186,6 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       return;
     }
 
-    console.log('Starting current location detection...');
     setIsDetecting(true);
 
     try {
@@ -196,7 +194,6 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       });
       
       const { latitude, longitude } = position.coords;
-      console.log('Got coordinates:', latitude, longitude);
       
       // Use OpenCage for reverse geocoding
       const { data, error } = await supabase.functions.invoke('geocoding', {
@@ -209,15 +206,17 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
       if (error || !data?.address) {
         console.error('Reverse geocoding failed:', error);
-        // Even if reverse geocoding fails, we can still create the room with coordinates
+        // Fallback to coordinates if reverse geocoding fails
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
-        console.log('Creating room with coordinates only:', coordinates);
-        onCreateRoom(name.trim(), coordinates);
+        setLocation(coordinates);
+        setDisplayLocation('Location detected'); // Don't show coordinates to user
+        setFormattedAddress(null);
       } else {
         // Store coordinates for API calls, formatted address for display
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
-        console.log('Creating room with coordinates and address:', coordinates, data.address);
-        onCreateRoom(name.trim(), coordinates, data.address);
+        setLocation(coordinates);
+        setDisplayLocation(data.address); // Show formatted address in input
+        setFormattedAddress(data.address);
       }
       
     } catch (error) {
@@ -298,7 +297,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   disabled={isDetecting || isLoading}
                 >
                   <Navigation className="w-4 h-4 mr-2" />
-                  {isDetecting ? 'Detecting...' : name.trim() ? 'Use Current Location & Create Room' : 'Use Current Location'}
+                  {isDetecting ? 'Detecting...' : 'Use Current Location'}
                 </Button>
               </>
             )}
