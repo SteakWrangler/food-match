@@ -378,7 +378,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     <div className="relative"> {/* Removed touch-none from main container */}
       {/* REMOVED: Background loading indicator - should be completely invisible to user */}
       
-      <div className="flex items-center justify-center min-h-[280px] sm:min-h-[320px] md:min-h-[500px] p-1 sm:p-2 md:p-4 relative w-full"> {/* Further reduced heights and padding */}
+      <div className="flex flex-col items-center justify-center min-h-[280px] sm:min-h-[320px] md:min-h-[500px] p-1 sm:p-2 md:p-4 relative w-full"> {/* Changed to flex-col for vertical layout */}
         
         {/* Background Cards - Hidden until they become the top card */}
         {orderedRestaurants.slice(orderedRestaurants.indexOf(currentRestaurant) + 1, orderedRestaurants.indexOf(currentRestaurant) + 3).map((restaurant, index) => (
@@ -408,8 +408,8 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           </div>
         ))}
         
-        {/* Outer Container - Contains card and buttons visually together */}
-        <div className="flex flex-col items-center overflow-hidden">
+        {/* Card Container - Centered horizontally */}
+        <div className="flex flex-col items-center">
           {/* Swipeable Card Area - Only the card is swipeable */}
           <div
             ref={cardRef}

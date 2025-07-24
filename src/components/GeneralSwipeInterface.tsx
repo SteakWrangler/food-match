@@ -250,7 +250,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
 
   return (
     <div className="relative">
-      <div className="flex items-center justify-center min-h-[400px] sm:min-h-[500px] p-2 sm:p-4 relative w-full">
+      <div className="flex flex-col items-center justify-center min-h-[400px] sm:min-h-[500px] p-2 sm:p-4 relative w-full">
         {/* Background Cards - Hidden until they become the top card */}
         {orderedFoodTypes.slice(currentIndex + 1, currentIndex + 3).map((foodType, index) => (
           <div
@@ -279,8 +279,8 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
           </div>
         ))}
         
-        {/* Outer Container - Contains card and buttons visually together */}
-        <div className="flex flex-col items-center overflow-hidden">
+        {/* Card Container - Centered horizontally */}
+        <div className="flex flex-col items-center">
           {/* Swipeable Card Area - Only the card is swipeable */}
           <div
             className="relative z-10 touch-none select-none swipe-card"
