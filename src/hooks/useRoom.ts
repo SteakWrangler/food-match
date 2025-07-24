@@ -34,20 +34,29 @@ const useRoom = () => {
   const roomService = getRoomService();
 
   // Convert RoomData to RoomState
-  const convertRoomDataToState = (roomData: RoomData): RoomState => ({
-    id: roomData.id,
-    hostId: roomData.host_id,
-    participants: roomData.participants,
-    currentRestaurantId: roomData.current_restaurant_id, // Changed from current_restaurant_index to current_restaurant_id
-    viewedRestaurantIds: roomData.viewed_restaurant_ids || [], // Changed from current_restaurant_index to viewed_restaurant_ids
-    restaurantSwipes: roomData.restaurant_swipes,
-    foodTypeSwipes: roomData.food_type_swipes,
-    restaurants: roomData.restaurants,
-    location: roomData.location,
-    filters: roomData.filters,
-    nextPageToken: roomData.next_page_token,
-    lastUpdated: new Date(roomData.updated_at).getTime()
-  });
+  const convertRoomDataToState = (roomData: RoomData): RoomState => {
+    const roomState = {
+      id: roomData.id,
+      hostId: roomData.host_id,
+      participants: roomData.participants,
+      currentRestaurantId: roomData.current_restaurant_id, // Changed from current_restaurant_index to current_restaurant_id
+      viewedRestaurantIds: roomData.viewed_restaurant_ids || [], // Changed from current_restaurant_index to viewed_restaurant_ids
+      restaurantSwipes: roomData.restaurant_swipes,
+      foodTypeSwipes: roomData.food_type_swipes,
+      restaurants: roomData.restaurants,
+      location: roomData.location,
+      filters: roomData.filters,
+      nextPageToken: roomData.next_page_token,
+      lastUpdated: new Date(roomData.updated_at).getTime()
+    };
+    
+    // Reset hasReachedEnd if we have restaurants
+    if (roomData.restaurants && roomData.restaurants.length > 0) {
+      setHasReachedEnd(false);
+    }
+    
+    return roomState;
+  };
 
   // Poll for room updates to detect matches from other participants
   useEffect(() => {
@@ -457,7 +466,7 @@ const useRoom = () => {
 
   const loadMoreRestaurants = async (filters?: FilterState) => {
     console.log('🔍 loadMoreRestaurants called with filters:', filters);
-    console.log('🔍 Current room state:', roomState);
+    // console.log('🔍 Current room state:', roomState);
     console.log('🔍 Current room location:', roomState?.location);
     console.log('🔍 Current nextPageToken:', roomState?.nextPageToken);
     console.log('🔍 Current restaurants count:', roomState?.restaurants?.length);
@@ -544,6 +553,16 @@ const useRoom = () => {
         
         setRoomState(updatedRoom);
         console.log(`✅ Smart loading: Added ${result.restaurants.length} new restaurants (total: ${updatedRoom.restaurants.length})`);
+        
+        // Reset hasReachedEnd since we successfully loaded more restaurants
+        setHasReachedEnd(false);
+        
+        // If no nextPageToken, we've reached the end
+        if (!result.nextPageToken) {
+          console.log('🏁 No nextPageToken returned - reached end of available restaurants');
+          setHasReachedEnd(true);
+        }
+        
         return true;
       } else {
         console.log('⚠️ No restaurants returned from API');

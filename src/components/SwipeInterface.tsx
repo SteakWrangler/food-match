@@ -37,7 +37,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(false);
   const [viewedRestaurants, setViewedRestaurants] = useState<Set<string>>(new Set());
-  const [hasReachedEnd, setHasReachedEnd] = useState(false);
   const [isSecondLookMode, setIsSecondLookMode] = useState(false);
   const [isButtonTouch, setIsButtonTouch] = useState(false); // Track if touch started on button
   const cardRef = useRef<HTMLDivElement>(null);
@@ -46,20 +45,20 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   // Get user swipes from room state (restaurant swipes only)
   const userSwipes = roomState?.restaurantSwipes?.[participantId || ''] || {};
   
-  // Debug logging
-  console.log('SwipeInterface - userSwipes:', userSwipes);
-  console.log('SwipeInterface - participantId:', participantId);
-  console.log('SwipeInterface - roomState:', roomState);
+  // Debug logging - reduced frequency
+  // console.log('SwipeInterface - userSwipes:', userSwipes);
+  // console.log('SwipeInterface - participantId:', participantId);
+  // console.log('SwipeInterface - roomState:', roomState);
 
   // Monitor room state changes
   useEffect(() => {
-    console.log('SwipeInterface - roomState changed:', roomState);
+    // console.log('SwipeInterface - roomState changed:', roomState);
   }, [roomState]);
 
   // Reset hasReachedEnd when new restaurants are added
   useEffect(() => {
     if (restaurants.length > 0) {
-      setHasReachedEnd(false);
+      // setHasReachedEnd(false); // This line is removed as per the edit hint
     }
   }, [restaurants.length]);
 
@@ -135,7 +134,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   const handleTakeSecondLook = () => {
     setIsSecondLookMode(true);
     setViewedRestaurants(new Set()); // Reset viewed restaurants for second look
-    setHasReachedEnd(false); // Reset end state
+    // setHasReachedEnd(false); // This line is removed as per the edit hint
     if (onTakeSecondLook) {
       onTakeSecondLook();
     }
@@ -296,9 +295,11 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   // Enhanced smart loading triggers with better state management
   useEffect(() => {
+    console.log(`🔍 Smart loading check: remainingUnviewed=${remainingUnviewed}, onGenerateMore=${!!onGenerateMore}, hasReachedEndFromHook=${hasReachedEndFromHook}, isLoading=${isLoading}`);
+    
     // Only trigger if we have the onGenerateMore function and we're running very low on restaurants
     // and we haven't reached the end of available restaurants
-    if (onGenerateMore && remainingUnviewed <= 5 && remainingUnviewed > 0 && !hasReachedEnd && !isLoading) {
+    if (onGenerateMore && remainingUnviewed <= 5 && remainingUnviewed > 0 && !hasReachedEndFromHook && !isLoading) {
       console.log(`🔄 Smart loading trigger: ${remainingUnviewed} restaurants remaining`);
       
       // Add a delay to prevent multiple rapid calls
@@ -309,12 +310,12 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           onGenerateMore().then((success) => {
             // If loading failed or returned false, we've reached the end
             if (!success) {
-              setHasReachedEnd(true);
+              // setHasReachedEnd(true); // This line is removed as per the edit hint
               console.log('🏁 Reached end of available restaurants');
             }
           }).catch((error) => {
             console.error('❌ Smart loading failed:', error);
-            setHasReachedEnd(true);
+            // setHasReachedEnd(true); // This line is removed as per the edit hint
           });
         } else {
           console.log('⚠️ Already loading, skipping duplicate request');
@@ -323,7 +324,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       
       return () => clearTimeout(timeoutId);
     }
-  }, [remainingUnviewed, onGenerateMore, isLoading, hasReachedEnd]);
+  }, [remainingUnviewed, onGenerateMore, isLoading, hasReachedEndFromHook]);
 
   // Card style with drag transform
   const cardStyle: React.CSSProperties = {
