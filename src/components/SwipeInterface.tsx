@@ -303,41 +303,21 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     };
   }, [isDragging]);
 
-  // Enhanced smart loading triggers with better state management
+  // NEW: Simple trigger system
   useEffect(() => {
-    console.log(`🔍 Smart loading check: remainingUnviewed=${remainingUnviewed}, onGenerateMore=${!!onGenerateMore}, hasReachedEndFromHook=${hasReachedEndFromHook}, isLoading=${isLoading}`);
+    // Only trigger if we have the function and we're getting low on restaurants
+    if (!onGenerateMore || hasReachedEndFromHook || isLoading) return;
     
-    // Only trigger if we have the onGenerateMore function and we're running very low on restaurants
-    // and we haven't reached the end of available restaurants
-    if (onGenerateMore && remainingUnviewed === 10 && !hasReachedEndFromHook && !isLoading) {
-      console.log(`🔄 Smart loading trigger: ${remainingUnviewed} restaurants remaining`);
+    // Trigger only when we hit exactly 5 restaurants remaining
+    if (remainingUnviewed === 5) {
+      // Small delay to prevent rapid calls
+      const timer = setTimeout(() => {
+        onGenerateMore();
+      }, 300);
       
-      // Add a delay to prevent multiple rapid calls
-      const timeoutId = setTimeout(() => {
-        if (!isLoading) {
-          console.log('🚀 Triggering smart loading of more restaurants...');
-          // Don't set isLoading to true - keep it invisible to user
-          onGenerateMore().then((success) => {
-            console.log('🔍 onGenerateMore returned:', success);
-            // If loading failed or returned false, we've reached the end
-            if (!success) {
-              // setHasReachedEnd(true); // This line is removed as per the edit hint
-              console.log('🏁 Reached end of available restaurants');
-            }
-          }).catch((error) => {
-            console.error('❌ Smart loading failed:', error);
-            // setHasReachedEnd(true); // This line is removed as per the edit hint
-          });
-        } else {
-          console.log('⚠️ Already loading, skipping duplicate request');
-        }
-      }, 1000); // Longer delay to prevent rapid triggering
-      
-      return () => clearTimeout(timeoutId);
-    } else {
-      console.log(`❌ Smart loading blocked: onGenerateMore=${!!onGenerateMore}, remainingUnviewed=${remainingUnviewed}, hasReachedEndFromHook=${hasReachedEndFromHook}, isLoading=${isLoading}`);
+      return () => clearTimeout(timer);
     }
-  }, [remainingUnviewed, onGenerateMore, isLoading, hasReachedEndFromHook]);
+  }, [remainingUnviewed, onGenerateMore, hasReachedEndFromHook, isLoading]);
 
   // Card style with drag transform
   const cardStyle: React.CSSProperties = {

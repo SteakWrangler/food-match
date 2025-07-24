@@ -310,20 +310,12 @@ const Index = () => {
   };
 
   const handleGenerateMore = async () => {
-    console.log('🔍 handleGenerateMore called');
-    if (!roomState) {
-      console.log('❌ handleGenerateMore: No room state');
-      return false;
-    }
+    if (!roomState) return false;
     
     try {
-      console.log('🔍 handleGenerateMore: Calling loadMoreRestaurants');
-      const success = await loadMoreRestaurants();
-      console.log('🔍 handleGenerateMore: loadMoreRestaurants returned:', success);
-      return success;
+      return await loadMoreRestaurants();
     } catch (err) {
-      console.error('Error loading more restaurants:', err);
-      setError('Failed to load more restaurants. Please try again.');
+      console.error('Failed to load more:', err);
       return false;
     }
   };

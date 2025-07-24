@@ -464,124 +464,87 @@ const useRoom = () => {
   };
 
   const loadMoreRestaurants = async (filters?: FilterState) => {
-    console.log('🔍 loadMoreRestaurants called with filters:', filters);
-    console.log('🔍 Current room state:', roomState);
-    console.log('🔍 Current room location:', roomState?.location);
-    console.log('🔍 Current nextPageToken:', roomState?.nextPageToken);
-    console.log('🔍 Current restaurants count:', roomState?.restaurants?.length);
+    console.log('🔄 loadMoreRestaurants called');
     
     if (!roomState || !roomState.location) {
-      console.log('❌ loadMoreRestaurants: No room state or location');
+      console.log('❌ No room state or location');
       return false;
     }
 
-    // Prevent multiple simultaneous background loads
+    // Prevent multiple simultaneous loads
     if (isLoadingMoreRestaurants) {
-      console.log('⚠️ Already loading more restaurants, skipping duplicate request');
+      console.log('⚠️ Already loading, skipping');
       return false;
     }
     
     try {
-      console.log('🚀 Starting to load more restaurants...');
-      console.log('🔍 Applied filters:', filters);
-      
       setIsLoadingMoreRestaurants(true);
+      console.log('🚀 Loading next 20 restaurants...');
       
       const hybridRestaurantsAPI = getHybridRestaurantsAPI();
       
-      // Use filters from room state if not provided
+      // Use current filters or provided filters
       const appliedFilters = filters || roomState.filters;
-      console.log('🔍 Applied filters after fallback:', appliedFilters);
       
-      // Convert filters to API parameters
+      // Build API parameters
       const apiParams: any = {
         location: roomState.location,
-        radius: appliedFilters.distance[0] * 1609, // Convert miles to meters, use filter distance
-        openNow: appliedFilters.openNow, // Use filter value directly
-        limit: 20 // Load 20 restaurants per request for proper pagination
+        radius: appliedFilters.distance[0] * 1609,
+        openNow: appliedFilters.openNow,
+        limit: 20,
+        pageToken: roomState.nextPageToken,
+        minPrice: 0,
+        maxPrice: appliedFilters.priceRange[0]
       };
 
-      // Add price range filter - use "or-less" logic
-      apiParams.minPrice = 0; // Start from lowest price (Google uses 0-4)
-      apiParams.maxPrice = appliedFilters.priceRange[0]; // Use the selected price level directly
-
-      // Add cuisine keyword if specified
-      if (appliedFilters?.selectedCuisines && appliedFilters.selectedCuisines.length > 0) {
+      // Add cuisine filter if specified
+      if (appliedFilters?.selectedCuisines?.length > 0) {
         apiParams.keyword = appliedFilters.selectedCuisines.join(' ');
       }
-
-      // Add pageToken if we have one for pagination
-      if (roomState.nextPageToken) {
-        apiParams.pageToken = roomState.nextPageToken;
-        console.log('🔍 Using pageToken for pagination:', roomState.nextPageToken);
-      } else {
-        console.log('🔍 No pageToken available, this will be a fresh search');
-      }
       
-      console.log('🔍 API parameters being sent:', apiParams);
+      console.log('📡 API call params:', apiParams);
       
       const result = await hybridRestaurantsAPI.searchRestaurants(apiParams);
       
-      console.log(`Received ${result.restaurants.length} restaurants from API`);
-      console.log('🔍 Sample new restaurant:', result.restaurants[0]);
-      console.log('🔍 Next page token:', result.nextPageToken);
+      console.log(`✅ Received ${result.restaurants.length} new restaurants`);
       
       if (result.restaurants.length > 0) {
-        console.log('✅ Adding new restaurants to room state');
+        // Append new restaurants to existing list
+        const updatedRestaurants = [...roomState.restaurants, ...result.restaurants];
         
-        // Handle insufficient restaurants by adding end card if needed
-        const processedRestaurants = handleInsufficientRestaurants(result.restaurants.length, result.restaurants);
-        
-        // Add a small delay to prevent user from seeing individual restaurants being added
-        // This makes the batch loading appear more seamless
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+        // Update room state
         const updatedRoom: RoomState = {
           ...roomState,
-          restaurants: [...roomState.restaurants, ...processedRestaurants], // Append the new restaurants
-          filters: appliedFilters,
-          nextPageToken: result.nextPageToken, // Store the nextPageToken for future pagination
-          lastUpdated: Date.now(),
-          // Preserve existing swipes to prevent losing likes
-          restaurantSwipes: roomState.restaurantSwipes,
-          foodTypeSwipes: roomState.foodTypeSwipes,
-          // Preserve current restaurant ID - don't change it when adding new restaurants
-          currentRestaurantId: roomState.currentRestaurantId,
-          viewedRestaurantIds: roomState.viewedRestaurantIds
+          restaurants: updatedRestaurants,
+          nextPageToken: result.nextPageToken,
+          lastUpdated: Date.now()
         };
         
         setRoomState(updatedRoom);
-        console.log(`✅ Smart loading: Added ${result.restaurants.length} new restaurants (total: ${updatedRoom.restaurants.length})`);
-        console.log(`🔍 Room state after update: restaurants=${updatedRoom.restaurants.length}, nextPageToken=${updatedRoom.nextPageToken}`);
         
-        // Update the database so polling doesn't overwrite our changes
-        try {
-          await roomService.updateRestaurants(roomState.id, updatedRoom.restaurants, updatedRoom.nextPageToken);
-        } catch (error) {
-          console.error('Failed to update room in database:', error);
-        }
+        // Update database
+        await roomService.updateRestaurants(roomState.id, updatedRestaurants, result.nextPageToken);
         
-        // Reset hasReachedEnd since we successfully loaded more restaurants
-        setHasReachedEnd(false);
+        console.log(`✅ Added ${result.restaurants.length} restaurants (total: ${updatedRestaurants.length})`);
         
-        // If no nextPageToken, we've reached the end
+        // Check if we've reached the end
         if (!result.nextPageToken) {
-          console.log('🏁 No nextPageToken returned - reached end of available restaurants');
+          console.log('🏁 No more restaurants available');
           setHasReachedEnd(true);
+        } else {
+          setHasReachedEnd(false);
         }
         
         return true;
       } else {
-        console.log('⚠️ No restaurants returned from API');
-        // If no restaurants returned and no nextPageToken, we've reached the end
+        console.log('⚠️ No restaurants returned');
         if (!result.nextPageToken) {
-          console.log('🏁 No nextPageToken returned - reached end of available restaurants');
           setHasReachedEnd(true);
         }
         return false;
       }
     } catch (error) {
-      console.error('💥 Failed to load more restaurants:', error);
+      console.error('❌ Failed to load more restaurants:', error);
       return false;
     } finally {
       setIsLoadingMoreRestaurants(false);
@@ -679,8 +642,65 @@ const useRoom = () => {
   const handleInsufficientRestaurants = (totalFound: number, restaurants: any[]) => {
     // Only log the count, don't treat it as insufficient
     console.log(`📊 Found ${totalFound} restaurants from API`);
+    return restaurants; // Return restaurants as-is
+  };
+
+  // NEW: Simple restaurant loading system
+  const loadNextBatch = async () => {
+    if (!roomState?.location) return false;
+    if (isLoadingMoreRestaurants) return false;
     
-    return restaurants; // Return restaurants as-is, let the nextPageToken determine if we've reached the end
+    setIsLoadingMoreRestaurants(true);
+    
+    try {
+      const api = getHybridRestaurantsAPI();
+      const filters = roomState.filters;
+      
+      const params: any = {
+        location: roomState.location,
+        radius: filters.distance[0] * 1609,
+        openNow: filters.openNow,
+        limit: 20,
+        pageToken: roomState.nextPageToken,
+        minPrice: 0,
+        maxPrice: filters.priceRange[0]
+      };
+      
+      if (filters.selectedCuisines?.length > 0) {
+        params.keyword = filters.selectedCuisines.join(' ');
+      }
+      
+      const result = await api.searchRestaurants(params);
+      
+      if (result.restaurants.length > 0) {
+        const newRestaurants = [...roomState.restaurants, ...result.restaurants];
+        
+        const updatedRoom = {
+          ...roomState,
+          restaurants: newRestaurants,
+          nextPageToken: result.nextPageToken,
+          lastUpdated: Date.now()
+        };
+        
+        setRoomState(updatedRoom);
+        await roomService.updateRestaurants(roomState.id, newRestaurants, result.nextPageToken);
+        
+        // Check if we've hit the end
+        if (!result.nextPageToken) {
+          setHasReachedEnd(true);
+        }
+        
+        return true;
+      } else {
+        setHasReachedEnd(true);
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to load next batch:', error);
+      return false;
+    } finally {
+      setIsLoadingMoreRestaurants(false);
+    }
   };
 
   const leaveRoom = async () => {
@@ -693,7 +713,7 @@ const useRoom = () => {
     }
     setRoomState(null);
     setIsHost(false);
-    setHasReachedEnd(false); // Reset end state when leaving room
+    setHasReachedEnd(false);
   };
 
   return {
@@ -701,16 +721,16 @@ const useRoom = () => {
     isHost,
     participantId,
     isLoadingRestaurantsFromHook: isLoadingRestaurants,
-    isLoadingMoreRestaurants, // Add the new loading state
-    hasReachedEnd, // Add the end state
+    isLoadingMoreRestaurants,
+    hasReachedEnd,
     createRoom,
     joinRoom,
     addSwipe,
     checkForMatch,
     getParticipantSwipe,
-    loadMoreRestaurants,
+    loadMoreRestaurants: loadNextBatch, // Use the new simple function
     reloadRestaurantsWithFilters,
-    testDuplicateAPI, // Add test function
+    testDuplicateAPI,
     leaveRoom
   };
 };
