@@ -130,6 +130,11 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     }
   }, [orderedRestaurants, viewedRestaurants, isSecondLookMode, roomState, participantId]);
 
+  // Debug logging for restaurant state
+  useEffect(() => {
+    console.log(`🔍 Restaurant state: total=${orderedRestaurants.length}, current=${currentRestaurant?.name || 'none'}, remaining=${remainingUnviewed}, viewed=${viewedRestaurants.size}`);
+  }, [orderedRestaurants.length, currentRestaurant?.name, remainingUnviewed, viewedRestaurants.size]);
+
   // Handle entering second look mode
   const handleTakeSecondLook = () => {
     setIsSecondLookMode(true);
