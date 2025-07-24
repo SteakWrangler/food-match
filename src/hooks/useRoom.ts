@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { getHybridRestaurantsAPI } from '@/integrations/supabase/hybridRestaurants';
 import { getRoomService, RoomData } from '@/integrations/supabase/roomService';
@@ -466,7 +465,7 @@ const useRoom = () => {
 
   const loadMoreRestaurants = async (filters?: FilterState) => {
     console.log('🔍 loadMoreRestaurants called with filters:', filters);
-    // console.log('🔍 Current room state:', roomState);
+    console.log('🔍 Current room state:', roomState);
     console.log('🔍 Current room location:', roomState?.location);
     console.log('🔍 Current nextPageToken:', roomState?.nextPageToken);
     console.log('🔍 Current restaurants count:', roomState?.restaurants?.length);

@@ -324,6 +324,8 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       }, 1000); // Longer delay to prevent rapid triggering
       
       return () => clearTimeout(timeoutId);
+    } else {
+      console.log(`❌ Smart loading blocked: onGenerateMore=${!!onGenerateMore}, remainingUnviewed=${remainingUnviewed}, hasReachedEndFromHook=${hasReachedEndFromHook}, isLoading=${isLoading}`);
     }
   }, [remainingUnviewed, onGenerateMore, isLoading, hasReachedEndFromHook]);
 
