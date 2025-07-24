@@ -555,9 +555,11 @@ const useRoom = () => {
         console.log(`🔍 Room state after update: restaurants=${updatedRoom.restaurants.length}, nextPageToken=${updatedRoom.nextPageToken}`);
         
         // Update the database so polling doesn't overwrite our changes
-        roomService.updateRestaurants(roomState.id, updatedRoom.restaurants, updatedRoom.nextPageToken).catch(error => {
+        try {
+          await roomService.updateRestaurants(roomState.id, updatedRoom.restaurants, updatedRoom.nextPageToken);
+        } catch (error) {
           console.error('Failed to update room in database:', error);
-        });
+        }
         
         // Reset hasReachedEnd since we successfully loaded more restaurants
         setHasReachedEnd(false);

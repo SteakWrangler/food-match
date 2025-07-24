@@ -309,7 +309,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     
     // Only trigger if we have the onGenerateMore function and we're running very low on restaurants
     // and we haven't reached the end of available restaurants
-    if (onGenerateMore && remainingUnviewed === 5 && !hasReachedEndFromHook && !isLoading) {
+    if (onGenerateMore && remainingUnviewed === 10 && !hasReachedEndFromHook && !isLoading) {
       console.log(`🔄 Smart loading trigger: ${remainingUnviewed} restaurants remaining`);
       
       // Add a delay to prevent multiple rapid calls
