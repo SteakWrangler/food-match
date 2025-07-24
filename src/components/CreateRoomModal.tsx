@@ -180,12 +180,6 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   };
 
   const handleUseCurrentLocation = async () => {
-    // Check if user has entered their name first
-    if (!name.trim()) {
-      alert('Please enter your name first before using current location.');
-      return;
-    }
-
     setIsDetecting(true);
 
     try {
@@ -209,7 +203,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         // Fallback to coordinates if reverse geocoding fails
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        setDisplayLocation('Location detected'); // Don't show coordinates to user
+        setDisplayLocation(''); // Don't show coordinates in input - leave it empty
         setFormattedAddress(null);
       } else {
         // Store coordinates for API calls, formatted address for display
@@ -225,16 +219,6 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     } finally {
       setIsDetecting(false);
     }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setLocation(value);
-    setDisplayLocation(value);
-  };
-
-  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    handleAddressInput(e.target.value);
   };
 
   const isFormValid = name.trim() && (!needsLocation || location.trim());
@@ -281,8 +265,11 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                     id="location"
                     type="text"
                     value={displayLocation}
-                    onChange={handleInputChange}
-                    onBlur={handleInputBlur}
+                    onChange={(e) => {
+                      setLocation(e.target.value);
+                      setDisplayLocation(e.target.value);
+                    }}
+                    onBlur={(e) => handleAddressInput(e.target.value)}
                     placeholder="e.g., San Francisco, CA or 94102"
                     className="mt-1 text-sm sm:text-base"
                     disabled={isLoading}

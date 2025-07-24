@@ -31,7 +31,6 @@ const LocationModal: React.FC<LocationModalProps> = ({
   const [formattedAddress, setFormattedAddress] = useState<string | null>(null);
   const [displayLocation, setDisplayLocation] = useState(currentLocation);
   const [isDetecting, setIsDetecting] = useState(false);
-  const [hasFormattedAddress, setHasFormattedAddress] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,13 +106,11 @@ const LocationModal: React.FC<LocationModalProps> = ({
           setLocation(address);
           setDisplayLocation('Loading location...'); // Show loading instead of coordinates
           setFormattedAddress(null);
-          setHasFormattedAddress(false);
         } else {
           // Store coordinates for API calls, formatted address for display
           setLocation(address);
           setDisplayLocation(data.address);
           setFormattedAddress(data.address);
-          setHasFormattedAddress(true);
           
           // Immediately call the callback to update the parent component
           if (isCreatingRoom && onLocationSetForRoom) {
@@ -126,7 +123,6 @@ const LocationModal: React.FC<LocationModalProps> = ({
         console.error('Reverse geocoding error:', error);
         setLocation(address);
         setDisplayLocation('Loading location...'); // Show loading instead of coordinates
-        setHasFormattedAddress(false);
       }
     } else {
       // It's an address, try to geocode it
@@ -144,14 +140,12 @@ const LocationModal: React.FC<LocationModalProps> = ({
           setLocation(address);
           setDisplayLocation(address);
           setFormattedAddress(null);
-          setHasFormattedAddress(false);
         } else {
           // Store coordinates for API calls, formatted address for display
           const coordinates = `${data.lat}, ${data.lng}`;
           setLocation(coordinates);
           setDisplayLocation(data.formatted_address || address);
           setFormattedAddress(data.formatted_address || address);
-          setHasFormattedAddress(true);
           
           // Immediately call the callback to update the parent component
           if (isCreatingRoom && onLocationSetForRoom) {
@@ -164,7 +158,6 @@ const LocationModal: React.FC<LocationModalProps> = ({
         console.error('Geocoding error:', error);
         setLocation(address);
         setDisplayLocation(address);
-        setHasFormattedAddress(false);
       }
     }
   };
@@ -195,14 +188,12 @@ const LocationModal: React.FC<LocationModalProps> = ({
         setLocation(coordinates);
         setDisplayLocation('Location detected'); // Don't show coordinates to user
         setFormattedAddress(null);
-        setHasFormattedAddress(false);
       } else {
         // Store coordinates for API calls, formatted address for display
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        setDisplayLocation(data.address); // Show formatted address in input
+        setDisplayLocation(data.address);
         setFormattedAddress(data.address);
-        setHasFormattedAddress(true);
         
         // Call the appropriate callback with both coordinates and formatted address
         if (isCreatingRoom && onLocationSetForRoom) {
@@ -210,7 +201,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
         } else {
           onLocationChange(coordinates, data.address);
         }
-        // Don't close the modal automatically - let user confirm
+        onClose();
       }
     } catch (error) {
       console.error('Error getting location:', error);
@@ -218,24 +209,6 @@ const LocationModal: React.FC<LocationModalProps> = ({
     } finally {
       setIsDetecting(false);
     }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setLocation(value);
-    
-    // Only update display if we don't have a formatted address from current location
-    if (!hasFormattedAddress) {
-      setDisplayLocation(value);
-    }
-  };
-
-  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    // If user manually types something, clear the formatted address flag
-    if (hasFormattedAddress) {
-      setHasFormattedAddress(false);
-    }
-    handleAddressInput(e.target.value);
   };
 
   return (
@@ -267,8 +240,11 @@ const LocationModal: React.FC<LocationModalProps> = ({
                 id="location"
                 type="text"
                 value={displayLocation}
-                onChange={handleInputChange}
-                onBlur={handleInputBlur}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  setDisplayLocation(e.target.value);
+                }}
+                onBlur={(e) => handleAddressInput(e.target.value)}
                 placeholder="e.g., San Francisco, CA or 94102"
                 className="mt-1 text-sm sm:text-base"
                 autoFocus
