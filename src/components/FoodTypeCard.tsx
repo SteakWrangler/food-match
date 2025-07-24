@@ -37,11 +37,11 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style, s
   const getCardClasses = () => {
     switch (deviceType) {
       case 'mobile':
-        return 'w-full max-w-[320px] h-[500px]';
+        return 'w-full max-w-[320px] h-[240px]'; // Smaller than RestaurantCard's 280px
       case 'tablet':
-        return 'w-full max-w-[400px] h-[550px]';
+        return 'w-full max-w-[400px] h-[300px]'; // Smaller than RestaurantCard's 360px
       default:
-        return 'w-full max-w-[400px] h-[600px]';
+        return 'w-full max-w-[400px] h-[380px]'; // Smaller than RestaurantCard's 480px
     }
   };
 
@@ -70,11 +70,11 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style, s
   return (
     <div className={`${getCardClasses()} mx-auto flex flex-col`}>
       <Card 
-        className="w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex flex-col"
+        className="w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex flex-col h-full"
         style={style}
       >
         {/* Main Image */}
-        <div className="relative h-48 sm:h-56">
+        <div className="relative h-24 sm:h-28"> {/* Reduced from h-32 sm:h-40 to h-24 sm:h-28 */}
           {imageLoading && (
             <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
               <div className="text-gray-400 text-sm">Loading...</div>
@@ -101,8 +101,8 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style, s
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-4 sm:p-6 flex flex-col">
-          <h2 className={`${textClasses.title} font-bold text-gray-900 mb-3 sm:mb-4`}>
+        <div className="flex-1 p-2 sm:p-3 flex flex-col"> {/* Reduced from p-3 sm:p-4 to p-2 sm:p-3 */}
+          <h2 className={`${textClasses.title} font-bold text-gray-900 mb-2 sm:mb-3`}> {/* Reduced from mb-3 sm:mb-4 to mb-2 sm:mb-3 */}
             {foodType.name}
           </h2>
           
