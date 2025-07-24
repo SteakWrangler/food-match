@@ -232,17 +232,11 @@ const Index = () => {
     }
     
     // Update the location state if a new location was provided
-    if (locationToUse && locationToUse !== location) {
+    if (locationToUse) {
       console.log('Setting location:', locationToUse);
       console.log('Setting formatted location:', formattedAddress);
-      // Only set location if we have a formatted address, otherwise wait
-      if (formattedAddress) {
-        setLocation(locationToUse);
-        setFormattedLocation(formattedAddress);
-      } else {
-        // Don't set location yet - wait for geocoding to complete
-        console.log('Waiting for geocoding to complete before setting location');
-      }
+      setLocation(locationToUse);
+      setFormattedLocation(formattedAddress || null);
     }
     
     // Close the modal immediately when room creation starts
