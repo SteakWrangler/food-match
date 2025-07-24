@@ -103,6 +103,10 @@
     overflow-x: hidden;
     /* Improve touch scrolling */
     -webkit-overflow-scrolling: touch;
+    /* Prevent automatic zooming on input focus */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   /* Improve touch targets on mobile */
@@ -145,6 +149,10 @@
   /* Smooth scrolling for iOS */
   html {
     -webkit-overflow-scrolling: touch;
+    /* Prevent automatic zooming */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   /* Better focus indicators for accessibility */
@@ -156,6 +164,13 @@
   /* Safe area handling for mobile apps */
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
+  }
+  
+  /* Prevent zoom issues on mobile */
+  @media screen and (max-width: 768px) {
+    input, textarea, select {
+      font-size: 16px !important;
+    }
   }
   
   .safe-area-bottom {
