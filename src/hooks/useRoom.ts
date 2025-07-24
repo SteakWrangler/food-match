@@ -29,6 +29,7 @@ const useRoom = () => {
   const [participantId] = useState(() => `user_${Math.random().toString(36).substr(2, 9)}`);
   const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
   const [isLoadingMoreRestaurants, setIsLoadingMoreRestaurants] = useState(false); // Add separate state for background loading
+  const [hasReachedEnd, setHasReachedEnd] = useState(false); // Track if we've reached the end of available restaurants
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const roomService = getRoomService();
 
@@ -458,6 +459,8 @@ const useRoom = () => {
     console.log('🔍 loadMoreRestaurants called with filters:', filters);
     console.log('🔍 Current room state:', roomState);
     console.log('🔍 Current room location:', roomState?.location);
+    console.log('🔍 Current nextPageToken:', roomState?.nextPageToken);
+    console.log('🔍 Current restaurants count:', roomState?.restaurants?.length);
     
     if (!roomState || !roomState.location) {
       console.log('❌ loadMoreRestaurants: No room state or location');
@@ -513,6 +516,7 @@ const useRoom = () => {
       
       console.log(`Received ${result.restaurants.length} restaurants from API`);
       console.log('🔍 Sample new restaurant:', result.restaurants[0]);
+      console.log('🔍 Next page token:', result.nextPageToken);
       
       if (result.restaurants.length > 0) {
         console.log('✅ Adding new restaurants to room state');
@@ -543,6 +547,11 @@ const useRoom = () => {
         return true;
       } else {
         console.log('⚠️ No restaurants returned from API');
+        // If no restaurants returned and no nextPageToken, we've reached the end
+        if (!result.nextPageToken) {
+          console.log('🏁 No nextPageToken returned - reached end of available restaurants');
+          setHasReachedEnd(true);
+        }
         return false;
       }
     } catch (error) {
@@ -660,6 +669,7 @@ const useRoom = () => {
     }
     setRoomState(null);
     setIsHost(false);
+    setHasReachedEnd(false); // Reset end state when leaving room
   };
 
   return {
@@ -668,6 +678,7 @@ const useRoom = () => {
     participantId,
     isLoadingRestaurantsFromHook: isLoadingRestaurants,
     isLoadingMoreRestaurants, // Add the new loading state
+    hasReachedEnd, // Add the end state
     createRoom,
     joinRoom,
     addSwipe,

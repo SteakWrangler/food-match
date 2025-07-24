@@ -63,6 +63,8 @@ const Index = () => {
     isHost,
     participantId,
     isLoadingRestaurantsFromHook,
+    isLoadingMoreRestaurants,
+    hasReachedEnd,
     createRoom,
     joinRoom,
     addSwipe,
@@ -688,6 +690,8 @@ const Index = () => {
                       // This will be handled by the SwipeInterface component
                       console.log('Taking a second look at restaurants');
                     }}
+                    hasReachedEndFromHook={hasReachedEnd}
+                    isLoadingMoreRestaurants={isLoadingMoreRestaurants}
                   />
                 )}
               </TabsContent>

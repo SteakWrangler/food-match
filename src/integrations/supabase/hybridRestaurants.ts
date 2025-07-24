@@ -121,10 +121,10 @@ export class HybridRestaurantsAPI {
       console.log('Processing removed - using Google Places data only');
 
       // Step 3: Transform and return final data with nextPageToken
-      const transformedData = this.transformGooglePlacesData(googlePlacesData.restaurants);
+      const transformedData = this.transformGooglePlacesData(googlePlacesData.restaurants, googlePlacesData.nextPageToken);
       return {
         restaurants: transformedData.restaurants,
-        nextPageToken: googlePlacesData.nextPageToken // Pass through the nextPageToken from Google Places
+        nextPageToken: transformedData.nextPageToken
       };
 
     } catch (error) {
@@ -133,7 +133,7 @@ export class HybridRestaurantsAPI {
     }
   }
 
-  private transformGooglePlacesData(restaurants: any[]): { restaurants: Restaurant[], nextPageToken?: string } {
+  private transformGooglePlacesData(restaurants: any[], nextPageToken?: string): { restaurants: Restaurant[], nextPageToken?: string } {
     return {
       restaurants: restaurants.map(restaurant => ({
         id: restaurant.id,
@@ -144,7 +144,7 @@ export class HybridRestaurantsAPI {
         vicinity: restaurant.vicinity,
         openingHours: restaurant.openingHours
       })),
-      nextPageToken: undefined // Google Places doesn't return a page token directly in this response
+      nextPageToken: nextPageToken
     };
   }
 

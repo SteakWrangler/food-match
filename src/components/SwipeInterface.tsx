@@ -14,6 +14,8 @@ interface SwipeInterfaceProps {
   customOrder?: string[];
   onGenerateMore?: () => Promise<boolean>;
   onTakeSecondLook?: () => void;
+  hasReachedEndFromHook?: boolean;
+  isLoadingMoreRestaurants?: boolean;
 }
 
 const SwipeInterface: React.FC<SwipeInterfaceProps> = ({ 
@@ -26,7 +28,9 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   onBringToFront,
   customOrder,
   onGenerateMore,
-  onTakeSecondLook
+  onTakeSecondLook,
+  hasReachedEndFromHook,
+  isLoadingMoreRestaurants
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -294,7 +298,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   useEffect(() => {
     // Only trigger if we have the onGenerateMore function and we're running very low on restaurants
     // and we haven't reached the end of available restaurants
-    if (onGenerateMore && remainingUnviewed <= 3 && remainingUnviewed > 0 && !hasReachedEnd && !isLoading) {
+    if (onGenerateMore && remainingUnviewed <= 5 && remainingUnviewed > 0 && !hasReachedEnd && !isLoading) {
       console.log(`🔄 Smart loading trigger: ${remainingUnviewed} restaurants remaining`);
       
       // Add a delay to prevent multiple rapid calls
@@ -330,6 +334,19 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   // No restaurants to show
   if (!currentRestaurant) {
+    // If we're loading more restaurants, show loading screen
+    if (isLoadingMoreRestaurants) {
+      return (
+        <div className="text-center py-12">
+          <div className="text-4xl sm:text-6xl mb-4">🍽️</div>
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Loading more restaurants...</h3>
+          <p className="text-sm sm:text-base text-gray-600 mb-4">
+            Finding more great places for you to discover.
+          </p>
+        </div>
+      );
+    }
+
     // No more restaurants - show the end screen
     return (
       <div className="text-center py-12">
@@ -349,25 +366,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
             className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium mb-3"
           >
             Take a second look ({getUnlikedRestaurants(orderedRestaurants).length} restaurants)
-          </button>
-        )}
-        
-        {/* Only show "Try Loading More" if there are no unliked restaurants and we have the function */}
-        {!isSecondLookMode && onGenerateMore && getUnlikedRestaurants(orderedRestaurants).length === 0 && (
-          <button
-            onClick={() => {
-              setIsLoading(true);
-              setHasReachedEnd(false); // Reset end state when manually trying to load more
-              onGenerateMore().then((success) => {
-                if (!success) {
-                  setHasReachedEnd(true);
-                }
-              }).finally(() => setIsLoading(false));
-            }}
-            disabled={isLoading}
-            className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium disabled:opacity-50"
-          >
-            {isLoading ? 'Loading...' : 'Try Loading More'}
           </button>
         )}
       </div>
