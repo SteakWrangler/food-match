@@ -186,13 +186,13 @@ const LocationModal: React.FC<LocationModalProps> = ({
         // Fallback to coordinates if reverse geocoding fails
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        setDisplayLocation('Location detected'); // Don't show coordinates to user
+        setDisplayLocation(coordinates); // Show coordinates in input
         setFormattedAddress(null);
       } else {
         // Store coordinates for API calls, formatted address for display
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        setDisplayLocation(data.address);
+        setDisplayLocation(coordinates); // Show coordinates in input
         setFormattedAddress(data.address);
         
         // Call the appropriate callback with both coordinates and formatted address

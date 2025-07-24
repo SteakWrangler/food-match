@@ -203,13 +203,13 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         // Fallback to coordinates if reverse geocoding fails
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        setDisplayLocation(''); // Don't show coordinates in input - leave it empty
+        setDisplayLocation(coordinates); // Show coordinates in input
         setFormattedAddress(null);
       } else {
         // Store coordinates for API calls, formatted address for display
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        setDisplayLocation(data.address); // Show formatted address in input
+        setDisplayLocation(coordinates); // Show coordinates in input
         setFormattedAddress(data.address);
       }
       
