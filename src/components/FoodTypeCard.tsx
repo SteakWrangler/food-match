@@ -73,8 +73,8 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style, s
         className="w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex flex-col h-full"
         style={style}
       >
-        {/* Main Image */}
-        <div className="relative h-24 sm:h-28"> {/* Reduced from h-32 sm:h-40 to h-24 sm:h-28 */}
+        {/* Main Image - Increased height significantly */}
+        <div className="relative h-40 sm:h-48"> {/* Increased from h-24 sm:h-28 to h-40 sm:h-48 */}
           {imageLoading && (
             <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
               <div className="text-gray-400 text-sm">Loading...</div>
@@ -100,20 +100,20 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style, s
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
         </div>
 
-        {/* Content */}
-        <div className="flex-1 p-2 sm:p-3 flex flex-col"> {/* Reduced from p-3 sm:p-4 to p-2 sm:p-3 */}
-          <h2 className={`${textClasses.title} font-bold text-gray-900 mb-2 sm:mb-3`}> {/* Reduced from mb-3 sm:mb-4 to mb-2 sm:mb-3 */}
+        {/* Content - Reduced padding and spacing */}
+        <div className="flex-1 p-2 sm:p-2 flex flex-col"> {/* Reduced from p-2 sm:p-3 to p-2 sm:p-2 */}
+          <h2 className={`${textClasses.title} font-bold text-gray-900 mb-1 sm:mb-2`}> {/* Reduced from mb-2 sm:mb-3 to mb-1 sm:mb-2 */}
             {foodType.name}
           </h2>
           
           {foodType.description && (
-            <p className={`${textClasses.body} text-gray-600 leading-relaxed flex-1`}>
+            <p className={`${textClasses.body} text-gray-600 leading-tight flex-1`}> {/* Changed from leading-relaxed to leading-tight */}
               {foodType.description}
             </p>
           )}
           
           {!foodType.description && (
-            <p className={`${textClasses.body} text-gray-600 leading-relaxed flex-1`}>
+            <p className={`${textClasses.body} text-gray-600 leading-tight flex-1`}> {/* Changed from leading-relaxed to leading-tight */}
               Discover amazing {foodType.name.toLowerCase()} restaurants near you!
             </p>
           )}

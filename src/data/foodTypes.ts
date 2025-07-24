@@ -418,7 +418,7 @@ export const foodTypeCategories = [
   'Popular',
   'Asian',
   'American', 
-  'European',
+  'European', 
   'Quick Service',
   'Seafood',
   'Desserts',
