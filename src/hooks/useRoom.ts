@@ -155,7 +155,6 @@ const useRoom = () => {
         hostId: participantId,
         hostName,
         location, // Coordinates for API calls
-        formattedAddress, // Formatted address for UI display
         filters
       });
 

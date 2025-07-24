@@ -244,7 +244,7 @@ const Index = () => {
     setIsCreatingRoom(true);
     
     try {
-      await createRoom(name, locationToSet, filters, formattedAddress);
+      await createRoom(name, locationToSet, filters);
       // Show QR modal after successful room creation
       setShowQRCode(true);
     } catch (err) {
