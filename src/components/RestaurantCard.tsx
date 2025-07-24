@@ -83,22 +83,22 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
         </div>
 
         {/* Restaurant Name and Basic Info */}
-        <div className="px-4 sm:px-6 pt-3 pb-2 flex-1 flex flex-col">
+        <div className="px-3 sm:px-4 md:px-6 pt-3 pb-2 flex-1 flex flex-col">
           <h2 className={`${textClasses.title} font-bold mb-2 text-gray-900 line-clamp-2`}>{restaurant.name}</h2>
           
           {/* Rating and Price - Clean horizontal layout */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              <span className="text-sm font-medium text-gray-700">{restaurant.rating}</span>
+              <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
+              <span className="text-xs sm:text-sm font-medium text-gray-700">{restaurant.rating}</span>
             </div>
-            <span className="text-sm font-semibold text-gray-800">{restaurant.priceRange}</span>
+            <span className="text-xs sm:text-sm font-semibold text-gray-800">{restaurant.priceRange}</span>
           </div>
           
           {/* Location - Clean single line */}
           {restaurant.vicinity && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600">
+              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
               <span className="truncate">{restaurant.vicinity}</span>
             </div>
           )}
@@ -106,7 +106,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
 
         
         {/* Details Link - Always visible at bottom */}
-        <div className="px-4 sm:px-6 py-1.5 bg-gray-50 flex items-center justify-center flex-shrink-0">
+        <div className="px-3 sm:px-4 md:px-6 py-1.5 bg-gray-50 flex items-center justify-center flex-shrink-0">
           <a
             href={roomLocation 
               ? `https://www.google.com/maps/search/${encodeURIComponent(restaurant.name)}/@${encodeURIComponent(roomLocation)}`
@@ -114,10 +114,10 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
             }
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm sm:text-base text-orange-600 hover:text-orange-700 font-medium transition-colors"
+            className="inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-orange-600 hover:text-orange-700 font-medium transition-colors"
           >
             <span>View Details</span>
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </a>
@@ -126,18 +126,18 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
 
       {/* Swipe Action Buttons - Below the card */}
       {showButtons && (
-        <div className="flex justify-center gap-3 sm:gap-4 mt-4">
+        <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mt-3 sm:mt-4">
           <button
             onClick={() => onSwipe('left')}
-            className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
           >
-            <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform">✕</span>
+            <span className="text-lg sm:text-xl md:text-2xl group-hover:scale-110 transition-transform">✕</span>
           </button>
           <button
             onClick={() => onSwipe('right')}
-            className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group"
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group"
           >
-            <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform">♥</span>
+            <span className="text-lg sm:text-xl md:text-2xl group-hover:scale-110 transition-transform">♥</span>
           </button>
         </div>
       )}

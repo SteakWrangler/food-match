@@ -389,7 +389,9 @@ serve(async (req: Request) => {
       }
 
       try {
-        let lat: number, lng: number;
+        let lat: number = 0, lng: number = 0;
+        let useTextSearch = false;
+        let nearbySearchData: any = null;
         
         // Check if location is already coordinates
         const coordMatch = location.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
@@ -410,94 +412,155 @@ serve(async (req: Request) => {
           const geocodeData = await geocodeResponse.json();
           
           if (geocodeData.status !== 'OK' || !geocodeData.results || geocodeData.results.length === 0) {
+            // If geocoding fails, use Text Search instead of Nearby Search
+            useTextSearch = true;
+          } else {
+            // Use the first result's coordinates
+            const result = geocodeData.results[0];
+            lat = result.geometry.location.lat;
+            lng = result.geometry.location.lng;
+          }
+        }
+
+        let restaurants: RestaurantData[] = [];
+
+        if (useTextSearch) {
+          // Use Text Search when geocoding fails - can accept addresses directly
+          const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=restaurants+in+${encodeURIComponent(location)}&type=restaurant&key=${googlePlacesApiKey}`;
+          
+          const textSearchResponse = await fetch(textSearchUrl);
+          
+          if (!textSearchResponse.ok) {
+            throw new Error(`Text search failed: HTTP ${textSearchResponse.status}`);
+          }
+
+          const textSearchData = await textSearchResponse.json();
+          
+          if (textSearchData.status !== 'OK' || !textSearchData.results || textSearchData.results.length === 0) {
             return new Response(JSON.stringify({ 
-              error: "Location not found",
-              status: geocodeData.status
+              error: "No restaurants found for the given location",
+              status: textSearchData.status
             }), {
               status: 400,
               headers: corsHeaders
             });
           }
 
-          // Use the first result's coordinates
-          const result = geocodeData.results[0];
-          lat = result.geometry.location.lat;
-          lng = result.geometry.location.lng;
-        }
+          // Filter out non-restaurant places
+          const filteredResults = textSearchData.results.filter(place => !shouldExcludePlace(place));
+          console.log(`Filtered text search results: ${textSearchData.results.length} -> ${filteredResults.length}`);
+          
+          // Remove duplicate chain restaurants
+          const deduplicatedResults = removeDuplicateChains(filteredResults);
+          console.log(`Deduplicated text search results: ${filteredResults.length} -> ${deduplicatedResults.length}`);
+          
+          // Transform text search results
+          restaurants = deduplicatedResults.slice(0, limit || 20).map((place: any) => {
+            const priceLevelToString = (level?: number): string => {
+              if (!level) return '';
+              return '$'.repeat(level);
+            };
 
-        // Use Nearby Search instead of Text Search
-        const nearbySearchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius || 5000}&type=restaurant&minprice=${minPrice || 0}&maxprice=${maxPrice || 4}&opennow=${openNow || false}&key=${googlePlacesApiKey}${pageToken ? `&pagetoken=${pageToken}` : ''}`;
-        
-        const nearbySearchResponse = await fetch(nearbySearchUrl);
-        
-        if (!nearbySearchResponse.ok) {
-          throw new Error(`Nearby search failed: HTTP ${nearbySearchResponse.status}`);
-        }
+            // Get main image from photos
+            let mainImage = 'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop'; // placeholder
+            if (place.photos && place.photos.length > 0) {
+              mainImage = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&maxheight=300&photoreference=${place.photos[0].photo_reference}&key=${googlePlacesApiKey}`;
+            }
 
-        const nearbySearchData = await nearbySearchResponse.json();
-        
-        if (nearbySearchData.status !== 'OK' || !nearbySearchData.results || nearbySearchData.results.length === 0) {
-          return new Response(JSON.stringify({ 
-            error: "No restaurants found for the given location",
-            status: nearbySearchData.status
-          }), {
-            status: 400,
-            headers: corsHeaders
+            return {
+              id: place.place_id,
+              name: place.name,
+              image: mainImage,
+              rating: place.rating || 0,
+              priceRange: priceLevelToString(place.price_level),
+              vicinity: place.formatted_address || place.vicinity,
+              openingHours: place.opening_hours?.weekday_text || [],
+              cuisine: undefined,
+              images: undefined,
+              distance: undefined,
+              estimatedTime: undefined,
+              description: undefined,
+              tags: [],
+              address: undefined,
+              phone: undefined,
+              website: undefined,
+              googleTypes: undefined
+            };
+          });
+        } else {
+          // Use Nearby Search with coordinates
+          const nearbySearchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius || 5000}&type=restaurant&minprice=${minPrice || 0}&maxprice=${maxPrice || 4}&opennow=${openNow || false}&key=${googlePlacesApiKey}${pageToken ? `&pagetoken=${pageToken}` : ''}`;
+          
+          const nearbySearchResponse = await fetch(nearbySearchUrl);
+          
+          if (!nearbySearchResponse.ok) {
+            throw new Error(`Nearby search failed: HTTP ${nearbySearchResponse.status}`);
+          }
+
+          nearbySearchData = await nearbySearchResponse.json();
+          
+          if (nearbySearchData.status !== 'OK' || !nearbySearchData.results || nearbySearchData.results.length === 0) {
+            return new Response(JSON.stringify({ 
+              error: "No restaurants found for the given location",
+              status: nearbySearchData.status
+            }), {
+              status: 400,
+              headers: corsHeaders
+            });
+          }
+
+          // Filter out non-restaurant places
+          const filteredResults = nearbySearchData.results.filter(place => !shouldExcludePlace(place));
+          console.log(`Filtered nearby search results: ${nearbySearchData.results.length} -> ${filteredResults.length}`);
+          
+          // Remove duplicate chain restaurants
+          const deduplicatedResults = removeDuplicateChains(filteredResults);
+          console.log(`Deduplicated nearby search results: ${filteredResults.length} -> ${deduplicatedResults.length}`);
+          
+          // Transform nearby search results to match your existing format
+          restaurants = deduplicatedResults.slice(0, limit || 20).map((place: any) => {
+            const priceLevelToString = (level?: number): string => {
+              if (!level) return '';
+              return '$'.repeat(level);
+            };
+
+            // Get main image from photos
+            let mainImage = 'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop'; // placeholder
+            if (place.photos && place.photos.length > 0) {
+              mainImage = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&maxheight=300&photoreference=${place.photos[0].photo_reference}&key=${googlePlacesApiKey}`;
+            }
+
+            return {
+              id: place.place_id,
+              name: place.name,
+              image: mainImage,
+              rating: place.rating || 0,
+              priceRange: priceLevelToString(place.price_level),
+              vicinity: place.vicinity,
+              openingHours: place.opening_hours?.weekday_text || [],
+              cuisine: undefined,
+              images: undefined,
+              distance: undefined,
+              estimatedTime: undefined,
+              description: undefined,
+              tags: [],
+              address: undefined,
+              phone: undefined,
+              website: undefined,
+              googleTypes: undefined
+            };
           });
         }
 
-        // Filter out non-restaurant places
-        const filteredResults = nearbySearchData.results.filter(place => !shouldExcludePlace(place));
-        console.log(`Filtered nearby search results: ${nearbySearchData.results.length} -> ${filteredResults.length}`);
-        
-        // Remove duplicate chain restaurants
-        const deduplicatedResults = removeDuplicateChains(filteredResults);
-        console.log(`Deduplicated nearby search results: ${filteredResults.length} -> ${deduplicatedResults.length}`);
-        
-        // Transform nearby search results to match your existing format
-        const restaurants: RestaurantData[] = deduplicatedResults.slice(0, limit || 20).map((place: any) => {
-          const priceLevelToString = (level?: number): string => {
-            if (!level) return '';
-            return '$'.repeat(level);
-          };
-
-          // Get main image from photos
-          let mainImage = 'https://images.unsplash.com/photo-1565299585323-38174c5833ca?w=400&h=300&fit=crop'; // placeholder
-          if (place.photos && place.photos.length > 0) {
-            mainImage = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&maxheight=300&photoreference=${place.photos[0].photo_reference}&key=${googlePlacesApiKey}`;
-          }
-
-          return {
-            id: place.place_id,
-            name: place.name,
-            image: mainImage,
-            rating: place.rating || 0,
-            priceRange: priceLevelToString(place.price_level),
-            vicinity: place.vicinity,
-            openingHours: place.opening_hours?.weekday_text || [],
-            // Remove fields that aren't in Nearby Search
-            cuisine: undefined,
-            images: undefined,
-            distance: undefined,
-            estimatedTime: undefined,
-            description: undefined,
-            tags: [],
-            address: undefined,
-            phone: undefined,
-            website: undefined,
-            googleTypes: undefined
-          };
-        });
-
         return new Response(JSON.stringify({
           restaurants,
-          nextPageToken: nearbySearchData.next_page_token
+          nextPageToken: useTextSearch ? undefined : nearbySearchData?.next_page_token
         }), {
           headers: corsHeaders
         });
 
       } catch (error) {
-        console.error('Error in nearby search:', error);
+        console.error('Error in restaurant search:', error);
         return new Response(JSON.stringify({ 
           error: "Restaurant search failed",
           details: error.message

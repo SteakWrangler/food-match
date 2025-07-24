@@ -28,18 +28,25 @@ const LocationModal: React.FC<LocationModalProps> = ({
   isLoading = false
 }) => {
   const [location, setLocation] = useState(currentLocation);
+  const [formattedAddress, setFormattedAddress] = useState<string | null>(null);
+  const [displayLocation, setDisplayLocation] = useState(currentLocation);
   const [isDetecting, setIsDetecting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (location.trim() && !isLoading) {
-      // Just pass the current location - geocoding should have already been done
-      if (isCreatingRoom && onLocationSetForRoom) {
-        onLocationSetForRoom(location.trim());
+      // If we have a formatted address, use it; otherwise, try to geocode first
+      if (formattedAddress) {
+        if (isCreatingRoom && onLocationSetForRoom) {
+          onLocationSetForRoom(location.trim(), formattedAddress);
+        } else {
+          onLocationChange(location.trim(), formattedAddress);
+        }
+        onClose();
       } else {
-        onLocationChange(location.trim());
+        // Try to geocode the location before submitting
+        handleGeocode(location.trim());
       }
-      onClose();
     }
   };
 
@@ -54,13 +61,9 @@ const LocationModal: React.FC<LocationModalProps> = ({
 
       if (error || !data?.lat || !data?.lng) {
         console.error('Geocoding failed:', error);
-        // Fallback to using the address as-is
-        if (isCreatingRoom && onLocationSetForRoom) {
-          onLocationSetForRoom(address, address);
-        } else {
-          onLocationChange(address, address);
-        }
-        onClose();
+        // Don't set location if geocoding fails - show error to user
+        alert('Unable to find that location. Please try a different address or use "Use Current Location".');
+        return;
       } else {
         // Use coordinates for API calls, formatted address for display
         const coordinates = `${data.lat}, ${data.lng}`;
@@ -75,13 +78,8 @@ const LocationModal: React.FC<LocationModalProps> = ({
       }
     } catch (error) {
       console.error('Geocoding error:', error);
-      // Fallback to using the address as-is
-      if (isCreatingRoom && onLocationSetForRoom) {
-        onLocationSetForRoom(address, address);
-      } else {
-        onLocationChange(address, address);
-      }
-      onClose();
+      // Don't set location if geocoding fails - show error to user
+      alert('Unable to find that location. Please try a different address or use "Use Current Location".');
     }
   };
 
@@ -106,10 +104,12 @@ const LocationModal: React.FC<LocationModalProps> = ({
           console.error('Reverse geocoding failed:', error);
           // Fallback to coordinates
           setLocation(address);
+          setFormattedAddress(null);
         } else {
-          // Store coordinates, display formatted address
+          // Store coordinates for API calls, formatted address for display
           setLocation(address);
-          // We'll pass the formatted address when submitting
+          setDisplayLocation(data.address);
+          setFormattedAddress(data.address);
         }
       } catch (error) {
         console.error('Reverse geocoding error:', error);
@@ -129,15 +129,19 @@ const LocationModal: React.FC<LocationModalProps> = ({
           console.error('Geocoding failed:', error);
           // Fallback to using address as-is
           setLocation(address);
+          setDisplayLocation(address);
+          setFormattedAddress(null);
         } else {
-          // Store coordinates for API calls
+          // Store coordinates for API calls, formatted address for display
           const coordinates = `${data.lat}, ${data.lng}`;
           setLocation(coordinates);
-          // We'll pass the formatted address when submitting
+          setDisplayLocation(data.formatted_address || address);
+          setFormattedAddress(data.formatted_address || address);
         }
       } catch (error) {
         console.error('Geocoding error:', error);
         setLocation(address);
+        setDisplayLocation(address);
       }
     }
   };
@@ -166,19 +170,20 @@ const LocationModal: React.FC<LocationModalProps> = ({
         // Fallback to coordinates if reverse geocoding fails
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        // No formatted address available
+        setDisplayLocation('Location detected'); // Don't show coordinates to user
+        setFormattedAddress(null);
       } else {
-        // Store coordinates for API calls but display the formatted address
+        // Store coordinates for API calls, formatted address for display
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        // Store the formatted address for later use
-        const formattedAddress = data.address;
+        setDisplayLocation(data.address);
+        setFormattedAddress(data.address);
         
         // Call the appropriate callback with both coordinates and formatted address
         if (isCreatingRoom && onLocationSetForRoom) {
-          onLocationSetForRoom(coordinates, formattedAddress);
+          onLocationSetForRoom(coordinates, data.address);
         } else {
-          onLocationChange(coordinates, formattedAddress);
+          onLocationChange(coordinates, data.address);
         }
         onClose();
       }
@@ -218,7 +223,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
               <Input
                 id="location"
                 type="text"
-                value={location}
+                value={displayLocation}
                 onChange={(e) => setLocation(e.target.value)}
                 onBlur={(e) => handleAddressInput(e.target.value)}
                 placeholder="e.g., San Francisco, CA or 94102"

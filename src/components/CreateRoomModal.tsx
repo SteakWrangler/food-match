@@ -27,14 +27,21 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [location, setLocation] = useState(currentLocation || '');
+  const [formattedAddress, setFormattedAddress] = useState<string | null>(null);
+  const [displayLocation, setDisplayLocation] = useState(currentLocation || '');
   const [isDetecting, setIsDetecting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim() && !isLoading) {
       if (needsLocation && location.trim()) {
-        // Just pass the current location - geocoding should have already been done
-        onCreateRoom(name.trim(), location.trim());
+        // If we have a formatted address, use it; otherwise, try to geocode first
+        if (formattedAddress) {
+          onCreateRoom(name.trim(), location.trim(), formattedAddress);
+        } else {
+          // Try to geocode the location before submitting
+          handleGeocode(name.trim(), location.trim());
+        }
       } else if (!needsLocation) {
         // If we don't need location, just pass name
         onCreateRoom(name.trim());
@@ -44,17 +51,18 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
   const handleGeocode = async (name: string, address: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('google-places', {
+      const { data, error } = await supabase.functions.invoke('geocoding', {
         body: {
           action: 'geocode',
-          location: address
+          address: address
         },
       });
 
       if (error || !data?.lat || !data?.lng) {
         console.error('Geocoding failed:', error);
-        // Fallback to using the address as-is
-        onCreateRoom(name, address, address);
+        // Don't create room if geocoding fails - show error to user
+        alert('Unable to find that location. Please try a different address or use "Use Current Location".');
+        return;
       } else {
         // Use coordinates for API calls, formatted address for display
         const coordinates = `${data.lat}, ${data.lng}`;
@@ -63,8 +71,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       }
     } catch (error) {
       console.error('Geocoding error:', error);
-      // Fallback to using the address as-is
-      onCreateRoom(name, address, address);
+      // Don't create room if geocoding fails - show error to user
+      alert('Unable to find that location. Please try a different address or use "Use Current Location".');
     }
   };
 
@@ -73,11 +81,11 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     const coordMatch = address.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
     
     if (coordMatch) {
-      // It's coordinates, try to get formatted address
+      // It's coordinates, try to get formatted address using OpenCage
       try {
         const [lat, lng] = address.split(',').map(coord => parseFloat(coord.trim()));
         
-        const { data, error } = await supabase.functions.invoke('google-places', {
+        const { data, error } = await supabase.functions.invoke('geocoding', {
           body: {
             action: 'reverse-geocode',
             lat,
@@ -89,22 +97,26 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           console.error('Reverse geocoding failed:', error);
           // Fallback to coordinates
           setLocation(address);
+          setDisplayLocation('Coordinates entered');
+          setFormattedAddress(null);
         } else {
           // Store coordinates, display formatted address
           setLocation(address);
-          // We'll pass the formatted address when submitting
+          setDisplayLocation(data.address);
+          setFormattedAddress(data.address);
         }
       } catch (error) {
         console.error('Reverse geocoding error:', error);
         setLocation(address);
+        setDisplayLocation('Coordinates entered');
       }
     } else {
-      // It's an address, try to geocode it
+      // It's an address, try to geocode it using OpenCage
       try {
-        const { data, error } = await supabase.functions.invoke('google-places', {
+        const { data, error } = await supabase.functions.invoke('geocoding', {
           body: {
             action: 'geocode',
-            location: address
+            address: address
           },
         });
 
@@ -112,15 +124,19 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           console.error('Geocoding failed:', error);
           // Fallback to using address as-is
           setLocation(address);
+          setDisplayLocation(address);
+          setFormattedAddress(null);
         } else {
-          // Store coordinates for API calls
+          // Store coordinates for API calls, formatted address for display
           const coordinates = `${data.lat}, ${data.lng}`;
           setLocation(coordinates);
-          // We'll pass the formatted address when submitting
+          setDisplayLocation(data.formatted_address || address);
+          setFormattedAddress(data.formatted_address || address);
         }
       } catch (error) {
         console.error('Geocoding error:', error);
         setLocation(address);
+        setDisplayLocation(address);
       }
     }
   };
@@ -135,30 +151,30 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       
       const { latitude, longitude } = position.coords;
       
-      // Use Google Places API for reverse geocoding
-      const { data, error } = await supabase.functions.invoke('google-places', {
+      // Use OpenCage for reverse geocoding
+      const { data, error } = await supabase.functions.invoke('geocoding', {
         body: {
           action: 'reverse-geocode',
           lat: latitude,
           lng: longitude
-          },
-        });
+        },
+      });
 
       if (error || !data?.address) {
         console.error('Reverse geocoding failed:', error);
         // Fallback to coordinates if reverse geocoding fails
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
+        setDisplayLocation('Current Location');
+        setFormattedAddress(null);
       } else {
-        // Store coordinates for API calls but display the formatted address
+        // Store coordinates for API calls, formatted address for display
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        // Store the formatted address for later use
-        const formattedAddress = data.address;
-        
-        // Call the callback immediately with both coordinates and formatted address
-        onCreateRoom(name, coordinates, formattedAddress);
+        setDisplayLocation(data.address);
+        setFormattedAddress(data.address);
       }
+      
     } catch (error) {
       console.error('Error getting location:', error);
       alert('Unable to detect your location. Please enter it manually.');
@@ -170,11 +186,11 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const isFormValid = name.trim() && (!needsLocation || location.trim());
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md bg-white rounded-3xl overflow-hidden animate-scale-in">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Create Room</h2>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <Card className="w-full max-w-md bg-white rounded-2xl sm:rounded-3xl overflow-hidden animate-scale-in">
+        <div className="p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Create Room</h2>
             <Button
               variant="ghost"
               size="icon"
@@ -182,20 +198,20 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               className="rounded-full"
               disabled={isLoading}
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div>
-              <Label htmlFor="name" className="text-gray-700">Your Name</Label>
+              <Label htmlFor="name" className="text-gray-700 text-sm sm:text-base">Your Name</Label>
               <Input
                 id="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter your name"
-                className="mt-1"
+                className="mt-1 text-sm sm:text-base"
                 autoFocus
                 disabled={isLoading}
               />
@@ -204,17 +220,17 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             {needsLocation && (
               <>
                 <div>
-                  <Label htmlFor="location" className="text-gray-700">
+                  <Label htmlFor="location" className="text-gray-700 text-sm sm:text-base">
                     Enter your city or zip code
                   </Label>
                   <Input
                     id="location"
                     type="text"
-                    value={location}
+                    value={displayLocation}
                     onChange={(e) => setLocation(e.target.value)}
                     onBlur={(e) => handleAddressInput(e.target.value)}
                     placeholder="e.g., San Francisco, CA or 94102"
-                    className="mt-1"
+                    className="mt-1 text-sm sm:text-base"
                     disabled={isLoading}
                   />
                 </div>
@@ -222,7 +238,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full"
+                  className="w-full text-sm sm:text-base"
                   onClick={handleUseCurrentLocation}
                   disabled={isDetecting || isLoading}
                 >
@@ -232,11 +248,11 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               </>
             )}
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4">
               <Button 
                 type="button"
                 variant="outline" 
-                className="flex-1"
+                className="flex-1 text-sm sm:text-base"
                 onClick={onClose}
                 disabled={isLoading}
               >
@@ -244,7 +260,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               </Button>
               <Button 
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+                className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-sm sm:text-base"
                 disabled={!isFormValid || isLoading}
               >
                 {isLoading ? 'Creating Room...' : 'Create Room'}

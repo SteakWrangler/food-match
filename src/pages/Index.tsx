@@ -206,6 +206,8 @@ const Index = () => {
     
     // Update the location state if a new location was provided
     if (locationToUse && locationToUse !== location) {
+      console.log('Setting location:', locationToUse);
+      console.log('Setting formatted location:', formattedAddress);
       setLocation(locationToUse);
       setFormattedLocation(formattedAddress || null);
     }
@@ -215,7 +217,7 @@ const Index = () => {
     setIsCreatingRoom(true);
     
     try {
-      await createRoom(name, locationToSet);
+      await createRoom(name, locationToSet, filters);
       // Show QR modal after successful room creation
       setShowQRCode(true);
     } catch (err) {
@@ -382,7 +384,7 @@ const Index = () => {
   const getContainerClasses = () => {
     switch (deviceType) {
       case 'mobile':
-        return 'max-w-sm mx-auto px-3 py-3';
+        return 'max-w-sm mx-auto px-2 py-2';
       case 'tablet':
         return 'max-w-2xl mx-auto px-6 py-4';
       default:
@@ -393,7 +395,7 @@ const Index = () => {
   const getHeaderClasses = () => {
     switch (deviceType) {
       case 'mobile':
-        return 'max-w-sm mx-auto px-3 py-2';
+        return 'max-w-sm mx-auto px-2 py-2';
       case 'tablet':
         return 'max-w-2xl mx-auto px-6 py-3';
       default:
@@ -427,18 +429,41 @@ const Index = () => {
         <div className={getHeaderClasses()}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xs sm:text-sm">F</span>
-              </div>
-              <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
-                Toss or Taste
-              </h1>
+              <button 
+                onClick={() => {
+                  if (isInRoom) {
+                    handleLeaveRoom();
+                  }
+                }}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              >
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full flex items-center justify-center relative overflow-hidden">
+                  {/* Connected T shapes - one upright, one upside-down */}
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    {/* Upright T */}
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2">
+                      <div className="text-white font-bold text-xs sm:text-sm leading-none">T</div>
+                    </div>
+                    {/* Upside-down T */}
+                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2">
+                      <div className="text-white font-bold text-xs sm:text-sm leading-none transform rotate-180">T</div>
+                    </div>
+                    {/* OR text overlaid on top */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-white font-bold text-[6px] sm:text-[8px] leading-none bg-gradient-to-r from-orange-500 to-pink-500 px-1 rounded">OR</span>
+                    </div>
+                  </div>
+                </div>
+                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
+                  Toss or Taste
+                </h1>
+              </button>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <button
                 onClick={() => setShowLocation(true)}
-                className={`flex items-center gap-1 text-xs sm:text-sm transition-colors ${
+                className={`flex items-center gap-1 text-xs sm:text-sm transition-colors px-2 py-1 rounded-md hover:bg-orange-50 ${
                   location 
                     ? 'text-gray-600 hover:text-orange-600' 
                     : 'text-orange-600 hover:text-orange-700 font-medium'
@@ -453,7 +478,7 @@ const Index = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowFilters(true)}
-                  className="border-orange-200 hover:bg-orange-50"
+                  className="border-orange-200 hover:bg-orange-50 px-2 sm:px-3"
                 >
                   <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
@@ -467,34 +492,48 @@ const Index = () => {
       <main className={getContainerClasses()}>
         {!isInRoom ? (
           /* Welcome Screen */
-          <div className="text-center space-y-4 sm:space-y-6">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-sm border border-orange-100">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">
-                Find food together!
-              </h2>
-              <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
-                Swipe on restaurants with your dining partner and get matched when you both like the same place.
-              </p>
-              
-              <div className="space-y-3 sm:space-y-4">
-                <Button
-                  onClick={() => setShowCreateRoom(true)}
-                  className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-base sm:text-lg py-4 sm:py-6"
-                >
-                  <QrCode className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  Create Room & Share QR
-                </Button>
+          <div className="h-[calc(100vh-6rem)] flex items-center justify-center relative overflow-hidden">
+            {/* Background Image - Full Viewport Coverage */}
+            <div 
+              className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-50 transition-opacity duration-500" 
+              style={{
+                backgroundImage: "url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')",
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                zIndex: 0
+              }}
+            />
+            
+            <div className="text-center space-y-4 sm:space-y-6 w-full max-w-md mx-auto relative z-20 px-4">
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 shadow-xl border border-orange-100">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3 sm:mb-4 md:mb-6">
+                  Find food together!
+                </h2>
+                <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-6 sm:mb-8 md:mb-10 leading-relaxed">
+                  Swipe on restaurants with your dining partner and get matched when you both like the same place.
+                </p>
                 
-                <Button
-                  onClick={() => setShowJoinRoom(true)}
-                  variant="outline"
-                  className="w-full border-orange-200 hover:bg-orange-50 text-base sm:text-lg py-4 sm:py-6"
-                >
-                  <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  Join Room
-                </Button>
-                
+                <div className="space-y-3 sm:space-y-4 md:space-y-5">
+                  <Button
+                    onClick={() => setShowCreateRoom(true)}
+                    className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-base sm:text-lg md:text-xl py-4 sm:py-6 md:py-8"
+                  >
+                    <QrCode className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2 sm:mr-3" />
+                    Create Room & Share QR
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setShowJoinRoom(true)}
+                    variant="outline"
+                    className="w-full border-orange-200 hover:bg-orange-50 text-base sm:text-lg md:text-xl py-4 sm:py-6 md:py-8"
+                  >
+                    <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2 sm:mr-3" />
+                    Join Room
+                  </Button>
+                  
 
+                </div>
               </div>
             </div>
           </div>
@@ -504,18 +543,18 @@ const Index = () => {
             {/* Room Status Bar */}
             <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-3 sm:mb-4 shadow-sm border border-orange-100">
               <div className="flex items-center justify-between text-xs sm:text-sm">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
                   {isHost && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowQRCode(true)}
-                      className="text-orange-600 hover:bg-orange-50"
+                      className="text-orange-600 hover:bg-orange-50 flex-shrink-0"
                     >
                       <QrCode className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Button>
                   )}
-                  <span className="text-gray-700">Room: {roomState.id}</span>
+                  <span className="text-gray-700 truncate">Room: {roomState.id}</span>
                   {roomState.participants && roomState.participants.find(p => p.id === roomState.hostId) && (
                     <>
                       <span className="text-gray-400 hidden sm:inline">•</span>
@@ -523,12 +562,12 @@ const Index = () => {
                     </>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleLeaveRoom}
-                    className="text-red-600 hover:bg-red-50"
+                    className="text-red-600 hover:bg-red-50 px-2 sm:px-3"
                   >
                     <span className="text-xs sm:text-sm">Leave</span>
                   </Button>
@@ -539,10 +578,10 @@ const Index = () => {
             {/* Tab System */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-2 sm:mb-3">
               <TabsList className="grid w-full grid-cols-2 bg-white/80 backdrop-blur-sm">
-                <TabsTrigger value="specific" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-xs sm:text-sm">
+                <TabsTrigger value="specific" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-xs sm:text-sm py-2 sm:py-3">
                   Restaurants
                 </TabsTrigger>
-                <TabsTrigger value="general" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-xs sm:text-sm">
+                <TabsTrigger value="general" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-xs sm:text-sm py-2 sm:py-3">
                   Food Types
                 </TabsTrigger>
               </TabsList>
@@ -553,19 +592,19 @@ const Index = () => {
                   onClick={() => setShowHistory(true)}
                   variant="outline"
                   size="sm"
-                  className="border-orange-200 hover:bg-orange-50 text-orange-600"
+                  className="border-orange-200 hover:bg-orange-50 text-orange-600 px-3 sm:px-4"
                 >
-                  <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                  <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   Room Stats
                 </Button>
               </div>
               
               <TabsContent value="specific" className="mt-2">
                 {filteredRestaurants.length === 0 ? (
-                  <div className="text-center py-8 sm:py-12">
-                    <div className="text-4xl sm:text-6xl mb-4">🍽️</div>
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-2">No restaurants found</h3>
-                    <p className="text-sm sm:text-base text-gray-600 mb-4">
+                  <div className="text-center py-6 sm:py-8 md:py-12">
+                    <div className="text-3xl sm:text-4xl md:text-6xl mb-3 sm:mb-4">🍽️</div>
+                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-2">No restaurants found</h3>
+                    <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-3 sm:mb-4 px-2">
                       {isInRoom 
                         ? "No restaurants available in your area. Try changing your location."
                         : "Join a room to start swiping on restaurants!"
@@ -575,9 +614,9 @@ const Index = () => {
                       <Button
                         onClick={() => setShowLocation(true)}
                         variant="outline"
-                        className="border-orange-200 hover:bg-orange-50"
+                        className="border-orange-200 hover:bg-orange-50 text-xs sm:text-sm"
                       >
-                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                         Change Location
                       </Button>
                     )}
@@ -617,8 +656,8 @@ const Index = () => {
             </Tabs>
 
             {/* Instructions */}
-            <div className="text-center mt-3 sm:mt-4 space-y-1">
-              <p className="text-gray-600 text-xs sm:text-sm">
+            <div className="text-center mt-3 sm:mt-4 space-y-1 px-2">
+              <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
                 {activeTab === 'specific' 
                   ? 'Swipe right if you want to eat there, left if you don\'t'
                   : 'Swipe right on food types you\'re craving, left if you don\'t want them'

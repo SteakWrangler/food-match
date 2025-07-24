@@ -25,58 +25,121 @@ serve(async (req: Request) => {
       });
     }
 
-    // Test the API key with a simple Places API call
+    // Parse request body to check if we want to test geocoding
+    let body: any = {};
     try {
-      // Test with a simple text search for restaurants in San Diego
-      const testUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=restaurants+in+San+Diego&key=${googlePlacesApiKey}`;
-      
-      console.log('Testing Google Places API with URL:', testUrl);
-      
-      const response = await fetch(testUrl);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
+      body = await req.json();
+    } catch (_) {
+      // No body provided, use default test
+    }
+
+    const testGeocoding = body.test === 'geocoding';
+
+    if (testGeocoding) {
+      // Test Geocoding API specifically
+      try {
+        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=San+Francisco,+CA&key=${googlePlacesApiKey}`;
+        
+        console.log('Testing Google Geocoding API with URL:', geocodeUrl);
+        
+        const response = await fetch(geocodeUrl);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          return new Response(JSON.stringify({ 
+            error: `Google Geocoding API test failed: HTTP ${response.status}`,
+            details: errorText,
+            hasApiKey: true,
+            apiKeyLength: googlePlacesApiKey.length
+          }), {
+            status: 400,
+            headers: corsHeaders
+          });
+        }
+
+        const data = await response.json();
+        
         return new Response(JSON.stringify({ 
-          error: `Google Places API test failed: HTTP ${response.status}`,
-          details: errorText,
+          message: "Google Geocoding API test completed",
+          hasApiKey: true,
+          apiKeyLength: googlePlacesApiKey.length,
+          responseStatus: response.status,
+          geocodingStatus: data.status,
+          resultsCount: data.results?.length || 0,
+          sampleResult: data.results?.[0] ? {
+            formatted_address: data.results[0].formatted_address,
+            place_id: data.results[0].place_id,
+            location: data.results[0].geometry?.location
+          } : null
+        }), {
+          headers: corsHeaders
+        });
+        
+      } catch (error) {
+        return new Response(JSON.stringify({ 
+          error: "Google Geocoding API test failed",
+          details: error.message,
           hasApiKey: true,
           apiKeyLength: googlePlacesApiKey.length
         }), {
-          status: 400,
+          status: 500,
           headers: corsHeaders
         });
       }
+    } else {
+      // Test the API key with a simple Places API call
+      try {
+        // Test with a simple text search for restaurants in San Diego
+        const testUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=restaurants+in+San+Diego&key=${googlePlacesApiKey}`;
+        
+        console.log('Testing Google Places API with URL:', testUrl);
+        
+        const response = await fetch(testUrl);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          return new Response(JSON.stringify({ 
+            error: `Google Places API test failed: HTTP ${response.status}`,
+            details: errorText,
+            hasApiKey: true,
+            apiKeyLength: googlePlacesApiKey.length
+          }), {
+            status: 400,
+            headers: corsHeaders
+          });
+        }
 
-      const data = await response.json();
-      
-      return new Response(JSON.stringify({ 
-        message: "Google Places API test successful",
-        hasApiKey: true,
-        apiKeyLength: googlePlacesApiKey.length,
-        responseStatus: response.status,
-        resultsCount: data.results?.length || 0,
-        status: data.status,
-        sampleResult: data.results?.[0] ? {
-          name: data.results[0].name,
-          place_id: data.results[0].place_id,
-          rating: data.results[0].rating,
-          price_level: data.results[0].price_level,
-          types: data.results[0].types
-        } : null
-      }), {
-        headers: corsHeaders
-      });
-      
-    } catch (error) {
-      return new Response(JSON.stringify({ 
-        error: "Google Places API test failed",
-        details: error.message,
-        hasApiKey: true,
-        apiKeyLength: googlePlacesApiKey.length
-      }), {
-        status: 500,
-        headers: corsHeaders
-      });
+        const data = await response.json();
+        
+        return new Response(JSON.stringify({ 
+          message: "Google Places API test successful",
+          hasApiKey: true,
+          apiKeyLength: googlePlacesApiKey.length,
+          responseStatus: response.status,
+          resultsCount: data.results?.length || 0,
+          status: data.status,
+          sampleResult: data.results?.[0] ? {
+            name: data.results[0].name,
+            place_id: data.results[0].place_id,
+            rating: data.results[0].rating,
+            price_level: data.results[0].price_level,
+            types: data.results[0].types
+          } : null
+        }), {
+          headers: corsHeaders
+        });
+        
+      } catch (error) {
+        return new Response(JSON.stringify({ 
+          error: "Google Places API test failed",
+          details: error.message,
+          hasApiKey: true,
+          apiKeyLength: googlePlacesApiKey.length
+        }), {
+          status: 500,
+          headers: corsHeaders
+        });
+      }
     }
   } catch (error) {
     console.error('Unhandled error in test function:', error);

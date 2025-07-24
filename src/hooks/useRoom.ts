@@ -135,7 +135,7 @@ const useRoom = () => {
     };
   }, [roomState?.id, participantId]);
 
-  const createRoom = async (hostName: string, location: string, filters?: FilterState) => {
+  const createRoom = async (hostName: string, location: string, filters: FilterState) => {
     try {
       // Set loading state immediately
       setIsLoadingRestaurants(true);
@@ -180,7 +180,7 @@ const useRoom = () => {
     }
   };
 
-  const loadInitialRestaurants = async (roomId: string, location: string, filters?: FilterState, isInitialLoad: boolean = false) => {
+  const loadInitialRestaurants = async (roomId: string, location: string, filters: FilterState, isInitialLoad: boolean = false) => {
     try {
       console.log('🚀 Loading 20 restaurants for room entry...');
       console.log('Applied filters:', filters);
@@ -242,7 +242,7 @@ const useRoom = () => {
     }
   };
 
-  const loadMoreRestaurantsInBackground = async (roomId: string, location: string, filters?: FilterState, pageToken?: string, batchSize: number = 20) => {
+  const loadMoreRestaurantsInBackground = async (roomId: string, location: string, filters: FilterState, pageToken?: string, batchSize: number = 20) => {
     try {
       const stageName = batchSize === 10 ? 'STAGE 2' : 'BACKGROUND';
       console.log(`🔄 ${stageName}: Loading ${batchSize} more restaurants in background...`);
