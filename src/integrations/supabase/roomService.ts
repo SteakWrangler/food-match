@@ -31,7 +31,6 @@ export interface RoomData {
   food_type_swipes: Record<string, Record<string, 'left' | 'right'>>;
   restaurants: any[];
   location: string; // Coordinates for API calls
-  formatted_address?: string; // Formatted address for UI display
   filters?: FilterState;
   next_page_token?: string;
   created_at: string;

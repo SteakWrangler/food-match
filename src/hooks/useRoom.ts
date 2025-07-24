@@ -35,28 +35,20 @@ const useRoom = () => {
 
   // Convert RoomData to RoomState
   const convertRoomDataToState = (roomData: RoomData): RoomState => {
-    const roomState = {
+    return {
       id: roomData.id,
       hostId: roomData.host_id,
       participants: roomData.participants,
-      currentRestaurantId: roomData.current_restaurant_id, // Changed from current_restaurant_index to current_restaurant_id
-      viewedRestaurantIds: roomData.viewed_restaurant_ids || [], // Changed from current_restaurant_index to viewed_restaurant_ids
-      restaurantSwipes: roomData.restaurant_swipes,
-      foodTypeSwipes: roomData.food_type_swipes,
-      restaurants: roomData.restaurants,
+      currentRestaurantId: roomData.current_restaurant_id,
+      viewedRestaurantIds: roomData.viewed_restaurant_ids || [],
+      restaurantSwipes: roomData.restaurant_swipes || {},
+      foodTypeSwipes: roomData.food_type_swipes || {},
+      restaurants: roomData.restaurants || [],
       location: roomData.location, // Coordinates for API calls
-      formattedAddress: roomData.formatted_address, // Formatted address for UI display
+      lastUpdated: Date.now(),
       filters: roomData.filters,
-      nextPageToken: roomData.next_page_token,
-      lastUpdated: new Date(roomData.updated_at).getTime()
+      nextPageToken: roomData.next_page_token
     };
-    
-    // Reset hasReachedEnd if we have restaurants
-    if (roomData.restaurants && roomData.restaurants.length > 0) {
-      setHasReachedEnd(false);
-    }
-    
-    return roomState;
   };
 
   // Poll for room updates to detect matches from other participants
