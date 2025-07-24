@@ -45,17 +45,26 @@ const Index = () => {
   
   // Helper function to check if location is coordinates and return appropriate display text
   const getLocationDisplayText = (location: string | null, formattedLocation: string | null) => {
+    // Only show formatted address in UI - never show coordinates
     if (formattedLocation) {
       return formattedLocation;
     }
     if (!location) {
       return 'Set Location';
     }
-    // Check if location looks like coordinates (contains comma and numbers)
-    if (location.includes(',') && /\d/.test(location)) {
-      return 'Loading location...'; // Show loading instead of coordinates
+    // If we have location but no formatted address, show a generic message
+    // This prevents coordinates from ever being displayed
+    return 'Location set';
+  };
+
+  // Get the display location for the current context
+  const getCurrentDisplayLocation = () => {
+    // If we're in a room, use the room's formatted address
+    if (roomState?.formattedAddress) {
+      return roomState.formattedAddress;
     }
-    return location;
+    // Otherwise use the local formatted location
+    return getLocationDisplayText(location, formattedLocation);
   };
   
   const {
@@ -241,7 +250,7 @@ const Index = () => {
     setIsCreatingRoom(true);
     
     try {
-      await createRoom(name, locationToSet, filters);
+      await createRoom(name, locationToSet, filters, formattedAddress);
       // Show QR modal after successful room creation
       setShowQRCode(true);
     } catch (err) {
@@ -521,7 +530,7 @@ const Index = () => {
                 }`}
               >
                 <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{getLocationDisplayText(location, formattedLocation)}</span>
+                <span className="hidden sm:inline">{getCurrentDisplayLocation()}</span>
                 <span className="sm:hidden">{location || formattedLocation ? 'Location' : 'Set'}</span>
               </button>
               {activeTab === 'specific' && (

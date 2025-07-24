@@ -16,7 +16,8 @@ export interface RoomState {
   restaurantSwipes: Record<string, Record<string, 'left' | 'right'>>;
   foodTypeSwipes: Record<string, Record<string, 'left' | 'right'>>;
   restaurants: any[];
-  location: string;
+  location: string; // Coordinates for API calls
+  formattedAddress?: string; // Formatted address for UI display
   lastUpdated: number;
   filters?: FilterState;
   nextPageToken?: string;
@@ -43,7 +44,8 @@ const useRoom = () => {
       restaurantSwipes: roomData.restaurant_swipes,
       foodTypeSwipes: roomData.food_type_swipes,
       restaurants: roomData.restaurants,
-      location: roomData.location,
+      location: roomData.location, // Coordinates for API calls
+      formattedAddress: roomData.formatted_address, // Formatted address for UI display
       filters: roomData.filters,
       nextPageToken: roomData.next_page_token,
       lastUpdated: new Date(roomData.updated_at).getTime()
@@ -144,7 +146,7 @@ const useRoom = () => {
     };
   }, [roomState?.id, participantId]);
 
-  const createRoom = async (hostName: string, location: string, filters: FilterState) => {
+  const createRoom = async (hostName: string, location: string, filters: FilterState, formattedAddress?: string) => {
     try {
       // Set loading state immediately
       setIsLoadingRestaurants(true);
@@ -152,7 +154,8 @@ const useRoom = () => {
       const roomData = await roomService.createRoom({
         hostId: participantId,
         hostName,
-        location,
+        location, // Coordinates for API calls
+        formattedAddress, // Formatted address for UI display
         filters
       });
 

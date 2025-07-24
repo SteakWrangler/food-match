@@ -239,7 +239,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
               <Input
                 id="location"
                 type="text"
-                value={location}
+                value={displayLocation}
                 onChange={(e) => {
                   setLocation(e.target.value);
                   setDisplayLocation(e.target.value);

@@ -30,7 +30,8 @@ export interface RoomData {
   restaurant_swipes: Record<string, Record<string, 'left' | 'right'>>;
   food_type_swipes: Record<string, Record<string, 'left' | 'right'>>;
   restaurants: any[];
-  location: string;
+  location: string; // Coordinates for API calls
+  formatted_address?: string; // Formatted address for UI display
   filters?: FilterState;
   next_page_token?: string;
   created_at: string;
@@ -40,7 +41,8 @@ export interface RoomData {
 export interface CreateRoomParams {
   hostId: string;
   hostName: string;
-  location: string;
+  location: string; // Coordinates for API calls
+  formattedAddress?: string; // Formatted address for UI display
   filters?: FilterState;
 }
 
@@ -82,7 +84,7 @@ export class RoomService {
   }
 
   async createRoom(params: CreateRoomParams): Promise<RoomData> {
-    const { hostId, hostName, location, filters } = params;
+    const { hostId, hostName, location, formattedAddress, filters } = params;
     
     const roomData = {
       id: Math.random().toString(36).substr(2, 9).toUpperCase(),
@@ -96,7 +98,8 @@ export class RoomService {
       restaurant_swipes: {},
       food_type_swipes: {},
       restaurants: [],
-      location,
+      location, // Coordinates for API calls
+      formatted_address: formattedAddress, // Formatted address for UI display
       filters,
       next_page_token: null
     };
