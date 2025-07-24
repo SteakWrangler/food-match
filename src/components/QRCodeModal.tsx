@@ -44,10 +44,10 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ roomId, participants, onClose
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
-      <Card className="w-full max-w-sm sm:max-w-md bg-white rounded-2xl sm:rounded-3xl overflow-hidden animate-scale-in max-h-[90vh] overflow-y-auto">
-        <div className="p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Share Room</h2>
+      <Card className="w-full max-w-xs sm:max-w-sm md:max-w-md bg-white rounded-2xl sm:rounded-3xl overflow-hidden animate-scale-in max-h-[90vh] overflow-y-auto">
+        <div className="p-3 sm:p-4 md:p-6">
+          <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Share Room</h2>
             <Button
               variant="ghost"
               size="icon"
@@ -58,18 +58,18 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ roomId, participants, onClose
             </Button>
           </div>
 
-          <div className="text-center space-y-4 sm:space-y-6">
+          <div className="text-center space-y-3 sm:space-y-4 md:space-y-6">
             <div>
-              <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
+              <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-2 sm:mb-3 md:mb-4">
                 Have others scan this QR code or share the link:
               </p>
               
               {qrCodeUrl && (
-                <div className="flex justify-center mb-3 sm:mb-4">
+                <div className="flex justify-center mb-2 sm:mb-3 md:mb-4">
                   <img 
                     src={qrCodeUrl} 
                     alt="Room QR Code"
-                    className="w-32 h-32 sm:w-48 sm:h-48 md:w-56 md:h-56 border-2 border-gray-200 rounded-xl sm:rounded-2xl"
+                    className="w-20 h-20 sm:w-48 sm:h-48 md:w-56 md:h-56 border-2 border-gray-200 rounded-xl sm:rounded-2xl"
                   />
                 </div>
               )}

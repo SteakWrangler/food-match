@@ -540,7 +540,7 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className={`${getContainerClasses()} touch-none`}> {/* Added touch-none to prevent touch propagation */}
+      <main className={getContainerClasses()}> {/* Removed touch-none to allow button interactions */}
         {!isInRoom ? (
           /* Welcome Screen */
           <div className="h-[calc(100vh-6rem)] flex items-center justify-center relative overflow-hidden">
