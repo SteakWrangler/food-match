@@ -250,7 +250,9 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
 
   return (
     <div className="relative">
-      <div className="flex flex-col items-center justify-center min-h-[400px] sm:min-h-[500px] p-2 sm:p-4 relative w-full">
+      {/* Background extension to hide container bottom */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-50 dark:to-gray-900 pointer-events-none"></div>
+      <div className="flex flex-col items-center justify-center min-h-[320px] sm:min-h-[400px] p-2 sm:p-4 relative w-full pb-8">
         {/* Background Cards - Hidden until they become the top card */}
         {orderedFoodTypes.slice(currentIndex + 1, currentIndex + 3).map((foodType, index) => (
           <div
