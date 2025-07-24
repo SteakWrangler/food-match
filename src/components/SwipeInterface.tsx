@@ -379,7 +379,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       {/* Background extension to hide container bottom */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-50 dark:to-gray-900 pointer-events-none"></div>
       
-      <div className="flex flex-col items-center justify-center min-h-[280px] sm:min-h-[320px] md:min-h-[500px] p-1 sm:p-2 md:p-4 relative w-full pb-8"> {/* Changed to flex-col for vertical layout */}
+      <div className="flex flex-col items-center justify-center min-h-[280px] sm:min-h-[320px] md:min-h-[400px] p-1 sm:p-2 md:p-4 relative w-full pb-8"> {/* Reduced height for better button positioning */}
         
         {/* Background Cards - Hidden until they become the top card */}
         {orderedRestaurants.slice(orderedRestaurants.indexOf(currentRestaurant) + 1, orderedRestaurants.indexOf(currentRestaurant) + 3).map((restaurant, index) => (
@@ -435,7 +435,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
           </div>
 
           {/* Non-swipeable Button Area - Positioned below card */}
-          <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mt-1 sm:mt-2 md:mt-4 touch-auto pointer-events-auto" style={{ touchAction: 'manipulation' }}>
+          <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mt-2 touch-auto pointer-events-auto" style={{ touchAction: 'manipulation' }}>
             <button
               onClick={() => handleSwipe('left')}
               className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"

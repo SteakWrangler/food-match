@@ -305,7 +305,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
           </div>
 
           {/* Non-swipeable Button Area - Positioned below card */}
-          <div className="flex justify-center gap-3 sm:gap-4 mt-4 touch-auto pointer-events-auto" style={{ touchAction: 'manipulation' }}>
+          <div className="flex justify-center gap-3 sm:gap-4 mt-2 touch-auto pointer-events-auto" style={{ touchAction: 'manipulation' }}>
             <button
               onClick={() => handleSwipe('left')}
               className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
