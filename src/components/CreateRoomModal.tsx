@@ -35,8 +35,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     e.preventDefault();
     if (name.trim() && !isLoading) {
       if (needsLocation && location.trim()) {
-        // Just pass the location (coordinates) without formatted address
-        onCreateRoom(name.trim(), location.trim());
+        // Pass the formatted address if we have it, otherwise just the location
+        onCreateRoom(name.trim(), location.trim(), formattedAddress || undefined);
       } else if (!needsLocation) {
         // If we don't need location, just pass name
         onCreateRoom(name.trim());
@@ -185,10 +185,35 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       const { latitude, longitude } = position.coords;
       const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
       
-      // Just set the coordinates directly
-      setLocation(coordinates);
-      setDisplayLocation(coordinates);
-      setFormattedAddress(null);
+      // Get formatted address for display purposes
+      try {
+        const { data, error } = await supabase.functions.invoke('geocoding', {
+          body: {
+            action: 'reverse-geocode',
+            lat: latitude,
+            lng: longitude
+          },
+        });
+
+        if (error || !data?.address) {
+          console.error('Reverse geocoding failed:', error);
+          // Just use coordinates if reverse geocoding fails
+          setLocation(coordinates);
+          setDisplayLocation(coordinates);
+          setFormattedAddress(null);
+        } else {
+          // Use coordinates for API calls, formatted address for display
+          setLocation(coordinates);
+          setDisplayLocation(coordinates);
+          setFormattedAddress(data.address);
+        }
+      } catch (error) {
+        console.error('Reverse geocoding error:', error);
+        // Just use coordinates if reverse geocoding fails
+        setLocation(coordinates);
+        setDisplayLocation(coordinates);
+        setFormattedAddress(null);
+      }
       
     } catch (error) {
       console.error('Error getting location:', error);
