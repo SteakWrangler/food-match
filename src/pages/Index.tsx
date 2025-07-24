@@ -638,10 +638,10 @@ const Index = () => {
             {/* Tab System */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-2 sm:mb-3">
               <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-lg p-1">
-                <TabsTrigger value="specific" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-xs sm:text-sm py-2 sm:py-3 rounded-md transition-all">
+                <TabsTrigger value="specific" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all">
                   Restaurants
                 </TabsTrigger>
-                <TabsTrigger value="general" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-xs sm:text-sm py-2 sm:py-3 rounded-md transition-all">
+                <TabsTrigger value="general" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all">
                   Food Types
                 </TabsTrigger>
               </TabsList>

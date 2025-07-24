@@ -30,6 +30,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const [formattedAddress, setFormattedAddress] = useState<string | null>(null);
   const [displayLocation, setDisplayLocation] = useState(currentLocation || '');
   const [isDetecting, setIsDetecting] = useState(false);
+  const [hasFormattedAddress, setHasFormattedAddress] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,16 +138,19 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           setLocation(address);
           setDisplayLocation('Loading location...'); // Show loading instead of coordinates
           setFormattedAddress(null);
+          setHasFormattedAddress(false);
         } else {
           // Store coordinates, display formatted address
           setLocation(address);
           setDisplayLocation(data.address);
           setFormattedAddress(data.address);
+          setHasFormattedAddress(true);
         }
       } catch (error) {
         console.error('Reverse geocoding error:', error);
         setLocation(address);
         setDisplayLocation('Loading location...'); // Show loading instead of coordinates
+        setHasFormattedAddress(false);
       }
     } else {
       // It's an address, try to geocode it using OpenCage
@@ -164,22 +168,31 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           setLocation(address);
           setDisplayLocation(address);
           setFormattedAddress(null);
+          setHasFormattedAddress(false);
         } else {
           // Store coordinates for API calls, formatted address for display
           const coordinates = `${data.lat}, ${data.lng}`;
           setLocation(coordinates);
           setDisplayLocation(data.formatted_address || address);
           setFormattedAddress(data.formatted_address || address);
+          setHasFormattedAddress(true);
         }
       } catch (error) {
         console.error('Geocoding error:', error);
         setLocation(address);
         setDisplayLocation(address);
+        setHasFormattedAddress(false);
       }
     }
   };
 
   const handleUseCurrentLocation = async () => {
+    // Check if user has entered their name first
+    if (!name.trim()) {
+      alert('Please enter your name first before using current location.');
+      return;
+    }
+
     setIsDetecting(true);
 
     try {
@@ -203,14 +216,20 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         // Fallback to coordinates if reverse geocoding fails
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        setDisplayLocation(''); // Don't show coordinates in input - leave it empty
+        setDisplayLocation('Location detected'); // Don't show coordinates to user
         setFormattedAddress(null);
+        setHasFormattedAddress(false);
+        alert('Unable to detect your location. Please enter it manually.');
       } else {
         // Store coordinates for API calls, formatted address for display
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
         setDisplayLocation(data.address); // Show formatted address in input
         setFormattedAddress(data.address);
+        setHasFormattedAddress(true);
+        
+        // Automatically create the room with the detected location
+        onCreateRoom(name.trim(), coordinates, data.address);
       }
       
     } catch (error) {
@@ -219,6 +238,24 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     } finally {
       setIsDetecting(false);
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocation(value);
+    
+    // Only update display if we don't have a formatted address from current location
+    if (!hasFormattedAddress) {
+      setDisplayLocation(value);
+    }
+  };
+
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // If user manually types something, clear the formatted address flag
+    if (hasFormattedAddress) {
+      setHasFormattedAddress(false);
+    }
+    handleAddressInput(e.target.value);
   };
 
   const isFormValid = name.trim() && (!needsLocation || location.trim());
@@ -265,11 +302,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                     id="location"
                     type="text"
                     value={displayLocation}
-                    onChange={(e) => {
-                      setLocation(e.target.value);
-                      setDisplayLocation(e.target.value);
-                    }}
-                    onBlur={(e) => handleAddressInput(e.target.value)}
+                    onChange={handleInputChange}
+                    onBlur={handleInputBlur}
                     placeholder="e.g., San Francisco, CA or 94102"
                     className="mt-1 text-sm sm:text-base"
                     disabled={isLoading}
@@ -284,7 +318,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   disabled={isDetecting || isLoading}
                 >
                   <Navigation className="w-4 h-4 mr-2" />
-                  {isDetecting ? 'Detecting...' : 'Use Current Location'}
+                  {isDetecting ? 'Detecting...' : name.trim() ? 'Use Current Location & Create Room' : 'Use Current Location'}
                 </Button>
               </>
             )}
