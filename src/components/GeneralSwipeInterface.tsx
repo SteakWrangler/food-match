@@ -252,7 +252,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
     <div className="relative">
       {/* Background extension to hide container bottom */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-50 dark:to-gray-900 pointer-events-none"></div>
-      <div className="flex flex-col items-center justify-start pt-8 min-h-[280px] sm:min-h-[320px] md:min-h-[400px] p-2 sm:p-4 relative w-full pb-8">
+      <div className="flex flex-col items-center justify-center pt-8 p-2 sm:p-4 relative w-full pb-8">
         {/* Background Cards - Hidden until they become the top card */}
         {orderedFoodTypes.slice(currentIndex + 1, currentIndex + 3).map((foodType, index) => (
           <div
@@ -305,7 +305,7 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
           </div>
 
           {/* Non-swipeable Button Area - Positioned below card */}
-          <div className="flex justify-center gap-3 sm:gap-4 mt-2 touch-auto pointer-events-auto" style={{ touchAction: 'manipulation' }}>
+          <div className="flex justify-center gap-3 sm:gap-4 mt-4 touch-auto pointer-events-auto" style={{ touchAction: 'manipulation' }}>
             <button
               onClick={() => handleSwipe('left')}
               className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
