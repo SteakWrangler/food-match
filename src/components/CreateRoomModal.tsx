@@ -35,13 +35,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     e.preventDefault();
     if (name.trim() && !isLoading) {
       if (needsLocation && location.trim()) {
-        // If we have a formatted address, use it; otherwise, try to geocode first
-        if (formattedAddress) {
-          onCreateRoom(name.trim(), location.trim(), formattedAddress);
-        } else {
-          // Try to geocode the location before submitting
-          handleGeocode(name.trim(), location.trim());
-        }
+        // Just pass the location (coordinates) without formatted address
+        onCreateRoom(name.trim(), location.trim());
       } else if (!needsLocation) {
         // If we don't need location, just pass name
         onCreateRoom(name.trim());
@@ -188,30 +183,12 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       });
       
       const { latitude, longitude } = position.coords;
+      const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
       
-      // Use OpenCage for reverse geocoding
-      const { data, error } = await supabase.functions.invoke('geocoding', {
-        body: {
-          action: 'reverse-geocode',
-          lat: latitude,
-          lng: longitude
-        },
-      });
-
-      if (error || !data?.address) {
-        console.error('Reverse geocoding failed:', error);
-        // Fallback to coordinates if reverse geocoding fails
-        const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
-        setLocation(coordinates);
-        setDisplayLocation(coordinates); // Show coordinates in input
-        setFormattedAddress(null);
-      } else {
-        // Store coordinates for API calls, formatted address for display
-        const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
-        setLocation(coordinates);
-        setDisplayLocation(coordinates); // Show coordinates in input
-        setFormattedAddress(data.address);
-      }
+      // Just set the coordinates directly
+      setLocation(coordinates);
+      setDisplayLocation(coordinates);
+      setFormattedAddress(null);
       
     } catch (error) {
       console.error('Error getting location:', error);
