@@ -37,6 +37,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       if (needsLocation && location.trim()) {
         // If we have a formatted address, use it; otherwise, try to geocode first
         if (formattedAddress) {
+          console.log('Creating room with coordinates:', location, 'and formatted address:', formattedAddress);
           onCreateRoom(name.trim(), location.trim(), formattedAddress);
         } else {
           // Try to geocode the location before submitting
@@ -180,6 +181,13 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   };
 
   const handleUseCurrentLocation = async () => {
+    // Check if user has entered their name first
+    if (!name.trim()) {
+      alert('Please enter your name first before using current location.');
+      return;
+    }
+
+    console.log('Starting current location detection...');
     setIsDetecting(true);
 
     try {
@@ -188,6 +196,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
       });
       
       const { latitude, longitude } = position.coords;
+      console.log('Got coordinates:', latitude, longitude);
       
       // Use OpenCage for reverse geocoding
       const { data, error } = await supabase.functions.invoke('geocoding', {
@@ -200,17 +209,15 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
       if (error || !data?.address) {
         console.error('Reverse geocoding failed:', error);
-        // Fallback to coordinates if reverse geocoding fails
+        // Even if reverse geocoding fails, we can still create the room with coordinates
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
-        setLocation(coordinates);
-        setDisplayLocation(''); // Don't show coordinates in input - leave it empty
-        setFormattedAddress(null);
+        console.log('Creating room with coordinates only:', coordinates);
+        onCreateRoom(name.trim(), coordinates);
       } else {
         // Store coordinates for API calls, formatted address for display
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
-        setLocation(coordinates);
-        setDisplayLocation(data.address); // Show formatted address in input
-        setFormattedAddress(data.address);
+        console.log('Creating room with coordinates and address:', coordinates, data.address);
+        onCreateRoom(name.trim(), coordinates, data.address);
       }
       
     } catch (error) {
@@ -219,6 +226,16 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     } finally {
       setIsDetecting(false);
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocation(value);
+    setDisplayLocation(value);
+  };
+
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    handleAddressInput(e.target.value);
   };
 
   const isFormValid = name.trim() && (!needsLocation || location.trim());
@@ -265,11 +282,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                     id="location"
                     type="text"
                     value={displayLocation}
-                    onChange={(e) => {
-                      setLocation(e.target.value);
-                      setDisplayLocation(e.target.value);
-                    }}
-                    onBlur={(e) => handleAddressInput(e.target.value)}
+                    onChange={handleInputChange}
+                    onBlur={handleInputBlur}
                     placeholder="e.g., San Francisco, CA or 94102"
                     className="mt-1 text-sm sm:text-base"
                     disabled={isLoading}
@@ -284,7 +298,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   disabled={isDetecting || isLoading}
                 >
                   <Navigation className="w-4 h-4 mr-2" />
-                  {isDetecting ? 'Detecting...' : 'Use Current Location'}
+                  {isDetecting ? 'Detecting...' : name.trim() ? 'Use Current Location & Create Room' : 'Use Current Location'}
                 </Button>
               </>
             )}

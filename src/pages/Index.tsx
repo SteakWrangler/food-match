@@ -521,18 +521,6 @@ const Index = () => {
             </div>
             
             <div className="flex items-center gap-1 sm:gap-2">
-              <button
-                onClick={() => setShowLocation(true)}
-                className={`flex items-center gap-1 text-xs sm:text-sm transition-colors px-2 py-1 rounded-md hover:bg-orange-50 ${
-                  location 
-                    ? 'text-gray-600 hover:text-orange-600' 
-                    : 'text-orange-600 hover:text-orange-700 font-medium'
-                }`}
-              >
-                <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{getCurrentDisplayLocation()}</span>
-                <span className="sm:hidden">{location || formattedLocation ? 'Location' : 'Set'}</span>
-              </button>
               {activeTab === 'specific' && (
                 <Button
                   variant="outline"
