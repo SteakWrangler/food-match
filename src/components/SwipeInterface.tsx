@@ -379,7 +379,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
       {/* Background extension to hide container bottom */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-50 dark:to-gray-900 pointer-events-none"></div>
       
-      <div className="flex flex-col items-center justify-center min-h-[280px] sm:min-h-[320px] md:min-h-[400px] p-1 sm:p-2 md:p-4 relative w-full pb-8"> {/* Reduced height for better button positioning */}
+      <div className="flex flex-col items-center justify-start pt-8 min-h-[280px] sm:min-h-[320px] md:min-h-[400px] p-1 sm:p-2 md:p-4 relative w-full pb-8"> {/* Changed to justify-start to reduce empty space */}
         
         {/* Background Cards - Hidden until they become the top card */}
         {orderedRestaurants.slice(orderedRestaurants.indexOf(currentRestaurant) + 1, orderedRestaurants.indexOf(currentRestaurant) + 3).map((restaurant, index) => (
