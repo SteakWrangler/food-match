@@ -647,15 +647,28 @@ const useRoom = () => {
 
   // NEW: Simple restaurant loading system
   const loadNextBatch = async () => {
-    if (!roomState?.location) return false;
-    if (isLoadingMoreRestaurants) return false;
+    console.log('🔄 STEP 1: loadNextBatch called');
     
+    if (!roomState?.location) {
+      console.log('❌ STEP 1 FAILED: No room state or location');
+      return false;
+    }
+    
+    if (isLoadingMoreRestaurants) {
+      console.log('❌ STEP 1 FAILED: Already loading restaurants');
+      return false;
+    }
+    
+    console.log('✅ STEP 1 COMPLETE: Starting to load next batch');
     setIsLoadingMoreRestaurants(true);
     
     try {
+      console.log('🔄 STEP 2: Getting API and filters');
       const api = getHybridRestaurantsAPI();
       const filters = roomState.filters;
+      console.log('✅ STEP 2 COMPLETE: Got API and filters');
       
+      console.log('🔄 STEP 3: Building API parameters');
       const params: any = {
         location: roomState.location,
         radius: filters.distance[0] * 1609,
@@ -670,9 +683,14 @@ const useRoom = () => {
         params.keyword = filters.selectedCuisines.join(' ');
       }
       
+      console.log('✅ STEP 3 COMPLETE: API parameters built', params);
+      
+      console.log('🔄 STEP 4: Calling API to get restaurants');
       const result = await api.searchRestaurants(params);
+      console.log('✅ STEP 4 COMPLETE: API returned', result.restaurants.length, 'restaurants');
       
       if (result.restaurants.length > 0) {
+        console.log('🔄 STEP 5: Adding new restaurants to state');
         const newRestaurants = [...roomState.restaurants, ...result.restaurants];
         
         const updatedRoom = {
@@ -683,22 +701,33 @@ const useRoom = () => {
         };
         
         setRoomState(updatedRoom);
+        console.log('✅ STEP 5 COMPLETE: Updated room state with', result.restaurants.length, 'new restaurants');
+        
+        console.log('🔄 STEP 6: Updating database');
         await roomService.updateRestaurants(roomState.id, newRestaurants, result.nextPageToken);
+        console.log('✅ STEP 6 COMPLETE: Database updated');
         
         // Check if we've hit the end
         if (!result.nextPageToken) {
+          console.log('🏁 REACHED END: No more restaurants available');
           setHasReachedEnd(true);
+        } else {
+          console.log('✅ MORE AVAILABLE: Next page token exists');
+          setHasReachedEnd(false);
         }
         
+        console.log('✅ ALL STEPS COMPLETE: Successfully loaded next batch');
         return true;
       } else {
+        console.log('⚠️ NO RESTAURANTS: API returned empty result');
         setHasReachedEnd(true);
         return false;
       }
     } catch (error) {
-      console.error('Failed to load next batch:', error);
+      console.error('❌ STEP FAILED: Error in loadNextBatch:', error);
       return false;
     } finally {
+      console.log('🔄 CLEANUP: Setting loading state to false');
       setIsLoadingMoreRestaurants(false);
     }
   };

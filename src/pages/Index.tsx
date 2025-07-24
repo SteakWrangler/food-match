@@ -310,12 +310,20 @@ const Index = () => {
   };
 
   const handleGenerateMore = async () => {
-    if (!roomState) return false;
+    console.log('🔄 HANDLER: handleGenerateMore called');
+    
+    if (!roomState) {
+      console.log('❌ HANDLER FAILED: No room state');
+      return false;
+    }
     
     try {
-      return await loadMoreRestaurants();
+      console.log('🔄 HANDLER: Calling loadMoreRestaurants');
+      const result = await loadMoreRestaurants();
+      console.log('✅ HANDLER: loadMoreRestaurants returned', result);
+      return result;
     } catch (err) {
-      console.error('Failed to load more:', err);
+      console.error('❌ HANDLER ERROR: Failed to load more:', err);
       return false;
     }
   };

@@ -305,13 +305,30 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   // NEW: Simple trigger system
   useEffect(() => {
+    console.log('🔍 TRIGGER CHECK: remainingUnviewed =', remainingUnviewed, 'hasReachedEnd =', hasReachedEndFromHook, 'isLoading =', isLoading);
+    
     // Only trigger if we have the function and we're getting low on restaurants
-    if (!onGenerateMore || hasReachedEndFromHook || isLoading) return;
+    if (!onGenerateMore) {
+      console.log('❌ TRIGGER BLOCKED: No onGenerateMore function');
+      return;
+    }
+    
+    if (hasReachedEndFromHook) {
+      console.log('❌ TRIGGER BLOCKED: Already reached end');
+      return;
+    }
+    
+    if (isLoading) {
+      console.log('❌ TRIGGER BLOCKED: Already loading');
+      return;
+    }
     
     // Trigger only when we hit exactly 5 restaurants remaining
     if (remainingUnviewed === 5) {
+      console.log('🚀 TRIGGER ACTIVATED: Exactly 5 restaurants remaining, starting timer');
       // Small delay to prevent rapid calls
       const timer = setTimeout(() => {
+        console.log('🔄 TRIGGER EXECUTING: Calling onGenerateMore');
         onGenerateMore();
       }, 300);
       
