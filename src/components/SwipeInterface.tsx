@@ -201,6 +201,8 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   // Touch event handlers for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault(); // Prevent default touch behavior
+    e.stopPropagation(); // Stop event propagation
     const touch = e.touches[0];
     setIsDragging(true);
     setStartPos({ x: touch.clientX, y: touch.clientY });
@@ -209,14 +211,20 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
     
+    e.preventDefault(); // Prevent default touch behavior
+    e.stopPropagation(); // Stop event propagation
+    
     const touch = e.touches[0];
     const deltaX = touch.clientX - startPos.x;
     const deltaY = touch.clientY - startPos.y;
     setDragOffset({ x: deltaX, y: deltaY });
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
     if (!isDragging) return;
+    
+    e.preventDefault(); // Prevent default touch behavior
+    e.stopPropagation(); // Stop event propagation
     
     const threshold = 50;
     
@@ -335,7 +343,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     <div className="relative">
       {/* REMOVED: Background loading indicator - should be completely invisible to user */}
       
-      <div className="flex items-center justify-center min-h-[400px] sm:min-h-[500px] p-2 sm:p-4 relative w-full">
+      <div className="flex items-center justify-center min-h-[300px] sm:min-h-[350px] md:min-h-[500px] p-2 sm:p-4 relative w-full">
         
         {/* Background Cards - Hidden until they become the top card */}
         {orderedRestaurants.slice(orderedRestaurants.indexOf(currentRestaurant) + 1, orderedRestaurants.indexOf(currentRestaurant) + 3).map((restaurant, index) => (
@@ -361,7 +369,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         {/* Current Card */}
         <div
           ref={cardRef}
-          className="relative z-10"
+          className="relative z-10 touch-none" // Add touch-none to prevent touch events from bubbling
           style={cardStyle}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
