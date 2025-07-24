@@ -122,16 +122,18 @@ const FoodTypeCard: React.FC<FoodTypeCardProps> = ({ foodType, onSwipe, style, s
 
       {/* Swipe Action Buttons */}
       {showButtons && (
-        <div className="flex justify-center gap-3 sm:gap-4 mt-4">
+        <div className="flex justify-center gap-3 sm:gap-4 mt-4 touch-auto"> {/* Added touch-auto to allow button interactions */}
           <button
             onClick={() => onSwipe('left')}
-            className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
+            className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group touch-auto"
+            style={{ touchAction: 'manipulation' }} // Ensure buttons are clickable
           >
             <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform">✕</span>
           </button>
           <button
             onClick={() => onSwipe('right')}
-            className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group"
+            className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group touch-auto"
+            style={{ touchAction: 'manipulation' }} // Ensure buttons are clickable
           >
             <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform">♥</span>
           </button>

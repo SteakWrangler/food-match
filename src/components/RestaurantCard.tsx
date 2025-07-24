@@ -64,6 +64,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
   
   return (
     <div className={`${getCardClasses()} mx-auto flex flex-col w-full`}>
+      {/* Swipeable Card Content */}
       <Card 
         className={`w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex flex-col border-0 min-w-full h-full`}
         style={style}
@@ -118,26 +119,24 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
           >
             <span>View Details</span>
             <svg className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </a>
         </div>
       </Card>
 
-      {/* Swipe Action Buttons - Below the card */}
+      {/* Non-swipeable Button Area */}
       {showButtons && (
-        <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mt-1 sm:mt-2 md:mt-4 touch-auto"> {/* Added touch-auto to allow button interactions */}
+        <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mt-1 sm:mt-2 md:mt-4 touch-auto pointer-events-auto" style={{ touchAction: 'manipulation' }}>
           <button
             onClick={() => onSwipe('left')}
-            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group touch-auto"
-            style={{ touchAction: 'manipulation' }} // Ensure buttons are clickable
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
           >
             <span className="text-lg sm:text-xl md:text-2xl group-hover:scale-110 transition-transform">✕</span>
           </button>
           <button
             onClick={() => onSwipe('right')}
-            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group touch-auto"
-            style={{ touchAction: 'manipulation' }} // Ensure buttons are clickable
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group"
           >
             <span className="text-lg sm:text-xl md:text-2xl group-hover:scale-110 transition-transform">♥</span>
           </button>

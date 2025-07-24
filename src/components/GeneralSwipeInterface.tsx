@@ -3,6 +3,7 @@ import FoodTypeCard from './FoodTypeCard';
 import { FoodType } from '@/data/foodTypes';
 import { randomizeFoodTypesByTiers } from '@/utils/foodTypeRandomizer';
 import { useDeviceType } from '@/hooks/use-mobile';
+import { Card } from '@/components/ui/card';
 
 interface GeneralSwipeInterfaceProps {
   foodTypes: FoodType[];
@@ -160,6 +161,13 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
 
   // Touch event handlers for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Check if the touch target is a button or button container
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('.touch-auto')) {
+      // Don't prevent default for buttons - let them handle the touch
+      return;
+    }
+    
     const touch = e.touches[0];
     setDragStart({ x: touch.clientX, y: touch.clientY });
     setIsDragging(true);
@@ -168,14 +176,30 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!dragStart || !isDragging) return;
     
+    // Check if the touch target is a button or button container
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('.touch-auto')) {
+      // Don't prevent default for buttons - let them handle the touch
+      return;
+    }
+    
     const touch = e.touches[0];
     const deltaX = touch.clientX - dragStart.x;
     const deltaY = touch.clientY - dragStart.y;
     setDragOffset({ x: deltaX, y: deltaY });
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e?: React.TouchEvent) => {
     if (!isDragging) return;
+    
+    // Check if the touch target is a button or button container
+    if (e) {
+      const target = e.target as HTMLElement;
+      if (target.closest('button') || target.closest('.touch-auto')) {
+        // Don't prevent default for buttons - let them handle the touch
+        return;
+      }
+    }
     
     const threshold = 50;
     
@@ -249,9 +273,9 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
           </div>
         ))}
         
-        {/* Current Card */}
+        {/* Current Card - Only the card content is swipeable */}
         <div
-          className="relative z-10"
+          className="relative z-10 touch-none select-none swipe-card"
           style={cardStyle}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -260,12 +284,64 @@ const GeneralSwipeInterface: React.FC<GeneralSwipeInterfaceProps> = ({
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd} // Add touch cancel handler
         >
-          <FoodTypeCard
-            key={`current-${currentFoodType.id}`}
-            foodType={currentFoodType}
-            onSwipe={handleSwipe}
-          />
+          {/* Only render the Card component (not the buttons) */}
+          <div className="w-full">
+            <Card 
+              className="w-full bg-white shadow-xl rounded-3xl overflow-hidden relative cursor-grab active:cursor-grabbing select-none flex flex-col"
+            >
+              {/* Main Image */}
+              <div className="relative h-48 sm:h-56">
+                <img
+                  src={currentFoodType.image}
+                  alt={currentFoodType.name}
+                  className="w-full h-full object-cover"
+                  onError={() => {
+                    console.log(`Image failed to load for ${currentFoodType.name}: ${currentFoodType.image}`);
+                  }}
+                />
+                
+                {/* Overlay gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 p-4 sm:p-6 flex flex-col">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
+                  {currentFoodType.name}
+                </h2>
+                
+                {currentFoodType.description && (
+                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed flex-1">
+                    {currentFoodType.description}
+                  </p>
+                )}
+                
+                {!currentFoodType.description && (
+                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed flex-1">
+                    Discover amazing {currentFoodType.name.toLowerCase()} restaurants near you!
+                  </p>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* Non-swipeable Button Area - Outside the swipeable container */}
+        <div className="flex justify-center gap-3 sm:gap-4 mt-4 touch-auto pointer-events-auto" style={{ touchAction: 'manipulation' }}>
+          <button
+            onClick={() => handleSwipe('left')}
+            className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
+          >
+            <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform">✕</span>
+          </button>
+          <button
+            onClick={() => handleSwipe('right')}
+            className="w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group"
+          >
+            <span className="text-xl sm:text-2xl group-hover:scale-110 transition-transform">♥</span>
+          </button>
         </div>
 
         {/* Swipe Indicators */}
