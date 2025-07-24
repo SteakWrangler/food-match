@@ -138,6 +138,10 @@
     touch-action: none;
   }
 
+  .touch-auto {
+    touch-action: auto;
+  }
+
   /* Smooth scrolling for iOS */
   html {
     -webkit-overflow-scrolling: touch;

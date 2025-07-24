@@ -126,16 +126,18 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
 
       {/* Swipe Action Buttons - Below the card */}
       {showButtons && (
-        <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mt-1 sm:mt-2 md:mt-4"> {/* Further reduced margin */}
+        <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mt-1 sm:mt-2 md:mt-4 touch-auto"> {/* Added touch-auto to allow button interactions */}
           <button
             onClick={() => onSwipe('left')}
-            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group"
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-red-200 hover:border-red-300 transition-colors group touch-auto"
+            style={{ touchAction: 'manipulation' }} // Ensure buttons are clickable
           >
             <span className="text-lg sm:text-xl md:text-2xl group-hover:scale-110 transition-transform">✕</span>
           </button>
           <button
             onClick={() => onSwipe('right')}
-            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group"
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white rounded-full shadow-lg flex items-center justify-center border-2 border-green-200 hover:border-green-300 transition-colors group touch-auto"
+            style={{ touchAction: 'manipulation' }} // Ensure buttons are clickable
           >
             <span className="text-lg sm:text-xl md:text-2xl group-hover:scale-110 transition-transform">♥</span>
           </button>
