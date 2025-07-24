@@ -62,16 +62,9 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     }
   }, [restaurants.length]);
 
-  // Reset viewed restaurants when new restaurants are added
-  useEffect(() => {
-    const currentRestaurantIds = new Set(restaurants.map(r => r.id));
-    setViewedRestaurants(prev => {
-      // Only keep IDs that still exist in the current restaurant list
-      const validViewedIds = new Set([...prev].filter(id => currentRestaurantIds.has(id)));
-      console.log(`🔍 Updated viewed restaurants: kept ${validViewedIds.size} out of ${prev.size} previously viewed, total restaurants: ${restaurants.length}`);
-      return validViewedIds;
-    });
-  }, [restaurants.length]);
+  // Note: viewedRestaurants Set should only grow, never shrink
+  // New restaurants are automatically unviewed since they're not in the Set
+  // Only reset viewedRestaurants for "Take a second look" mode
 
   // Order restaurants based on custom order or default
   const orderedRestaurants = React.useMemo(() => {
@@ -127,6 +120,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     } else {
       // Normal mode - show unviewed restaurants
       const unviewedRestaurants = getUnviewedRestaurants(orderedRestaurants, viewedRestaurants);
+      console.log(`🔍 Current restaurant selection: total=${orderedRestaurants.length}, viewed=${viewedRestaurants.size}, unviewed=${unviewedRestaurants.length}, first unviewed=${unviewedRestaurants[0]?.name || 'none'}`);
       return unviewedRestaurants[0] || null;
     }
   }, [orderedRestaurants, viewedRestaurants, isSecondLookMode, roomState, participantId]);
@@ -315,7 +309,7 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
     
     // Only trigger if we have the onGenerateMore function and we're running very low on restaurants
     // and we haven't reached the end of available restaurants
-    if (onGenerateMore && remainingUnviewed <= 5 && remainingUnviewed > 0 && !hasReachedEndFromHook && !isLoading) {
+    if (onGenerateMore && remainingUnviewed === 5 && !hasReachedEndFromHook && !isLoading) {
       console.log(`🔄 Smart loading trigger: ${remainingUnviewed} restaurants remaining`);
       
       // Add a delay to prevent multiple rapid calls
