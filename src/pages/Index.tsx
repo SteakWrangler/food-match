@@ -9,6 +9,7 @@ import MatchModal from '@/components/MatchModal';
 import LocationModal from '@/components/LocationModal';
 import LoadingScreen from '@/components/LoadingScreen';
 import EnhancedSwipeHistory from '@/components/EnhancedSwipeHistory';
+import FeedbackHeader from '@/components/FeedbackHeader';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Filter, Users, MapPin, QrCode, UserPlus, Loader2, BarChart3 } from 'lucide-react';
@@ -571,6 +572,7 @@ const Index = () => {
                   <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
               )}
+              <FeedbackHeader />
             </div>
           </div>
         </div>
