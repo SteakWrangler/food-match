@@ -28,7 +28,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const [name, setName] = useState('');
   const [location, setLocation] = useState(currentLocation || '');
   const [formattedAddress, setFormattedAddress] = useState<string | null>(null);
-  const [displayLocation, setDisplayLocation] = useState(currentLocation || '');
+  const [displayLocation, setDisplayLocation] = useState('');
   const [isDetecting, setIsDetecting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -63,10 +63,9 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
         if (error || !data?.address) {
           console.error('Reverse geocoding failed:', error);
-          // Fallback to coordinates
-          setLocation(address);
-          setDisplayLocation('Loading location...'); // Show loading instead of coordinates
-          setFormattedAddress(null);
+          // Show helpful error message with format examples
+          alert('Unable to find an address for those coordinates. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
+          return;
         } else {
           // Store coordinates, display formatted address
           setLocation(address);
@@ -75,8 +74,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         }
       } catch (error) {
         console.error('Reverse geocoding error:', error);
-        setLocation(address);
-        setDisplayLocation('Loading location...'); // Show loading instead of coordinates
+        // Show helpful error message with format examples
+        alert('Unable to find an address for those coordinates. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
       }
     } else {
       // It's an address, try to geocode it using OpenCage
@@ -90,10 +89,9 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
         if (error || !data?.lat || !data?.lng) {
           console.error('Geocoding failed:', error);
-          // Fallback to using address as-is
-          setLocation(address);
-          setDisplayLocation(address);
-          setFormattedAddress(null);
+          // Show helpful error message with format examples
+          alert('Unable to find that location. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
+          return;
         } else {
           // Store coordinates for API calls, formatted address for display
           const coordinates = `${data.lat}, ${data.lng}`;
@@ -103,8 +101,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         }
       } catch (error) {
         console.error('Geocoding error:', error);
-        setLocation(address);
-        setDisplayLocation(address);
+        // Show helpful error message with format examples
+        alert('Unable to find that location. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
       }
     }
   };
@@ -128,10 +126,9 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
         if (error || !data?.address) {
           console.error('Reverse geocoding failed:', error);
-          // Fallback to coordinates
-          setLocation(address);
-          setDisplayLocation('Loading location...'); // Show loading instead of coordinates
-          setFormattedAddress(null);
+          // Show helpful error message with format examples
+          alert('Unable to find an address for those coordinates. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
+          return;
         } else {
           // Store coordinates, display formatted address
           setLocation(address);
@@ -140,8 +137,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         }
       } catch (error) {
         console.error('Reverse geocoding error:', error);
-        setLocation(address);
-        setDisplayLocation('Loading location...'); // Show loading instead of coordinates
+        // Show helpful error message with format examples
+        alert('Unable to find an address for those coordinates. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
       }
     } else {
       // It's an address, try to geocode it using OpenCage
@@ -155,10 +152,9 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
         if (error || !data?.lat || !data?.lng) {
           console.error('Geocoding failed:', error);
-          // Fallback to using address as-is
-          setLocation(address);
-          setDisplayLocation(address);
-          setFormattedAddress(null);
+          // Show helpful error message with format examples
+          alert('Unable to find that location. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
+          return;
         } else {
           // Store coordinates for API calls, formatted address for display
           const coordinates = `${data.lat}, ${data.lng}`;
@@ -168,8 +164,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         }
       } catch (error) {
         console.error('Geocoding error:', error);
-        setLocation(address);
-        setDisplayLocation(address);
+        // Show helpful error message with format examples
+        alert('Unable to find that location. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
       }
     }
   };
@@ -197,27 +193,25 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
         if (error || !data?.address) {
           console.error('Reverse geocoding failed:', error);
-          // Just use coordinates if reverse geocoding fails
-          setLocation(coordinates);
-          setDisplayLocation(coordinates);
-          setFormattedAddress(null);
+          // Different error message for "Use Current Location" failure
+          alert('Unable to detect your location. Please enter your location manually or check your browser\'s location permissions.');
+          return;
         } else {
           // Use coordinates for API calls, formatted address for display
           setLocation(coordinates);
-          setDisplayLocation(coordinates);
+          setDisplayLocation(data.address);
           setFormattedAddress(data.address);
         }
       } catch (error) {
         console.error('Reverse geocoding error:', error);
-        // Just use coordinates if reverse geocoding fails
-        setLocation(coordinates);
-        setDisplayLocation(coordinates);
-        setFormattedAddress(null);
+        // Different error message for "Use Current Location" failure
+        alert('Unable to detect your location. Please enter your location manually or check your browser\'s location permissions.');
       }
       
     } catch (error) {
       console.error('Error getting location:', error);
-      alert('Unable to detect your location. Please enter it manually.');
+      // Different error message for "Use Current Location" failure
+      alert('Unable to detect your location. Please enter your location manually or check your browser\'s location permissions.');
     } finally {
       setIsDetecting(false);
     }

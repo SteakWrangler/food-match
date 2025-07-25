@@ -17,6 +17,7 @@ import { useDeviceType } from '@/hooks/use-mobile';
 import { foodTypes } from '@/data/foodTypes';
 import { Restaurant } from '@/data/restaurants';
 import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('specific');
@@ -244,7 +245,40 @@ const Index = () => {
     setIsCreatingRoom(true);
     
     try {
-      await createRoom(name, locationToSet, filters);
+      // Geocode the display address to get coordinates for API
+      let coordinatesForAPI = locationToSet;
+      
+      // Check if the location is already coordinates
+      const coordMatch = locationToSet.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+      
+      if (!coordMatch) {
+        // It's an address, need to geocode it
+        try {
+          const { data, error } = await supabase.functions.invoke('geocoding', {
+            body: {
+              action: 'geocode',
+              address: locationToSet
+            },
+          });
+
+          if (error || !data?.lat || !data?.lng) {
+            console.error('Geocoding failed for room creation:', error);
+            setError('Unable to find that location. Try entering your location in a format like "San Francisco, CA", "94102", or "New York, NY".');
+            return;
+          }
+          
+          coordinatesForAPI = `${data.lat}, ${data.lng}`;
+          console.log('Geocoded address to coordinates:', coordinatesForAPI);
+        } catch (error) {
+          console.error('Geocoding error for room creation:', error);
+          setError('Unable to find that location. Try entering your location in a format like "San Francisco, CA", "94102", or "New York, NY".');
+          return;
+        }
+      }
+      
+      // Create room with coordinates
+      await createRoom(name, coordinatesForAPI, filters, formattedAddress);
+      
       // Show QR modal after successful room creation
       setShowQRCode(true);
     } catch (err) {
@@ -760,7 +794,7 @@ const Index = () => {
           onCreateRoom={handleCreateRoom}
           onClose={() => setShowCreateRoom(false)}
           isLoading={isCreatingRoom}
-          currentLocation={location}
+          currentLocation=""
           needsLocation={!location}
         />
       )}
@@ -797,7 +831,7 @@ const Index = () => {
 
       {showLocation && (
         <LocationModal
-          currentLocation={location || ''}
+          currentLocation=""
           onLocationChange={handleLocationChange}
           onClose={() => setShowLocation(false)}
           isLoading={isCreatingRoom}

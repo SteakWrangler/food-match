@@ -29,7 +29,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
 }) => {
   const [location, setLocation] = useState(currentLocation);
   const [formattedAddress, setFormattedAddress] = useState<string | null>(null);
-  const [displayLocation, setDisplayLocation] = useState(currentLocation);
+  const [displayLocation, setDisplayLocation] = useState('');
   const [isDetecting, setIsDetecting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -52,17 +52,17 @@ const LocationModal: React.FC<LocationModalProps> = ({
 
   const handleGeocode = async (address: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('google-places', {
+      const { data, error } = await supabase.functions.invoke('geocoding', {
         body: {
           action: 'geocode',
-          location: address
+          address: address
         },
       });
 
       if (error || !data?.lat || !data?.lng) {
         console.error('Geocoding failed:', error);
-        // Don't set location if geocoding fails - show error to user
-        alert('Unable to find that location. Please try a different address or use "Use Current Location".');
+        // Show helpful error message with format examples
+        alert('Unable to find that location. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
         return;
       } else {
         // Use coordinates for API calls, formatted address for display
@@ -78,8 +78,8 @@ const LocationModal: React.FC<LocationModalProps> = ({
       }
     } catch (error) {
       console.error('Geocoding error:', error);
-      // Don't set location if geocoding fails - show error to user
-      alert('Unable to find that location. Please try a different address or use "Use Current Location".');
+      // Show helpful error message with format examples
+      alert('Unable to find that location. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
     }
   };
 
@@ -92,7 +92,7 @@ const LocationModal: React.FC<LocationModalProps> = ({
       try {
         const [lat, lng] = address.split(',').map(coord => parseFloat(coord.trim()));
         
-        const { data, error } = await supabase.functions.invoke('google-places', {
+        const { data, error } = await supabase.functions.invoke('geocoding', {
           body: {
             action: 'reverse-geocode',
             lat,
@@ -102,10 +102,9 @@ const LocationModal: React.FC<LocationModalProps> = ({
 
         if (error || !data?.address) {
           console.error('Reverse geocoding failed:', error);
-          // Fallback to coordinates
-          setLocation(address);
-          setDisplayLocation('Loading location...'); // Show loading instead of coordinates
-          setFormattedAddress(null);
+          // Show helpful error message with format examples
+          alert('Unable to find an address for those coordinates. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
+          return;
         } else {
           // Store coordinates for API calls, formatted address for display
           setLocation(address);
@@ -121,25 +120,24 @@ const LocationModal: React.FC<LocationModalProps> = ({
         }
       } catch (error) {
         console.error('Reverse geocoding error:', error);
-        setLocation(address);
-        setDisplayLocation('Loading location...'); // Show loading instead of coordinates
+        // Show helpful error message with format examples
+        alert('Unable to find an address for those coordinates. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
       }
     } else {
       // It's an address, try to geocode it
       try {
-        const { data, error } = await supabase.functions.invoke('google-places', {
+        const { data, error } = await supabase.functions.invoke('geocoding', {
           body: {
             action: 'geocode',
-            location: address
+            address: address
           },
         });
 
         if (error || !data?.lat || !data?.lng) {
           console.error('Geocoding failed:', error);
-          // Fallback to using address as-is
-          setLocation(address);
-          setDisplayLocation(address);
-          setFormattedAddress(null);
+          // Show helpful error message with format examples
+          alert('Unable to find that location. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
+          return;
         } else {
           // Store coordinates for API calls, formatted address for display
           const coordinates = `${data.lat}, ${data.lng}`;
@@ -156,8 +154,8 @@ const LocationModal: React.FC<LocationModalProps> = ({
         }
       } catch (error) {
         console.error('Geocoding error:', error);
-        setLocation(address);
-        setDisplayLocation(address);
+        // Show helpful error message with format examples
+        alert('Unable to find that location. Try entering your location in a format like:\n\n• "San Francisco, CA"\n• "94102"\n• "New York, NY"\n\nOr use "Use Current Location" instead.');
       }
     }
   };
@@ -172,8 +170,8 @@ const LocationModal: React.FC<LocationModalProps> = ({
       
       const { latitude, longitude } = position.coords;
       
-      // Use Google Places API for reverse geocoding
-      const { data, error } = await supabase.functions.invoke('google-places', {
+      // Use OpenCage API for reverse geocoding
+      const { data, error } = await supabase.functions.invoke('geocoding', {
         body: {
           action: 'reverse-geocode',
           lat: latitude,
@@ -183,16 +181,14 @@ const LocationModal: React.FC<LocationModalProps> = ({
 
       if (error || !data?.address) {
         console.error('Reverse geocoding failed:', error);
-        // Fallback to coordinates if reverse geocoding fails
-        const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
-        setLocation(coordinates);
-        setDisplayLocation(coordinates); // Show coordinates in input
-        setFormattedAddress(null);
+        // Different error message for "Use Current Location" failure
+        alert('Unable to detect your location. Please enter your location manually or check your browser\'s location permissions.');
+        return;
       } else {
         // Store coordinates for API calls, formatted address for display
         const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
         setLocation(coordinates);
-        setDisplayLocation(coordinates); // Show coordinates in input
+        setDisplayLocation(data.address);
         setFormattedAddress(data.address);
         
         // Call the appropriate callback with both coordinates and formatted address
@@ -205,7 +201,8 @@ const LocationModal: React.FC<LocationModalProps> = ({
       }
     } catch (error) {
       console.error('Error getting location:', error);
-      alert('Unable to detect your location. Please enter it manually.');
+      // Different error message for "Use Current Location" failure
+      alert('Unable to detect your location. Please enter your location manually or check your browser\'s location permissions.');
     } finally {
       setIsDetecting(false);
     }

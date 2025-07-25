@@ -160,6 +160,10 @@ const useRoom = () => {
         const updatedRoomData = await roomService.getRoom(roomData.id);
         if (updatedRoomData) {
           const roomState = convertRoomDataToState(updatedRoomData);
+          // Set the formatted address in the room state
+          if (formattedAddress) {
+            roomState.formattedAddress = formattedAddress;
+          }
           setRoomState(roomState);
           setIsHost(true);
           console.log(`Room ready with ${updatedRoomData.restaurants?.length || 0} initial restaurants`);
@@ -167,6 +171,10 @@ const useRoom = () => {
       } else {
         // If loading failed, still create the room but with empty restaurants
         const roomState = convertRoomDataToState(roomData);
+        // Set the formatted address in the room state
+        if (formattedAddress) {
+          roomState.formattedAddress = formattedAddress;
+        }
         setRoomState(roomState);
         setIsHost(true);
         console.log('Room created but restaurant loading failed');
