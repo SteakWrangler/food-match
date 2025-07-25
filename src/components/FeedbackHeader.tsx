@@ -9,6 +9,7 @@ import { Mail, Send, MessageCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 
 const feedbackSchema = z.object({
   name: z.string().optional(),
@@ -36,27 +37,38 @@ const FeedbackHeader = () => {
     setIsSubmitting(true);
     
     try {
-      // Create email content
-      const emailSubject = encodeURIComponent('Toss or Taste Feedback');
-      const emailBody = encodeURIComponent(
-        `Feedback from Toss or Taste App\n\n` +
-        `Name: ${data.name || 'Not provided'}\n` +
-        `Email: ${data.email || 'Not provided'}\n\n` +
-        `Message:\n${data.message}`
-      );
+      // Get user agent and IP address for tracking
+      const userAgent = navigator.userAgent;
       
-      // Open default email client
-      window.location.href = `mailto:linksmarttechllc@gmail.com?subject=${emailSubject}&body=${emailBody}`;
-      
-      // Show success toast
-      toast({
-        title: "Feedback sent!",
-        description: "Your feedback has been opened in your email client. Please send the email to complete the process.",
+      // Call the feedback processor function
+      const { data: responseData, error } = await supabase.functions.invoke('feedback-processor', {
+        body: {
+          name: data.name || undefined,
+          email: data.email || undefined,
+          message: data.message,
+          userAgent,
+          ipAddress: undefined, // Will be captured server-side if needed
+        },
       });
-      
-      // Reset form and close dialog
-      form.reset();
-      setIsOpen(false);
+
+      if (error) {
+        console.error('Error submitting feedback:', error);
+        throw new Error(error.message || 'Failed to submit feedback');
+      }
+
+      if (responseData?.success) {
+        // Show success toast
+        toast({
+          title: "Feedback submitted!",
+          description: "Thank you for your feedback. We'll get back to you soon.",
+        });
+        
+        // Reset form and close dialog
+        form.reset();
+        setIsOpen(false);
+      } else {
+        throw new Error('Failed to submit feedback');
+      }
     } catch (error) {
       console.error('Error sending feedback:', error);
       toast({
