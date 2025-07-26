@@ -123,31 +123,18 @@ export class RoomService {
   }
 
   async getRoom(roomId: string): Promise<RoomData | null> {
-    console.log('🔍 getRoom called with roomId:', roomId);
-    
-    try {
-      console.log('📡 Querying Supabase for room...');
-      const { data, error } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('id', roomId)
-        .single();
+    const { data, error } = await supabase
+      .from('rooms')
+      .select('*')
+      .eq('id', roomId)
+      .maybeSingle();
 
-      if (error) {
-        console.error('❌ Supabase error in getRoom:', error);
-        if (error.code === 'PGRST116') {
-          console.log('❌ Room not found (PGRST116)');
-          return null;
-        }
-        throw error;
-      }
-
-      console.log('✅ Room data retrieved successfully:', data);
-      return data;
-    } catch (error) {
-      console.error('❌ Exception in getRoom:', error);
+    if (error) {
+      console.error('Error getting room:', error);
       throw error;
     }
+
+    return data;
   }
 
   async joinRoom(params: JoinRoomParams): Promise<RoomData> {
