@@ -127,7 +127,7 @@ export const foodTypes: FoodType[] = [
     name: 'Mexican', 
     category: 'American', 
     emoji: '🌮',
-    image: 'https://images.unsplash.com/photo-1565299585323-38174c26a33b',
+    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1',
     description: 'Tacos, burritos, quesadillas and other Mexican favorites.'
   },
   { 
@@ -143,7 +143,7 @@ export const foodTypes: FoodType[] = [
     name: 'American (General)', 
     category: 'American', 
     emoji: '🍔',
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd',
+    image: 'https://images.unsplash.com/photo-1574484284002-952d92456975',
     description: 'Classic American comfort food, from steaks to mac and cheese.'
   },
   { 
@@ -247,7 +247,7 @@ export const foodTypes: FoodType[] = [
     name: 'Mediterranean', 
     category: 'European', 
     emoji: '🫔',
-    image: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe',
+    image: 'https://images.unsplash.com/photo-1571444443831-74caed8cd3dc',
     description: 'Healthy Mediterranean fare with olive oil, herbs, and fresh ingredients.'
   },
   { 
@@ -329,7 +329,7 @@ export const foodTypes: FoodType[] = [
     name: 'Family Friendly', 
     category: 'Experience', 
     emoji: '👨‍👩‍👧‍👦',
-    image: 'https://images.unsplash.com/photo-1504754524776-8f4f37790ca0',
+    image: 'https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf',
     description: 'Welcoming atmosphere perfect for dining with the whole family.'
   },
   { 
@@ -345,7 +345,7 @@ export const foodTypes: FoodType[] = [
     name: 'All You Can Eat / Buffet', 
     category: 'Experience', 
     emoji: '🍽️',
-    image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445',
+    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828',
     description: 'Endless options for when you want to try a little bit of everything.'
   },
   { 
@@ -369,7 +369,7 @@ export const foodTypes: FoodType[] = [
     name: 'Fusion / Ethnic Mix', 
     category: 'Experience', 
     emoji: '🥡',
-    image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187',
+    image: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9',
     description: 'Creative combinations of different culinary traditions.'
   },
   { 
