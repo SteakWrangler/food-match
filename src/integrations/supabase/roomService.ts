@@ -237,9 +237,20 @@ export class RoomService {
       .single();
 
     if (error) {
-      console.error('Error updating swipe:', error);
+      console.error('❌ Supabase update error:', error);
       throw new Error(`Failed to update swipe: ${error.message}`);
     }
+
+    if (!data) {
+      console.error('❌ No data returned from Supabase update');
+      throw new Error('No data returned from update');
+    }
+
+    console.log('✅ Supabase update successful:', data);
+    console.log('📊 Final swipes in returned data:', {
+      restaurantSwipes: data.restaurant_swipes,
+      foodTypeSwipes: data.food_type_swipes
+    });
 
     return data;
   }
