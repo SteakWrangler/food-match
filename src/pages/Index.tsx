@@ -624,11 +624,8 @@ const Index = () => {
                     className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
                   >
                     <User className="w-3 h-3 sm:w-4 sm:h-4" />
-                     <span className="hidden sm:inline font-medium text-xs sm:text-sm">{(() => {
-                       console.log('🔍 Profile debug:', { profile, profileName: profile?.name, userEmail: user.email });
-                       return profile?.name || user.email?.split('@')[0] || 'User';
-                     })()}</span>
-                     <span className="sm:hidden font-medium text-xs">{profile?.name || user.email?.split('@')[0] || 'User'}</span>
+                     <span className="hidden sm:inline font-medium text-xs sm:text-sm">{profile?.name || 'Loading...'}</span>
+                     <span className="sm:hidden font-medium text-xs">{profile?.name || 'Loading...'}</span>
                   </button>
                 )}
               </div>
@@ -654,11 +651,8 @@ const Index = () => {
             className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
           >
             <User className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline font-medium text-xs sm:text-sm">{(() => {
-              console.log('🔍 Profile debug (desktop):', { profile, profileName: profile?.name, userEmail: user.email });
-              return profile?.name || user.email?.split('@')[0] || 'User';
-            })()}</span>
-            <span className="sm:hidden font-medium text-xs">{profile?.name || user.email?.split('@')[0] || 'User'}</span>
+            <span className="hidden sm:inline font-medium text-xs sm:text-sm">{profile?.name || 'Loading...'}</span>
+            <span className="sm:hidden font-medium text-xs">{profile?.name || 'Loading...'}</span>
           </button>
         )}
       </div>
