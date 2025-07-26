@@ -575,13 +575,13 @@ const Index = () => {
               </button>
               
               {/* Move icons closer to title on mobile/tablet */}
-              <div className="flex items-center gap-1 lg:hidden">
+              <div className="flex items-center gap-0.5 lg:hidden">
                 {activeTab === 'specific' && (
                   <button
                     onClick={() => setShowFilters(true)}
                     className="p-1.5 rounded-md hover:bg-orange-50 transition-colors text-gray-600 hover:text-orange-600"
                   >
-                    <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <Filter className="w-4 h-4" />
                   </button>
                 )}
                 <FeedbackHeader />
@@ -609,7 +609,7 @@ const Index = () => {
         {!user ? (
           <button
             onClick={() => setShowAuthModal(true)}
-            className="bg-white/90 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-white/95 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
+            className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
           >
             <User className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline font-medium text-xs sm:text-sm">Sign In/Sign Up</span>
