@@ -244,45 +244,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) {
-      return { error: { message: 'No user logged in' } as AuthError };
+      return { error: { message: 'No user logged in' } };
     }
 
-    try {
-      // Remove the computed name field if present (it shouldn't be in updates)
-      const dbUpdates: any = { ...updates };
-      if (dbUpdates.name !== undefined) {
-        delete dbUpdates.name;
-      }
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id)
+      .select()
+      .single();
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({
-          ...dbUpdates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id)
-        .select()
-        .single();
-
-      if (error) {
-        return { error };
-      }
-
-      if (data) {
-        // Add computed name field for compatibility
-        const profileWithName = {
-          ...data,
-          name: data.first_name && data.last_name 
-            ? `${data.first_name} ${data.last_name}`.trim()
-            : data.first_name || data.last_name || ''
-        };
-        setProfile(profileWithName);
-      }
-
-      return { error: null };
-    } catch (error) {
-      return { error: error as AuthError };
+    if (error) {
+      return { error };
     }
+
+    setProfile(data);
+    return { error: null };
   };
 
   const resetPassword = async (email: string) => {
