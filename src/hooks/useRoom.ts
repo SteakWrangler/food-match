@@ -157,16 +157,37 @@ const useRoom = () => {
       
       if (success) {
         // Set room state immediately after initial 3 restaurants are loaded
-        const updatedRoomData = await roomService.getRoom(roomData.id);
-        if (updatedRoomData) {
-          const roomState = convertRoomDataToState(updatedRoomData);
-          // Set the formatted address in the room state
+        console.log('✅ Initial restaurants loaded, fetching updated room data...');
+        try {
+          const updatedRoomData = await roomService.getRoom(roomData.id);
+          if (updatedRoomData) {
+            console.log('✅ Updated room data retrieved:', updatedRoomData);
+            const roomState = convertRoomDataToState(updatedRoomData);
+            // Set the formatted address in the room state
+            if (formattedAddress) {
+              roomState.formattedAddress = formattedAddress;
+            }
+            setRoomState(roomState);
+            setIsHost(true);
+            console.log(`Room ready with ${updatedRoomData.restaurants?.length || 0} initial restaurants`);
+          } else {
+            console.log('❌ Updated room data is null, using original room data');
+            const roomState = convertRoomDataToState(roomData);
+            if (formattedAddress) {
+              roomState.formattedAddress = formattedAddress;
+            }
+            setRoomState(roomState);
+            setIsHost(true);
+          }
+        } catch (getError) {
+          console.error('❌ Error getting updated room data:', getError);
+          // Fall back to using original room data
+          const roomState = convertRoomDataToState(roomData);
           if (formattedAddress) {
             roomState.formattedAddress = formattedAddress;
           }
           setRoomState(roomState);
           setIsHost(true);
-          console.log(`Room ready with ${updatedRoomData.restaurants?.length || 0} initial restaurants`);
         }
       } else {
         // If loading failed, still create the room but with empty restaurants
