@@ -48,6 +48,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
+    console.log('🔍 fetchProfile called for userId:', userId);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -55,8 +56,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('id', userId)
         .single();
 
+      console.log('📊 Profile query result:', { data, error });
+
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('❌ Error fetching profile:', error);
         return null;
       }
 
@@ -67,27 +70,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           : data.first_name || data.last_name || ''
       };
 
+      console.log('✅ Profile with name computed:', profileWithName);
       return profileWithName;
     } catch (error) {
-      console.error('Error in fetchProfile:', error);
+      console.error('💥 Error in fetchProfile:', error);
       return null;
     }
   };
 
   const handleAuthStateChange = async (event: string, newSession: Session | null) => {
-    console.log('Auth state change:', event, newSession?.user?.id);
+    console.log('🔄 Auth state change:', event, 'userId:', newSession?.user?.id);
+    console.log('🔄 Session details:', newSession ? 'exists' : 'null');
     
     setSession(newSession);
     setUser(newSession?.user || null);
 
     if (newSession?.user) {
+      console.log('👤 User found, fetching profile for:', newSession.user.id);
       const userProfile = await fetchProfile(newSession.user.id);
+      console.log('👤 Profile fetched:', userProfile ? 'success' : 'failed');
       setProfile(userProfile);
     } else {
+      console.log('👤 No user, clearing profile');
       setProfile(null);
     }
 
+    console.log('⏳ Setting loading to false');
     setLoading(false);
+    console.log('✅ Auth state change complete');
   };
 
   useEffect(() => {
