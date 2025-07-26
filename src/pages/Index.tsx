@@ -575,7 +575,7 @@ const Index = () => {
               </button>
               
               {/* Move icons closer to title on mobile/tablet */}
-              <div className="flex items-center gap-0.5 lg:hidden">
+              <div className="flex items-center lg:hidden">
                 {activeTab === 'specific' && (
                   <button
                     onClick={() => setShowFilters(true)}
