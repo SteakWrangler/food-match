@@ -97,13 +97,21 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setName('');
   };
 
-  // If user is already authenticated, close the modal
+  // If user is already authenticated, close the modal immediately
   React.useEffect(() => {
-    if (user && !authLoading) {
+    console.log('AuthModal effect - user:', user, 'authLoading:', authLoading, 'isOpen:', isOpen);
+    if (user && !authLoading && isOpen) {
+      console.log('User already authenticated, closing auth modal');
       onClose();
       onAuthSuccess?.();
     }
-  }, [user, authLoading, onClose, onAuthSuccess]);
+  }, [user, authLoading, isOpen, onClose, onAuthSuccess]);
+
+  // Don't render the modal content if user is already authenticated
+  if (user && !authLoading) {
+    console.log('User authenticated, not rendering auth modal content');
+    return null;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
