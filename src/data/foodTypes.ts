@@ -15,7 +15,7 @@ export const foodTypes: FoodType[] = [
     name: 'Pizza', 
     category: 'Popular', 
     emoji: '🍕',
-    image: 'https://images.unsplash.com/photo-1601924572681-0096b6cc251b',
+    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b',
     description: 'Delicious cheesy goodness with your favorite toppings on a crispy crust.'
   },
   { 
@@ -47,7 +47,7 @@ export const foodTypes: FoodType[] = [
     name: 'Steak / Steakhouse', 
     category: 'Popular', 
     emoji: '🥩',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d',
+    image: 'https://images.unsplash.com/photo-1558030006-450675393462',
     description: 'Premium cuts of beef cooked to perfection with classic steakhouse sides.'
   },
   { 
@@ -127,7 +127,7 @@ export const foodTypes: FoodType[] = [
     name: 'Mexican', 
     category: 'American', 
     emoji: '🌮',
-    image: 'https://images.unsplash.com/photo-1599974579688-8dbdd335c6b3',
+    image: 'https://images.unsplash.com/photo-1615870216519-2f9fa19d0b68',
     description: 'Tacos, burritos, quesadillas and other Mexican favorites.'
   },
   { 
@@ -135,7 +135,7 @@ export const foodTypes: FoodType[] = [
     name: 'Italian', 
     category: 'European', 
     emoji: '🍝',
-    image: 'https://images.unsplash.com/photo-1572441713132-51c75654db73',
+    image: 'https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5',
     description: 'Pasta, risotto, and classic Italian comfort food.'
   },
   { 
@@ -159,7 +159,7 @@ export const foodTypes: FoodType[] = [
     name: 'Comfort Food', 
     category: 'American', 
     emoji: '🍽️',
-    image: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f',
+    image: 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3',
     description: 'Hearty, satisfying dishes that feel like a warm hug.'
   },
   { 
@@ -167,7 +167,7 @@ export const foodTypes: FoodType[] = [
     name: 'Casual Dining', 
     category: 'Casual', 
     emoji: '🍽️',
-    image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b',
+    image: 'https://images.unsplash.com/photo-1559339352-11d035aa65de',
     description: 'Relaxed atmosphere with table service and moderate prices.'
   },
   { 
@@ -207,7 +207,7 @@ export const foodTypes: FoodType[] = [
     name: 'Tex-Mex', 
     category: 'American', 
     emoji: '🌯',
-    image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d',
+    image: 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f',
     description: 'Texas-style Mexican cuisine with bold flavors and hearty portions.'
   },
   { 
@@ -255,7 +255,7 @@ export const foodTypes: FoodType[] = [
     name: 'Mediterranean', 
     category: 'European', 
     emoji: '🫔',
-    image: 'https://images.unsplash.com/photo-1544510529-efec0c8c725d',
+    image: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe',
     description: 'Healthy Mediterranean fare with olive oil, herbs, and fresh ingredients.'
   },
   { 
@@ -287,7 +287,7 @@ export const foodTypes: FoodType[] = [
     name: 'Ethiopian', 
     category: 'Other', 
     emoji: '🍖',
-    image: 'https://images.unsplash.com/photo-1544982503-9f984c14501a',
+    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1',
     description: 'Spiced stews and injera bread from East Africa.'
   },
   { 
@@ -295,7 +295,7 @@ export const foodTypes: FoodType[] = [
     name: 'Hawaiian / Poke', 
     category: 'Seafood', 
     emoji: '🐟',
-    image: 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62',
+    image: 'https://images.unsplash.com/photo-1546069901-eacef0df6022',
     description: 'Fresh Hawaiian poke bowls and tropical island flavors.'
   },
   { 
@@ -303,7 +303,7 @@ export const foodTypes: FoodType[] = [
     name: 'Hot Pot', 
     category: 'Asian', 
     emoji: '🍲',
-    image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624',
+    image: 'https://images.unsplash.com/photo-1553621042-f6e147245754',
     description: 'Interactive dining experience with simmering broth and fresh ingredients.'
   },
   { 
@@ -311,7 +311,7 @@ export const foodTypes: FoodType[] = [
     name: 'French', 
     category: 'European', 
     emoji: '🥖',
-    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0',
+    image: 'https://images.unsplash.com/photo-1606787366850-de6ba128a2ac',
     description: 'Elegant French cuisine with rich flavors and classic techniques.'
   },
   
@@ -321,7 +321,7 @@ export const foodTypes: FoodType[] = [
     name: 'Takeout-Friendly', 
     category: 'Experience', 
     emoji: '📦',
-    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add',
+    image: 'https://images.unsplash.com/photo-1593504049359-74330189a345',
     description: 'Perfect for when you want to enjoy restaurant-quality food at home.'
   },
   { 
@@ -329,7 +329,7 @@ export const foodTypes: FoodType[] = [
     name: 'Date Night', 
     category: 'Experience', 
     emoji: '💕',
-    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0',
+    image: 'https://images.unsplash.com/photo-1551218808-94e220e084d2',
     description: 'Romantic dining experiences perfect for special occasions.'
   },
   { 
@@ -337,7 +337,7 @@ export const foodTypes: FoodType[] = [
     name: 'Late Night Eats', 
     category: 'Experience', 
     emoji: '🌙',
-    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add',
+    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b',
     description: 'Delicious options for when the sun goes down and hunger strikes.'
   },
   { 
@@ -345,7 +345,7 @@ export const foodTypes: FoodType[] = [
     name: 'Family Friendly', 
     category: 'Experience', 
     emoji: '👨‍👩‍👧‍👦',
-    image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b',
+    image: 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f',
     description: 'Welcoming atmosphere perfect for dining with the whole family.'
   },
   { 
@@ -353,7 +353,7 @@ export const foodTypes: FoodType[] = [
     name: 'Trendy / Instagrammable', 
     category: 'Experience', 
     emoji: '📸',
-    image: 'https://images.unsplash.com/photo-1558857563-b371033873b8',
+    image: 'https://images.unsplash.com/photo-1504754524776-8f4f37790ca0',
     description: 'Hip spots with photogenic dishes and modern vibes.'
   },
   { 
@@ -361,7 +361,7 @@ export const foodTypes: FoodType[] = [
     name: 'All You Can Eat / Buffet', 
     category: 'Experience', 
     emoji: '🍽️',
-    image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b',
+    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0',
     description: 'Endless options for when you want to try a little bit of everything.'
   },
   { 
@@ -369,7 +369,7 @@ export const foodTypes: FoodType[] = [
     name: 'Guilty Pleasures', 
     category: 'Experience', 
     emoji: '😋',
-    image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307',
+    image: 'https://images.unsplash.com/photo-1571091655789-405eb7a3a3a8',
     description: 'Indulgent treats that are worth every calorie.'
   },
   { 
@@ -385,7 +385,7 @@ export const foodTypes: FoodType[] = [
     name: 'Fusion / Ethnic Mix', 
     category: 'Experience', 
     emoji: '🥡',
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+    image: 'https://images.unsplash.com/photo-1563379091339-03246963d96c',
     description: 'Creative combinations of different culinary traditions.'
   },
   { 
