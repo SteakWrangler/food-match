@@ -86,18 +86,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching profile:', error);
         return;
       }
 
       if (data) {
+        console.log('Profile found:', data);
         // Add computed name field for compatibility
         const profileWithName = {
           ...data,
@@ -107,6 +109,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
         setProfile(profileWithName);
       } else {
+        console.log('No profile found, creating new one');
         // Create profile if it doesn't exist
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
@@ -132,6 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           name: newProfile.first_name || ''
         };
         setProfile(profileWithName);
+        console.log('New profile created:', profileWithName);
       }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
