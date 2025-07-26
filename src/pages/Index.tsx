@@ -545,7 +545,7 @@ const Index = () => {
             </div>
             
             {/* Center - Title (all screen sizes) */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 sm:gap-6">
               <button 
                 onClick={() => {
                   if (isInRoom && !isLeavingRoom) {
@@ -556,7 +556,7 @@ const Index = () => {
                   }
                 }}
                 disabled={isLeavingRoom}
-                className={`flex items-center gap-0 transition-opacity ${
+                className={`flex items-center gap-1 sm:gap-2 transition-opacity ${
                   isInRoom 
                     ? 'hover:opacity-80 cursor-pointer' 
                     : 'hover:opacity-80'
@@ -593,7 +593,7 @@ const Index = () => {
             </div>
             
             {/* Right side - Desktop icons and mobile auth */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-5 sm:gap-3">
               {/* Desktop icons */}
               <div className="hidden lg:flex items-center gap-3">
                 {activeTab === 'specific' && (
