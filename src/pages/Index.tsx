@@ -609,16 +609,17 @@ const Index = () => {
       </header>
 
       {/* Auth Button - Fixed to top-right */}
-      <div className="fixed top-2 right-4 z-50">
+      <div className="fixed top-2 right-2 sm:right-4 z-50">
         {!user ? (
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowAuthModal(true)}
-            className="bg-white/90 backdrop-blur-sm border-orange-200 hover:bg-orange-50 text-orange-600 px-3 py-2 shadow-lg"
+            className="bg-white/90 backdrop-blur-sm border-orange-200 hover:bg-orange-50 text-orange-600 px-2 sm:px-3 py-1.5 sm:py-2 shadow-lg text-xs sm:text-sm"
           >
-            <User className="w-4 h-4 mr-2" />
-            <span className="text-sm font-medium">Sign In/Sign Up</span>
+            <User className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+            <span className="hidden sm:inline font-medium">Sign In/Sign Up</span>
+            <span className="sm:hidden font-medium">Sign In</span>
           </Button>
         ) : (
           <div 
