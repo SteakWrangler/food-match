@@ -247,6 +247,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return { error: { message: 'No user logged in' } };
     }
 
+    console.log('updateProfile called with:', updates);
+    console.log('user.id:', user.id);
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -255,13 +258,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .select()
         .single();
 
+      console.log('Supabase response:', { data, error });
+
       if (error) {
+        console.error('Database error:', error);
         return { error };
       }
 
       setProfile(data);
       return { error: null };
     } catch (err) {
+      console.error('Caught exception:', err);
       return { error: { message: 'Update failed' } };
     }
   };
