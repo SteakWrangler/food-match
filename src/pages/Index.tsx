@@ -579,7 +579,7 @@ const Index = () => {
                 {activeTab === 'specific' && (
                   <button
                     onClick={() => setShowFilters(true)}
-                    className="py-1.5 pl-1.5 pr-0.5 rounded-l-md hover:bg-orange-50 transition-colors text-gray-600 hover:text-orange-600"
+                    className="p-1 rounded-l-md hover:bg-orange-50 transition-colors text-gray-600 hover:text-orange-600"
                   >
                     <Filter className="w-4 h-4" />
                   </button>
