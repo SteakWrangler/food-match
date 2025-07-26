@@ -181,78 +181,85 @@ export class RoomService {
     
     console.log('🔄 roomService.updateSwipe called:', { roomId, participantId, itemId, direction, type });
     
-    // First get the current room
-    const currentRoom = await this.getRoom(roomId);
-    if (!currentRoom) {
-      console.log('❌ roomService.updateSwipe: Room not found');
-      throw new Error('Room not found');
-    }
+    try {
+      // First get the current room
+      console.log('📥 Getting current room...');
+      const currentRoom = await this.getRoom(roomId);
+      if (!currentRoom) {
+        console.log('❌ roomService.updateSwipe: Room not found');
+        throw new Error('Room not found');
+      }
 
-    console.log('📊 Current room swipes before update:', {
-      restaurantSwipes: currentRoom.restaurant_swipes,
-      foodTypeSwipes: currentRoom.food_type_swipes
-    });
+      console.log('✅ Current room retrieved:', currentRoom);
+      console.log('📊 Current room swipes before update:', {
+        restaurantSwipes: currentRoom.restaurant_swipes,
+        foodTypeSwipes: currentRoom.food_type_swipes
+      });
 
-    // Update the appropriate swipes object
-    const updateData: any = {
-      updated_at: new Date().toISOString()
-    };
-
-    if (type === 'restaurant') {
-      const updatedRestaurantSwipes = {
-        ...currentRoom.restaurant_swipes,
-        [participantId]: {
-          ...currentRoom.restaurant_swipes[participantId],
-          [itemId]: direction
-        }
+      // Update the appropriate swipes object
+      const updateData: any = {
+        updated_at: new Date().toISOString()
       };
-      updateData.restaurant_swipes = updatedRestaurantSwipes;
-      
-      console.log('🔄 Updating restaurant swipes:', updatedRestaurantSwipes);
-      
-      // REMOVED: Global restaurant progress tracking
-      // Each user should have their own progress through the restaurant list
-      // The current_restaurant_id and viewed_restaurant_ids should be per-participant
-      // This was causing all users to see the same restaurant
-    } else {
-      const updatedFoodTypeSwipes = {
-        ...currentRoom.food_type_swipes,
-        [participantId]: {
-          ...currentRoom.food_type_swipes[participantId],
-          [itemId]: direction
-        }
-      };
-      updateData.food_type_swipes = updatedFoodTypeSwipes;
-      
-      console.log('🔄 Updating food type swipes:', updatedFoodTypeSwipes);
+
+      if (type === 'restaurant') {
+        const updatedRestaurantSwipes = {
+          ...currentRoom.restaurant_swipes,
+          [participantId]: {
+            ...currentRoom.restaurant_swipes[participantId],
+            [itemId]: direction
+          }
+        };
+        updateData.restaurant_swipes = updatedRestaurantSwipes;
+        
+        console.log('🔄 Updating restaurant swipes:', updatedRestaurantSwipes);
+        
+        // REMOVED: Global restaurant progress tracking
+        // Each user should have their own progress through the restaurant list
+        // The current_restaurant_id and viewed_restaurant_ids should be per-participant
+        // This was causing all users to see the same restaurant
+      } else {
+        const updatedFoodTypeSwipes = {
+          ...currentRoom.food_type_swipes,
+          [participantId]: {
+            ...currentRoom.food_type_swipes[participantId],
+            [itemId]: direction
+          }
+        };
+        updateData.food_type_swipes = updatedFoodTypeSwipes;
+        
+        console.log('🔄 Updating food type swipes:', updatedFoodTypeSwipes);
+      }
+
+      console.log('📤 Sending update to Supabase:', updateData);
+
+      const { data, error } = await supabase
+        .from('rooms')
+        .update(updateData)
+        .eq('id', roomId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Supabase update error:', error);
+        throw new Error(`Failed to update swipe: ${error.message}`);
+      }
+
+      if (!data) {
+        console.error('❌ No data returned from Supabase update');
+        throw new Error('No data returned from update');
+      }
+
+      console.log('✅ Supabase update successful:', data);
+      console.log('📊 Final swipes in returned data:', {
+        restaurantSwipes: data.restaurant_swipes,
+        foodTypeSwipes: data.food_type_swipes
+      });
+
+      return data;
+    } catch (error) {
+      console.error('❌ Error in updateSwipe:', error);
+      throw error;
     }
-
-    console.log('📤 Sending update to Supabase:', updateData);
-
-    const { data, error } = await supabase
-      .from('rooms')
-      .update(updateData)
-      .eq('id', roomId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('❌ Supabase update error:', error);
-      throw new Error(`Failed to update swipe: ${error.message}`);
-    }
-
-    if (!data) {
-      console.error('❌ No data returned from Supabase update');
-      throw new Error('No data returned from update');
-    }
-
-    console.log('✅ Supabase update successful:', data);
-    console.log('📊 Final swipes in returned data:', {
-      restaurantSwipes: data.restaurant_swipes,
-      foodTypeSwipes: data.food_type_swipes
-    });
-
-    return data;
   }
 
   async updateRestaurants(roomId: string, restaurants: any[], nextPageToken?: string): Promise<RoomData> {
