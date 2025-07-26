@@ -50,6 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session ? 'exists' : 'null');
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -69,13 +70,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('Fetching profile for user:', session.user.id);
           await fetchProfile(session.user.id);
         } else {
           setProfile(null);
         }
         
         setLoading(false);
-        console.log('Auth state change completed');
+        console.log('Auth state change completed - loading set to false');
       }
     );
 

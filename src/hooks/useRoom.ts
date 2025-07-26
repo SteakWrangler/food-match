@@ -32,7 +32,13 @@ const useRoom = () => {
   const [hasReachedEnd, setHasReachedEnd] = useState(false); // Track if we've reached the end of available restaurants
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const roomService = getRoomService();
-
+  
+  // Reset loading state when there's no room to prevent stuck loading screen
+  useEffect(() => {
+    if (!roomState) {
+      setIsLoadingRestaurants(false);
+    }
+  }, [roomState]);
   // Convert RoomData to RoomState
   const convertRoomDataToState = (roomData: RoomData): RoomState => {
     return {
