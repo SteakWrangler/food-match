@@ -82,6 +82,7 @@ export class RoomService {
   }
 
   async createRoom(params: CreateRoomParams): Promise<RoomData> {
+    console.log('roomService.createRoom called with params:', params);
     const { hostId, hostName, location, filters } = params;
     
     const roomData = {
@@ -91,15 +92,18 @@ export class RoomService {
         id: hostId,
         name: hostName,
       }],
-      current_restaurant_id: undefined, // Initialize as undefined
-      viewed_restaurant_ids: [], // Initialize as empty array
-      restaurant_swipes: {},
-      food_type_swipes: {},
       restaurants: [],
       location, // Coordinates for API calls
-      filters,
-      next_page_token: null
+      filters, // Include filters for regular rooms
+      // The database will use defaults for:
+      // - restaurant_swipes: '{}'
+      // - food_type_swipes: '{}'
+      // - current_restaurant_id: null
+      // - viewed_restaurant_ids: '{}'
+      // - next_page_token: null
     };
+
+    console.log('About to insert room data:', roomData);
 
     const { data, error } = await supabase
       .from('rooms')
@@ -107,11 +111,14 @@ export class RoomService {
       .select()
       .single();
 
+    console.log('Supabase response:', { data, error });
+
     if (error) {
       console.error('Error creating room:', error);
       throw new Error(`Failed to create room: ${error.message}`);
     }
 
+    console.log('Room created successfully:', data);
     return data;
   }
 

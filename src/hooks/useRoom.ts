@@ -191,6 +191,45 @@ const useRoom = () => {
     }
   };
 
+  const createDemoRoom = async (hostName: string, formattedAddress?: string) => {
+    try {
+      console.log('Creating demo room for food types only...');
+      console.log('Host name:', hostName);
+      console.log('Participant ID:', participantId);
+      
+      // Create room in Supabase but with minimal data
+      const roomData = await roomService.createRoom({
+        hostId: participantId,
+        hostName,
+        location: 'demo', // Special location for demo rooms
+        filters: defaultFilters // Use default filters for demo
+      });
+
+      console.log(`Created demo room ${roomData.id}`);
+      console.log('Room data:', roomData);
+      
+      // Create room state immediately without loading restaurants
+      const roomState = convertRoomDataToState(roomData);
+      if (formattedAddress) {
+        roomState.formattedAddress = formattedAddress;
+      }
+      
+      console.log('Setting room state:', roomState);
+      setRoomState(roomState);
+      setIsHost(true);
+      setIsLoadingRestaurants(false);
+      
+      console.log('Demo room ready - food types only');
+      return roomData.id;
+    } catch (error) {
+      console.error('Error creating demo room:', error);
+      setRoomState(null);
+      setIsHost(false);
+      setIsLoadingRestaurants(false);
+      throw error;
+    }
+  };
+
   const loadInitialRestaurants = async (roomId: string, location: string, filters: FilterState, isInitialLoad: boolean = false) => {
     try {
       console.log('🚀 Loading 20 restaurants for room entry...');
@@ -637,6 +676,7 @@ const useRoom = () => {
     isLoadingMoreRestaurants,
     hasReachedEnd,
     createRoom,
+    createDemoRoom,
     joinRoom,
     addSwipe,
     checkForMatch,

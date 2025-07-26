@@ -12,13 +12,16 @@ import EnhancedSwipeHistory from '@/components/EnhancedSwipeHistory';
 import FeedbackHeader from '@/components/FeedbackHeader';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Filter, Users, MapPin, QrCode, UserPlus, Loader2, BarChart3 } from 'lucide-react';
+import { Filter, Users, MapPin, QrCode, UserPlus, Loader2, BarChart3, User } from 'lucide-react';
 import useRoom from '@/hooks/useRoom';
 import { useDeviceType } from '@/hooks/use-mobile';
 import { foodTypes } from '@/data/foodTypes';
 import { Restaurant } from '@/data/restaurants';
 import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import AuthModal from '@/components/AuthModal';
+import UserProfileModal from '@/components/UserProfileModal';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('specific');
@@ -42,6 +45,12 @@ const Index = () => {
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const [isLeavingRoom, setIsLeavingRoom] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authRequiredForRestaurants, setAuthRequiredForRestaurants] = useState(false);
+  const [isAuthenticatedRoom, setIsAuthenticatedRoom] = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
+
+  const { user, signOut } = useAuth();
   
   const deviceType = useDeviceType();
   
@@ -77,6 +86,7 @@ const Index = () => {
     isLoadingMoreRestaurants,
     hasReachedEnd,
     createRoom,
+    createDemoRoom,
     joinRoom,
     addSwipe,
     checkForMatch,
@@ -222,12 +232,14 @@ const Index = () => {
     }
   }, [roomState]);
 
-  const handleCreateRoom = async (name: string, locationToUse?: string, formattedAddress?: string) => {
+  const handleCreateRoom = async (name: string, locationToUse?: string, formattedAddress?: string, isAuthenticated?: boolean) => {
+    console.log('handleCreateRoom called with:', { name, locationToUse, formattedAddress, isAuthenticated });
+    
     if (isCreatingRoom) return; // Prevent multiple submissions
     
     const locationToSet = locationToUse || location;
     
-    if (!locationToSet) {
+    if (!locationToSet && isAuthenticated !== false) {
       console.error('No location provided for room creation');
       setError('Location is required to create a room.');
       return;
@@ -244,44 +256,58 @@ const Index = () => {
     // Close the modal immediately when room creation starts
     setShowCreateRoom(false);
     setIsCreatingRoom(true);
+    setIsAuthenticatedRoom(isAuthenticated || false);
     
-    try {
-      // Geocode the display address to get coordinates for API
-      let coordinatesForAPI = locationToSet;
-      
-      // Check if the location is already coordinates
-      const coordMatch = locationToSet.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
-      
-      if (!coordMatch) {
-        // It's an address, need to geocode it
         try {
-          const { data, error } = await supabase.functions.invoke('geocoding', {
-            body: {
-              action: 'geocode',
-              address: locationToSet
-            },
-          });
+      if (isAuthenticated !== false) {
+        // Regular room creation with location and restaurants
+        let coordinatesForAPI = locationToSet;
+    
+        // Check if the location is already coordinates
+        const coordMatch = locationToSet.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+        
+        if (!coordMatch) {
+          // It's an address, need to geocode it
+          try {
+            const { data, error } = await supabase.functions.invoke('geocoding', {
+              body: {
+                action: 'geocode',
+                address: locationToSet
+              },
+            });
 
-          if (error || !data?.lat || !data?.lng) {
-            console.error('Geocoding failed for room creation:', error);
+            if (error || !data?.lat || !data?.lng) {
+              console.error('Geocoding failed for room creation:', error);
+              setError('Unable to find that location. Try entering your location in a format like "San Francisco, CA", "94102", or "New York, NY".');
+              setIsCreatingRoom(false);
+              return;
+            }
+            
+            coordinatesForAPI = `${data.lat}, ${data.lng}`;
+            console.log('Geocoded address to coordinates:', coordinatesForAPI);
+          } catch (error) {
+            console.error('Geocoding error for room creation:', error);
             setError('Unable to find that location. Try entering your location in a format like "San Francisco, CA", "94102", or "New York, NY".');
+            setIsCreatingRoom(false);
             return;
           }
-          
-          coordinatesForAPI = `${data.lat}, ${data.lng}`;
-          console.log('Geocoded address to coordinates:', coordinatesForAPI);
-        } catch (error) {
-          console.error('Geocoding error for room creation:', error);
-          setError('Unable to find that location. Try entering your location in a format like "San Francisco, CA", "94102", or "New York, NY".');
-          return;
         }
+        
+        // Create room with coordinates
+        await createRoom(name, coordinatesForAPI, filters, formattedAddress);
+      } else {
+        // Demo room creation - food types only, no API calls
+        console.log('Creating demo room...');
+        const roomId = await createDemoRoom(name, 'Demo Mode');
+        console.log('Demo room created with ID:', roomId);
+        console.log('Room state after demo creation:', roomState);
+        // Don't show QR modal for demo rooms - just go straight to the room
       }
       
-      // Create room with coordinates
-      await createRoom(name, coordinatesForAPI, filters, formattedAddress);
-      
-      // Show QR modal after successful room creation
-      setShowQRCode(true);
+      // Show QR modal after successful room creation (only for authenticated rooms)
+      if (isAuthenticated !== false) {
+        setShowQRCode(true);
+      }
     } catch (err) {
       console.error('Error creating room:', err);
       setError('Failed to create room. Please try again.');
@@ -578,11 +604,35 @@ const Index = () => {
         </div>
       </header>
 
+      {/* Auth Button - Fixed to top-right */}
+      <div className="fixed top-2 right-4 z-50">
+        {!user ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAuthModal(true)}
+            className="bg-white/90 backdrop-blur-sm border-orange-200 hover:bg-orange-50 text-orange-600 px-3 py-2 shadow-lg"
+          >
+            <User className="w-4 h-4 mr-2" />
+            <span className="text-sm font-medium">Sign In/Sign Up</span>
+          </Button>
+        ) : (
+          <div 
+            className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-orange-200 cursor-pointer hover:bg-white/95 transition-colors"
+            onClick={() => setShowUserProfile(true)}
+          >
+            <div className="text-sm text-gray-700">
+              Signed in as <span className="font-medium text-gray-900">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Main Content */}
-      <main className={getContainerClasses()}> {/* Removed touch-none to allow button interactions */}
+      <main className={`${getContainerClasses()} pt-12`}> {/* Reduced pt-16 to pt-12 since button is higher */}
         {!isInRoom ? (
           /* Welcome Screen */
-          <div className="h-[calc(100vh-6rem)] flex items-center justify-center relative overflow-hidden">
+          <div className="h-[calc(100vh-4rem)] flex items-center justify-center relative overflow-hidden">
             {/* Background Image - Full Viewport Coverage */}
             <div 
               className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-50 transition-opacity duration-500" 
@@ -665,42 +715,90 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Tab System */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-2 sm:mb-3">
-              <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-lg p-1">
-                <TabsTrigger value="specific" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all">
-                  Restaurants
-                </TabsTrigger>
-                <TabsTrigger value="general" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all">
-                  Food Types
-                </TabsTrigger>
-              </TabsList>
-              
-              {/* Room Stats Button */}
-              <div className="mt-2 flex justify-center">
-                <Button
-                  onClick={() => setShowHistory(true)}
-                  variant="outline"
-                  size="sm"
-                  className="border-orange-200 hover:bg-orange-50 text-orange-600 px-3 sm:px-4"
-                >
-                  <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  Room Stats
-                </Button>
+            {/* Demo Room Interface - Food Types Only */}
+            {roomState?.location === 'demo' ? (
+              <div className="mb-2 sm:mb-3">
+                {/* Room Stats Button */}
+                <div className="mt-2 flex justify-center">
+                  <Button
+                    onClick={() => setShowHistory(true)}
+                    variant="outline"
+                    size="sm"
+                    className="border-orange-200 hover:bg-orange-50 text-orange-600 px-3 sm:px-4"
+                  >
+                    <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    Room Stats
+                  </Button>
+                </div>
+                
+                {/* Food Types Interface */}
+                <div className="mt-2">
+                  <GeneralSwipeInterface 
+                    foodTypes={foodTypes}
+                    roomState={roomState}
+                    onSwipe={handleFoodTypeSwipe}
+                    onMatch={setMatchedRestaurant}
+                    checkForMatch={checkForMatch}
+                    participantId={participantId}
+                    onBringToFront={handleBringFoodTypeToFront}
+                    customOrder={foodTypeOrder}
+                  />
+                </div>
               </div>
-              
-              <TabsContent value="specific" className="mt-2">
-                {filteredRestaurants.length === 0 ? (
-                  <div className="text-center py-6 sm:py-8 md:py-12">
-                    <div className="text-3xl sm:text-4xl md:text-6xl mb-3 sm:mb-4">🍽️</div>
-                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-2">No restaurants found</h3>
-                    <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-3 sm:mb-4 px-2">
-                      {isInRoom 
-                        ? "No restaurants available in your area. Try changing your location."
-                        : "Join a room to start swiping on restaurants!"
-                      }
-                    </p>
-                    {isInRoom && (
+            ) : (
+              /* Regular Room Interface - Two Tabs */
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-2 sm:mb-3">
+                <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-lg p-1">
+                  <TabsTrigger 
+                    value="specific" 
+                    className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
+                    disabled={!isAuthenticatedRoom}
+                  >
+                    Restaurants
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="general" 
+                    className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
+                  >
+                    Food Types
+                  </TabsTrigger>
+                </TabsList>
+                
+                {/* Room Stats Button */}
+                <div className="mt-2 flex justify-center">
+                  <Button
+                    onClick={() => setShowHistory(true)}
+                    variant="outline"
+                    size="sm"
+                    className="border-orange-200 hover:bg-orange-50 text-orange-600 px-3 sm:px-4"
+                  >
+                    <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    Room Stats
+                  </Button>
+                </div>
+                
+                <TabsContent value="specific" className="mt-2">
+                  {!isAuthenticatedRoom ? (
+                    <div className="text-center py-6 sm:py-8 md:py-12">
+                      <div className="text-3xl sm:text-4xl md:text-6xl mb-3 sm:mb-4">🔒</div>
+                      <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-2">Sign in for restaurants</h3>
+                      <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-3 sm:mb-4 px-2">
+                        Create an account to access restaurant swiping and location-based features.
+                      </p>
+                      <Button
+                        onClick={() => setShowAuthModal(true)}
+                        className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+                      >
+                        Sign In
+                      </Button>
+                    </div>
+                  ) : filteredRestaurants.length === 0 ? (
+                    <div className="text-center py-6 sm:py-8 md:py-12">
+                      <div className="text-3xl sm:text-4xl md:text-6xl mb-3 sm:mb-4">🍽️</div>
+                      <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-2">No restaurants found</h3>
+                      <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-3 sm:mb-4 px-2">
+                        No restaurants available in your area. Try changing your location.
+                      </p>
                       <Button
                         onClick={() => setShowLocation(true)}
                         variant="outline"
@@ -709,55 +807,62 @@ const Index = () => {
                         <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                         Change Location
                       </Button>
-                    )}
-                  </div>
-                ) : (
-                  <SwipeInterface
-                    key={roomState?.id || 'no-room'}
-                    restaurants={filteredRestaurants}
+                    </div>
+                  ) : (
+                    <SwipeInterface
+                      key={roomState?.id || 'no-room'}
+                      restaurants={filteredRestaurants}
+                      roomState={roomState}
+                      onSwipe={handleRestaurantSwipe}
+                      onMatch={setMatchedRestaurant}
+                      checkForMatch={checkForMatch}
+                      participantId={participantId}
+                      onBringToFront={handleBringRestaurantToFront}
+                      customOrder={restaurantOrder}
+                      onGenerateMore={handleGenerateMore}
+                      onTakeSecondLook={() => {
+                        // This will be handled by the SwipeInterface component
+                        console.log('Taking a second look at restaurants');
+                      }}
+                      hasReachedEndFromHook={hasReachedEnd}
+                      isLoadingMoreRestaurants={isLoadingMoreRestaurants}
+                    />
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="general" className="mt-0">
+                  <GeneralSwipeInterface 
+                    foodTypes={foodTypes}
                     roomState={roomState}
-                    onSwipe={handleRestaurantSwipe}
+                    onSwipe={handleFoodTypeSwipe}
                     onMatch={setMatchedRestaurant}
                     checkForMatch={checkForMatch}
                     participantId={participantId}
-                    onBringToFront={handleBringRestaurantToFront}
-                    customOrder={restaurantOrder}
-                    onGenerateMore={handleGenerateMore}
-                    onTakeSecondLook={() => {
-                      // This will be handled by the SwipeInterface component
-                      console.log('Taking a second look at restaurants');
-                    }}
-                    hasReachedEndFromHook={hasReachedEnd}
-                    isLoadingMoreRestaurants={isLoadingMoreRestaurants}
+                    onBringToFront={handleBringFoodTypeToFront}
+                    customOrder={foodTypeOrder}
                   />
-                )}
-              </TabsContent>
-              
-              <TabsContent value="general" className="mt-0">
-                <GeneralSwipeInterface 
-                  foodTypes={foodTypes}
-                  roomState={roomState}
-                  onSwipe={handleFoodTypeSwipe}
-                  onMatch={setMatchedRestaurant}
-                  checkForMatch={checkForMatch}
-                  participantId={participantId}
-                  onBringToFront={handleBringFoodTypeToFront}
-                  customOrder={foodTypeOrder}
-                />
-              </TabsContent>
-            </Tabs>
+                </TabsContent>
+              </Tabs>
+            )}
 
             {/* Instructions */}
             <div className="text-center mt-3 sm:mt-4 space-y-1 px-2">
               <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
-                {activeTab === 'specific' 
-                  ? 'Swipe right if you want to eat there, left if you don\'t'
-                  : 'Swipe right on food types you\'re craving, left if you don\'t want them'
+                {roomState?.location === 'demo' 
+                  ? 'Swipe right on food types you\'re craving, left if you don\'t want them'
+                  : activeTab === 'specific' 
+                    ? 'Swipe right if you want to eat there, left if you don\'t'
+                    : 'Swipe right on food types you\'re craving, left if you don\'t want them'
                 }
               </p>
               <p className="text-orange-600 text-xs sm:text-sm font-medium">
                 When everyone swipes right, it's a match! 🎉
               </p>
+              {roomState?.location === 'demo' && (
+                <p className="text-gray-500 text-xs">
+                  Demo mode • Food types only • Sign in for restaurants
+                </p>
+              )}
             </div>
 
             {/* Room Stats Modal */}
@@ -848,6 +953,20 @@ const Index = () => {
           onFiltersChange={handleFiltersChange}
         />
       )}
+
+      {/* Auth Modal for restaurant access */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onContinueWithoutAuth={() => setShowAuthModal(false)}
+        defaultTab="signin"
+      />
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={showUserProfile}
+        onClose={() => setShowUserProfile(false)}
+      />
     </div>
   );
 };
