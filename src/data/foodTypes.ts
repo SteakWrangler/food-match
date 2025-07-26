@@ -64,7 +64,7 @@ export const foodTypes: FoodType[] = [
     category: 'Popular', 
     emoji: '🍝',
     image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141',
-    description: 'Al dente pasta with rich sauces and fresh ingredients.'
+    description: 'Al dente pasta and noodles with rich sauces and fresh ingredients from various culinary traditions.'
   },
   { 
     id: 'sandwiches', 
@@ -217,14 +217,6 @@ export const foodTypes: FoodType[] = [
     emoji: '🌱',
     image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999',
     description: 'Plant-based cuisine that\'s both healthy and delicious.'
-  },
-  { 
-    id: 'noodles', 
-    name: 'Noodles (Generic)', 
-    category: 'Asian', 
-    emoji: '🍜',
-    image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624',
-    description: 'Various Asian noodle dishes from different culinary traditions.'
   },
   { 
     id: 'dessert', 
