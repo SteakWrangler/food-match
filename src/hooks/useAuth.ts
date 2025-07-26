@@ -47,27 +47,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const getCachedProfile = (userId: string): UserProfile | null => {
-    try {
-      const cached = localStorage.getItem(`profile_${userId}`);
-      return cached ? JSON.parse(cached) : null;
-    } catch {
-      return null;
-    }
-  };
-
-  const setCachedProfile = (userId: string, profile: UserProfile | null) => {
-    try {
-      if (profile) {
-        localStorage.setItem(`profile_${userId}`, JSON.stringify(profile));
-      } else {
-        localStorage.removeItem(`profile_${userId}`);
-      }
-    } catch {
-      // Ignore localStorage errors
-    }
-  };
-
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
     console.log('🔍 fetchProfile called for userId:', userId);
     try {
@@ -92,10 +71,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       };
 
       console.log('✅ Profile with name computed:', profileWithName);
-      
-      // Cache the profile
-      setCachedProfile(userId, profileWithName);
-      
       return profileWithName;
     } catch (error) {
       console.error('💥 Error in fetchProfile:', error);
@@ -111,21 +86,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(newSession?.user || null);
 
     if (newSession?.user) {
-      console.log('👤 User found, loading profile for:', newSession.user.id);
-      
-      // Load cached profile immediately for instant display
-      const cachedProfile = getCachedProfile(newSession.user.id);
-      if (cachedProfile) {
-        console.log('⚡ Using cached profile');
-        setProfile(cachedProfile);
-      }
-      
-      // Fetch fresh profile in background to update cache
-      const freshProfile = await fetchProfile(newSession.user.id);
-      console.log('👤 Fresh profile fetched:', freshProfile ? 'success' : 'failed');
-      if (freshProfile) {
-        setProfile(freshProfile);
-      }
+      console.log('👤 User found, fetching profile for:', newSession.user.id);
+      const userProfile = await fetchProfile(newSession.user.id);
+      console.log('👤 Profile fetched:', userProfile ? 'success' : 'failed');
+      setProfile(userProfile);
     } else {
       console.log('👤 No user, clearing profile');
       setProfile(null);
@@ -241,12 +205,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           : data.first_name || data.last_name || ''
       };
       setProfile(profileWithName);
-      
-      // Update cache when profile is updated
-      if (user) {
-        setCachedProfile(user.id, profileWithName);
-      }
-      
       return { error: null };
     } catch (error) {
       console.error('Update profile error:', error);
