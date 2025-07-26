@@ -575,11 +575,11 @@ const Index = () => {
               </button>
               
               {/* Stack icons vertically next to title on mobile/tablet */}
-              <div className="flex flex-col gap-1 lg:hidden">
+              <div className="flex flex-col gap-0.5 lg:hidden">
                 {activeTab === 'specific' && (
                   <button
                     onClick={() => setShowFilters(true)}
-                    className="p-1.5 rounded-md hover:bg-orange-50 transition-colors text-gray-600 hover:text-orange-600"
+                    className="p-1 rounded-md hover:bg-orange-50 transition-colors text-gray-600 hover:text-orange-600 flex items-center justify-center"
                   >
                     <Filter className="w-4 h-4" />
                   </button>
