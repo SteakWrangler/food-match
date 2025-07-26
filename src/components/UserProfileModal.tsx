@@ -161,11 +161,6 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
           {/* User Info */}
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
-                  {(user?.user_metadata?.name || user?.email?.charAt(0) || 'U').toUpperCase()}
-                </span>
-              </div>
               <div className="flex-1">
                 <div className="font-medium text-gray-900">
                   {user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}
