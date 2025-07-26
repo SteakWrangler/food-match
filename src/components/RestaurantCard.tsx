@@ -107,7 +107,7 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
 
         
         {/* Details Link - Always visible at bottom */}
-        <div className="px-2 sm:px-4 md:px-6 py-1 bg-gray-50 flex items-center justify-center flex-shrink-0"> {/* Further reduced padding */}
+        <div className="px-2 sm:px-4 md:px-6 py-1 bg-gray-50 flex items-center justify-center flex-shrink-0 touch-auto pointer-events-auto"> {/* Further reduced padding */}
           <a
             href={roomLocation 
               ? `https://www.google.com/maps/search/${encodeURIComponent(restaurant.name)}/@${encodeURIComponent(roomLocation)}`
@@ -115,7 +115,8 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
             }
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-orange-600 hover:text-orange-700 font-medium transition-colors"
+            className="inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-orange-600 hover:text-orange-700 font-medium transition-colors touch-auto"
+            style={{ touchAction: 'manipulation' }}
           >
             <span>View Details</span>
             <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
