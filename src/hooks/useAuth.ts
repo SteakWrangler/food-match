@@ -272,66 +272,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return { error: { message: 'No user logged in' } };
     }
 
-    console.log('updateProfile called with:', updates);
-    console.log('user.id:', user.id);
-    console.log('session:', session);
-
     try {
-      console.log('=== TESTING SIMPLE RPC CALL ===');
+      console.log('Updating profile with:', updates);
       
-      // First test a simple query to see if basic Supabase calls work
-      console.log('Testing basic select query...');
-      const testQuery = await supabase.from('profiles').select('id').eq('id', user.id).single();
-      console.log('Basic query result:', testQuery);
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
       
-      // If that works, test our RPC function
-      if (!testQuery.error) {
-        console.log('Basic query worked, testing RPC...');
-        
-        // Add a timeout to the RPC call
-        const rpcPromise = supabase.rpc('update_user_profile_debug', {
-          user_id_param: user.id,
-          first_name_param: updates.first_name || null,
-          last_name_param: updates.last_name || null,
-          avatar_url_param: updates.avatar_url || null,
-          preferences_param: updates.preferences || null
-        });
-        
-        // Race the RPC call against a timeout
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('RPC call timed out after 5 seconds')), 5000);
-        });
-        
-        try {
-          const result = await Promise.race([rpcPromise, timeoutPromise]) as any;
-          console.log('RPC response:', result);
-          
-          if (result.error) {
-            console.error('Database error:', result.error);
-            return { error: result.error };
-          }
+      if (updates.first_name !== undefined) updateData.first_name = updates.first_name;
+      if (updates.last_name !== undefined) updateData.last_name = updates.last_name;
+      if (updates.avatar_url !== undefined) updateData.avatar_url = updates.avatar_url;
+      if (updates.preferences !== undefined) updateData.preferences = updates.preferences;
 
-          if (result.data) {
-            // Add computed name field
-            const profileWithName = {
-              ...result.data,
-              name: result.data.first_name && result.data.last_name 
-                ? `${result.data.first_name} ${result.data.last_name}`.trim()
-                : result.data.first_name || result.data.last_name || ''
-            };
-            setProfile(profileWithName);
-          }
-          return { error: null };
-        } catch (rpcError) {
-          console.error('RPC call failed or timed out:', rpcError);
-          return { error: { message: rpcError instanceof Error ? rpcError.message : 'RPC call failed' } };
-        }
-      } else {
-        console.error('Basic query failed:', testQuery.error);
-        return { error: testQuery.error };
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Update error:', error);
+        return { error };
       }
+
+      if (data) {
+        // Add computed name field
+        const profileWithName = {
+          ...data,
+          name: data.first_name && data.last_name 
+            ? `${data.first_name} ${data.last_name}`.trim()
+            : data.first_name || data.last_name || ''
+        };
+        setProfile(profileWithName);
+        console.log('Profile updated successfully:', profileWithName);
+      }
+
+      return { error: null };
     } catch (err) {
-      console.error('Caught exception:', err);
+      console.error('Update profile error:', err);
       return { error: { message: 'Update failed' } };
     }
   };
