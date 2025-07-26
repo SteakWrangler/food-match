@@ -101,12 +101,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    console.log('Starting auth initialization...');
+    console.log('🚀 Starting auth initialization...');
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+    // Get initial session and handle it immediately
+    supabase.auth.getSession().then(({ data: { session: initialSession }, error }) => {
+      console.log('📱 Initial session check:', initialSession ? 'exists' : 'null', error ? `error: ${error.message}` : 'no error');
       handleAuthStateChange('INITIAL_SESSION', initialSession);
+    }).catch((err) => {
+      console.error('💥 Error getting initial session:', err);
+      setLoading(false); // Ensure we don't stay stuck loading
     });
 
     return () => {
