@@ -247,19 +247,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return { error: { message: 'No user logged in' } };
     }
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+        .select()
+        .single();
 
-    if (error) {
-      return { error };
+      if (error) {
+        return { error };
+      }
+
+      setProfile(data);
+      return { error: null };
+    } catch (err) {
+      return { error: { message: 'Update failed' } };
     }
-
-    setProfile(data);
-    return { error: null };
   };
 
   const resetPassword = async (email: string) => {
