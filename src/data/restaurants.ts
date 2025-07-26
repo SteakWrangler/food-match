@@ -7,4 +7,6 @@ export interface Restaurant {
   priceRange: string;
   vicinity?: string;
   openingHours?: string[];
+  cuisine?: string;
+  tags?: string[];
 }
