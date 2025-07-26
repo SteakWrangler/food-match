@@ -177,6 +177,16 @@ export type Database = {
         }
         Returns: Json
       }
+      update_user_profile_debug: {
+        Args: {
+          user_id_param: string
+          first_name_param?: string
+          last_name_param?: string
+          avatar_url_param?: string
+          preferences_param?: Json
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

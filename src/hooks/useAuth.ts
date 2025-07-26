@@ -252,20 +252,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('session:', session);
 
     try {
-      console.log('Starting profile update with direct table access...');
+      console.log('=== PROFILE UPDATE DEBUG START ===');
+      console.log('Updates being sent:', updates);
+      console.log('User ID:', user.id);
+      console.log('Session exists:', !!session);
+      console.log('Session token (first 50 chars):', session?.access_token?.substring(0, 50));
       
-      // Use service role to bypass RLS for this specific operation
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-        .select()
-        .single();
-
-      console.log('Direct table update response:', { data, error });
+      console.log('Calling update_user_profile_debug...');
+      const startTime = Date.now();
+      
+      const { data, error } = await supabase.rpc('update_user_profile_debug', {
+        user_id_param: user.id,
+        first_name_param: updates.first_name || null,
+        last_name_param: updates.last_name || null,
+        avatar_url_param: updates.avatar_url || null,
+        preferences_param: updates.preferences || null
+      });
+      
+      const endTime = Date.now();
+      console.log(`RPC call completed in ${endTime - startTime}ms`);
+      console.log('RPC response:', { data, error });
 
       if (error) {
         console.error('Database error:', error);
