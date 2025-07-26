@@ -618,11 +618,12 @@ const Index = () => {
           </Button>
         ) : (
           <div 
-            className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-orange-200 cursor-pointer hover:bg-white/95 transition-colors"
+            className="bg-white/90 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 shadow-lg border border-orange-200 cursor-pointer hover:bg-white/95 transition-colors max-w-[200px] sm:max-w-none"
             onClick={() => setShowUserProfile(true)}
           >
-            <div className="text-sm text-gray-700">
-              Signed in as <span className="font-medium text-gray-900">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
+            <div className="text-xs sm:text-sm text-gray-700 truncate">
+              <span className="hidden sm:inline">Signed in as </span>
+              <span className="font-medium text-gray-900">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
             </div>
           </div>
         )}
