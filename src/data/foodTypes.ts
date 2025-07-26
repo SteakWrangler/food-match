@@ -31,7 +31,7 @@ export const foodTypes: FoodType[] = [
     name: 'Tacos', 
     category: 'Popular', 
     emoji: '🌮',
-    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828',
+    image: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b',
     description: 'Fresh Mexican tacos with flavorful fillings and authentic toppings.'
   },
   { 
@@ -127,7 +127,7 @@ export const foodTypes: FoodType[] = [
     name: 'Mexican', 
     category: 'American', 
     emoji: '🌮',
-    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828',
+    image: 'https://images.unsplash.com/photo-1599974579688-8dbdd335c6b3',
     description: 'Tacos, burritos, quesadillas and other Mexican favorites.'
   },
   { 
@@ -135,7 +135,7 @@ export const foodTypes: FoodType[] = [
     name: 'Italian', 
     category: 'European', 
     emoji: '🍝',
-    image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141',
+    image: 'https://images.unsplash.com/photo-1572441713132-51c75654db73',
     description: 'Pasta, risotto, and classic Italian comfort food.'
   },
   { 
@@ -143,7 +143,7 @@ export const foodTypes: FoodType[] = [
     name: 'American (General)', 
     category: 'American', 
     emoji: '🍔',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d',
+    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd',
     description: 'Classic American comfort food, from steaks to mac and cheese.'
   },
   { 
@@ -207,32 +207,16 @@ export const foodTypes: FoodType[] = [
     name: 'Tex-Mex', 
     category: 'American', 
     emoji: '🌯',
-    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828',
+    image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d',
     description: 'Texas-style Mexican cuisine with bold flavors and hearty portions.'
-  },
-  { 
-    id: 'boba', 
-    name: 'Boba / Milk Tea', 
-    category: 'Drinks', 
-    emoji: '🥤',
-    image: 'https://images.unsplash.com/photo-1558857563-b371033873b8',
-    description: 'Sweet bubble tea and milk tea drinks with chewy tapioca pearls.'
   },
   { 
     id: 'vegan', 
     name: 'Vegan / Vegetarian', 
     category: 'Health', 
     emoji: '🌱',
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd',
+    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999',
     description: 'Plant-based cuisine that\'s both healthy and delicious.'
-  },
-  { 
-    id: 'smoothies', 
-    name: 'Smoothies / Juice', 
-    category: 'Health', 
-    emoji: '🥤',
-    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb',
-    description: 'Fresh pressed juices, smoothies, and healthy drinks.'
   },
   { 
     id: 'noodles', 
@@ -409,7 +393,7 @@ export const foodTypes: FoodType[] = [
     name: 'Build-Your-Own', 
     category: 'Experience', 
     emoji: '🥗',
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd',
+    image: 'https://images.unsplash.com/photo-1547592180-85f173990554',
     description: 'Customizable meals where you choose your own ingredients and combinations.'
   },
 ];
@@ -425,7 +409,6 @@ export const foodTypeCategories = [
   'Health',
   'Other',
   'Casual',
-  'Drinks',
   'Experience'
 ];
 
