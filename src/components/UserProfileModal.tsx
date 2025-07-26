@@ -96,7 +96,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
   };
 
   const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword || !confirmNewPassword) {
+    if (!newPassword || !confirmNewPassword) {
       setError('Please fill in all password fields.');
       return;
     }
