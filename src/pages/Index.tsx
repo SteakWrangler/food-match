@@ -49,7 +49,7 @@ const Index = () => {
   const [authRequiredForRestaurants, setAuthRequiredForRestaurants] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
 
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   
   const deviceType = useDeviceType();
   
@@ -624,8 +624,8 @@ const Index = () => {
                     className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
                   >
                     <User className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline font-medium text-xs sm:text-sm">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
-                    <span className="sm:hidden font-medium text-xs">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
+                     <span className="hidden sm:inline font-medium text-xs sm:text-sm">{profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
+                     <span className="sm:hidden font-medium text-xs">{profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
                   </button>
                 )}
               </div>
@@ -651,8 +651,8 @@ const Index = () => {
             className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
           >
             <User className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline font-medium text-xs sm:text-sm">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
-            <span className="sm:hidden font-medium text-xs">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
+            <span className="hidden sm:inline font-medium text-xs sm:text-sm">{profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
+            <span className="sm:hidden font-medium text-xs">{profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
           </button>
         )}
       </div>
