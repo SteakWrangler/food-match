@@ -35,6 +35,13 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
     }
   }, [isOpen]);
 
+  // Close modal when user signs out
+  useEffect(() => {
+    if (!user && isOpen) {
+      onClose();
+    }
+  }, [user, isOpen, onClose]);
+
   // Clear success message when user starts typing
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
@@ -49,31 +56,6 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
   const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setConfirmNewPassword(e.target.value);
     setSuccess(null);
-  };
-
-  const handleResendVerification = async () => {
-    if (!user?.email) return;
-    
-    setIsLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: user.email,
-      });
-
-      if (error) {
-        setError(error.message);
-      } else {
-        setSuccess('Verification email sent! Check your inbox.');
-      }
-    } catch (err) {
-      setError('Failed to send verification email. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleUpdateProfile = async () => {
@@ -137,6 +119,31 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
     }
   };
 
+  const handleResendVerification = async () => {
+    if (!user?.email) return;
+    
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user.email,
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setSuccess('Verification email sent! Check your inbox.');
+      }
+    } catch (err) {
+      setError('Failed to send verification email. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSignOut = async () => {
     console.log('Sign out button clicked');
     try {
@@ -169,30 +176,45 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
               </div>
             </div>
 
-            {/* Email Verification Status */}
+            {/* Email Verification Status - Only show if not verified */}
             {!isEmailVerified && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <div className="space-y-2">
-                    <div>Your email is not verified. Please check your inbox and click the verification link.</div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResendVerification}
-                      disabled={isLoading}
-                      className="text-xs"
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                      ) : (
-                        <Mail className="w-3 h-3 mr-1" />
-                      )}
-                      Resend Verification Email
-                    </Button>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-gray-500" />
+                  <span className="text-sm text-gray-700">Email Verification</span>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <span className="text-sm text-yellow-700">Email not verified</span>
                   </div>
-                </AlertDescription>
-              </Alert>
+                  
+                  <div className="text-xs text-gray-600 mb-2">
+                    Verify your email to secure your account and enable password reset functionality.
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResendVerification}
+                    disabled={isLoading}
+                    className="w-full"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Send Verification Email
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
 

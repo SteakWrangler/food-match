@@ -60,16 +60,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
+        console.log('Previous user state:', user?.email);
+        console.log('New session:', session ? 'exists' : 'null');
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('User authenticated, fetching profile...');
           await fetchProfile(session.user.id);
         } else {
+          console.log('User signed out, clearing profile...');
           setProfile(null);
         }
         
         setLoading(false);
+        console.log('Auth state change completed');
       }
     );
 
@@ -126,7 +132,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         options: {
           data: {
             name: name || email.split('@')[0],
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
 
@@ -191,10 +198,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('signOut function called');
     try {
       // Clear local state first to provide immediate feedback
+      console.log('Clearing local state...');
       setUser(null);
       setSession(null);
       setProfile(null);
       
+      console.log('Calling Supabase auth.signOut()...');
       const { error } = await supabase.auth.signOut();
       console.log('Supabase signOut result:', error ? `Error: ${error.message}` : 'Success');
       
@@ -203,15 +212,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Don't throw here, just log it and continue with local cleanup
       }
       
-      // Force a hard refresh to ensure all state is cleared
-      window.location.reload();
+      // Don't reload the page - let React handle the state changes
+      // The auth state change listener will handle the cleanup
+      console.log('Sign out completed, auth state change listener should handle cleanup');
     } catch (error) {
       console.error('Error signing out:', error);
-      // Even if there's an error, clear local state and reload
+      // Even if there's an error, clear local state
       setUser(null);
       setSession(null);
       setProfile(null);
-      window.location.reload();
     }
   };
 
