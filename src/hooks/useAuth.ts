@@ -50,12 +50,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
     console.log('🔍 fetchProfile called for userId:', userId);
     try {
-      const { data, error } = await supabase
+      // Add a timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+      );
+
+      const queryPromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+      
       console.log('📊 Profile query result:', { data, error });
 
       if (error) {
