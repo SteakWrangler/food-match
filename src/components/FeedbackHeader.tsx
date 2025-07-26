@@ -19,7 +19,11 @@ const feedbackSchema = z.object({
 
 type FeedbackFormData = z.infer<typeof feedbackSchema>;
 
-const FeedbackHeader = () => {
+interface FeedbackHeaderProps {
+  className?: string;
+}
+
+const FeedbackHeader: React.FC<FeedbackHeaderProps> = ({ className = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -86,7 +90,7 @@ const FeedbackHeader = () => {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <button 
-            className="text-gray-500 hover:text-orange-600 transition-colors"
+            className={`text-gray-500 hover:text-orange-600 transition-colors ${className}`}
             title="Send feedback or report issues"
           >
             <MessageCircle className="w-4 h-4" />

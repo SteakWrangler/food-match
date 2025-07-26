@@ -12,7 +12,7 @@ import EnhancedSwipeHistory from '@/components/EnhancedSwipeHistory';
 import FeedbackHeader from '@/components/FeedbackHeader';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Filter, Users, MapPin, QrCode, UserPlus, Loader2, BarChart3, User } from 'lucide-react';
+import { Filter, Users, MapPin, QrCode, UserPlus, Loader2, BarChart3, User, MessageCircle } from 'lucide-react';
 import useRoom from '@/hooks/useRoom';
 import { useDeviceType } from '@/hooks/use-mobile';
 import { foodTypes } from '@/data/foodTypes';
@@ -495,9 +495,9 @@ const Index = () => {
   const getHeaderClasses = () => {
     switch (deviceType) {
       case 'mobile':
-        return 'max-w-sm mx-auto px-2 py-2';
+        return 'max-w-sm mx-auto px-2 py-1';
       case 'tablet':
-        return 'max-w-2xl mx-auto px-6 py-3';
+        return 'max-w-2xl mx-auto px-6 py-2';
       default:
         return 'max-w-md mx-auto px-4 py-3'; // Keep original desktop layout
     }
@@ -525,10 +525,27 @@ const Index = () => {
       )}
 
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-orange-100 sticky top-0 z-40">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-orange-100 sticky top-0 z-40 min-h-[48px] sm:min-h-[56px]">
         <div className={getHeaderClasses()}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
+            {/* Left side - Filter and message buttons (mobile/tablet only) */}
+            <div className="flex items-center gap-1 lg:hidden">
+              {activeTab === 'specific' && (
+                <button
+                  onClick={() => setShowFilters(true)}
+                  className="hover:text-orange-600 text-gray-600 transition-colors"
+                  title="Filter restaurants"
+                >
+                  <Filter className="w-4 h-4" />
+                </button>
+              )}
+              <div className="-ml-1">
+                <FeedbackHeader />
+              </div>
+            </div>
+            
+            {/* Center - Title (all screen sizes) */}
+            <div className="flex items-center gap-6">
               <button 
                 onClick={() => {
                   if (isInRoom && !isLeavingRoom) {
@@ -539,7 +556,7 @@ const Index = () => {
                   }
                 }}
                 disabled={isLeavingRoom}
-                className={`flex items-center gap-2 transition-opacity ${
+                className={`flex items-center gap-0 transition-opacity ${
                   isInRoom 
                     ? 'hover:opacity-80 cursor-pointer' 
                     : 'hover:opacity-80'
@@ -573,40 +590,53 @@ const Index = () => {
                   Toss or Taste
                 </h1>
               </button>
-              
-              {/* Stack icons vertically next to title on mobile/tablet */}
-              <div className="flex flex-col items-center gap-0.5 lg:hidden">
+            </div>
+            
+            {/* Right side - Desktop icons and mobile auth */}
+            <div className="flex items-center gap-3">
+              {/* Desktop icons */}
+              <div className="hidden lg:flex items-center gap-3">
                 {activeTab === 'specific' && (
                   <button
                     onClick={() => setShowFilters(true)}
-                    className="hover:text-orange-600 text-gray-600 transition-colors leading-none"
-                    title="Filter restaurants"
+                    className="p-2 rounded-md hover:bg-orange-50 transition-colors text-gray-600 hover:text-orange-600"
                   >
                     <Filter className="w-4 h-4" />
                   </button>
                 )}
                 <FeedbackHeader />
               </div>
-            </div>
-            
-            {/* Keep icons on the right for desktop */}
-            <div className="hidden lg:flex items-center gap-2">
-              {activeTab === 'specific' && (
-                <button
-                  onClick={() => setShowFilters(true)}
-                  className="p-2 rounded-md hover:bg-orange-50 transition-colors text-gray-600 hover:text-orange-600"
-                >
-                  <Filter className="w-4 h-4" />
-                </button>
-              )}
-              <FeedbackHeader />
+              
+              {/* Mobile/Tablet auth button */}
+              <div className="lg:hidden">
+                {!user ? (
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
+                  >
+                    <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline font-medium text-xs sm:text-sm">Sign In/Sign Up</span>
+                    <span className="sm:hidden font-medium text-xs">Sign In</span>
+                  </button>
+                ) : (
+                  <div 
+                    className="bg-white/90 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 shadow-lg border border-orange-200 cursor-pointer hover:bg-white/95 transition-colors max-w-[200px] sm:max-w-none"
+                    onClick={() => setShowUserProfile(true)}
+                  >
+                    <div className="text-xs sm:text-sm text-gray-700 truncate">
+                      <span className="hidden sm:inline">Signed in as </span>
+                      <span className="font-medium text-gray-900">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Auth Button - Fixed to top-right */}
-      <div className="fixed top-2 right-2 sm:right-4 z-50">
+      {/* Auth Button - Desktop only */}
+      <div className="fixed top-2 right-2 sm:right-4 z-50 hidden lg:block">
         {!user ? (
           <button
             onClick={() => setShowAuthModal(true)}
