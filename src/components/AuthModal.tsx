@@ -128,17 +128,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <Dialog open={isOpen && !user} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-center">
+      <DialogContent className="sm:max-w-md p-4 sm:p-6">
+        <DialogHeader className="mb-3 sm:mb-4">
+          <DialogTitle className="text-center text-lg sm:text-xl">
             {activeTab === 'signup' ? 'Create Account' : 'Sign In'}
           </DialogTitle>
         </DialogHeader>
 
         {authLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
-            <span className="ml-2 text-gray-600">Loading...</span>
+          <div className="flex items-center justify-center py-6 sm:py-8">
+            <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-orange-500" />
+            <span className="ml-2 text-gray-600 text-sm sm:text-base">Loading...</span>
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
@@ -147,8 +147,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="signin" className="space-y-4">
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <TabsContent value="signin" className="space-y-3 sm:space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <div className="relative">
@@ -201,8 +201,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
               </form>
             </TabsContent>
 
-            <TabsContent value="signup" className="space-y-4">
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <TabsContent value="signup" className="space-y-3 sm:space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Name</Label>
                   <div className="relative">
@@ -302,22 +302,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </Tabs>
         )}
 
-        {/* Continue without authentication option */}
-        <div className="mt-6 pt-4 border-t">
-          <div className="text-center mb-3">
-            <p className="text-sm text-gray-600 mb-2">
-              Want to try the app first?
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onContinueWithoutAuth}
-              className="w-full text-gray-700 hover:text-gray-900 hover:bg-gray-50 border-gray-300"
-            >
-              Continue with limited functionality without signing in
-            </Button>
-          </div>
-        </div>
+
       </DialogContent>
     </Dialog>
   );

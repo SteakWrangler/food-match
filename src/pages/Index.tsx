@@ -676,7 +676,7 @@ const Index = () => {
               }}
             />
             
-            <div className="text-center space-y-4 sm:space-y-6 w-full max-w-md mx-auto relative z-20 px-4">
+            <div className="text-center space-y-4 sm:space-y-6 w-full max-w-lg mx-auto relative z-20 px-4">
               <div className="bg-white/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 shadow-xl border border-orange-100">
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3 sm:mb-4 md:mb-6">
                   Find food together!
@@ -688,7 +688,7 @@ const Index = () => {
                 <div className="space-y-3 sm:space-y-4 md:space-y-5">
                   <Button
                     onClick={() => setShowCreateRoom(true)}
-                    className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-base sm:text-lg md:text-xl py-4 sm:py-6 md:py-8"
+                    className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-sm sm:text-base md:text-lg py-4 sm:py-6 md:py-8 px-4 sm:px-6 md:px-8"
                   >
                     <QrCode className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2 sm:mr-3" />
                     Create Room & Share QR
@@ -697,7 +697,7 @@ const Index = () => {
                   <Button
                     onClick={() => setShowJoinRoom(true)}
                     variant="outline"
-                    className="w-full border-orange-200 hover:bg-orange-50 text-base sm:text-lg md:text-xl py-4 sm:py-6 md:py-8"
+                    className="w-full border-orange-200 hover:bg-orange-50 text-sm sm:text-base md:text-lg py-4 sm:py-6 md:py-8 px-4 sm:px-6 md:px-8"
                   >
                     <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2 sm:mr-3" />
                     Join Room
