@@ -186,7 +186,9 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <div className="flex-1">
                 <div className="font-medium text-gray-900">
-                  {profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}
+                  {profile?.first_name && profile?.last_name 
+                    ? `${profile.first_name} ${profile.last_name}` 
+                    : 'User'}
                 </div>
                 <div className="text-sm text-gray-500">{user?.email}</div>
               </div>
