@@ -619,15 +619,14 @@ const Index = () => {
                     <span className="sm:hidden font-medium text-xs">Sign In</span>
                   </button>
                 ) : (
-                  <div 
-                    className="bg-white/90 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 shadow-lg border border-orange-200 cursor-pointer hover:bg-white/95 transition-colors max-w-[200px] sm:max-w-none"
+                  <button
                     onClick={() => setShowUserProfile(true)}
+                    className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
                   >
-                    <div className="text-xs sm:text-sm text-gray-700 truncate">
-                      <span className="hidden sm:inline">Signed in as </span>
-                      <span className="font-medium text-gray-900">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
-                    </div>
-                  </div>
+                    <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline font-medium text-xs sm:text-sm">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
+                    <span className="sm:hidden font-medium text-xs">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
+                  </button>
                 )}
               </div>
             </div>
@@ -647,15 +646,14 @@ const Index = () => {
             <span className="sm:hidden font-medium text-xs">Sign In</span>
           </button>
         ) : (
-          <div 
-            className="bg-white/90 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 shadow-lg border border-orange-200 cursor-pointer hover:bg-white/95 transition-colors max-w-[200px] sm:max-w-none"
+          <button
             onClick={() => setShowUserProfile(true)}
+            className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
           >
-            <div className="text-xs sm:text-sm text-gray-700 truncate">
-              <span className="hidden sm:inline">Signed in as </span>
-              <span className="font-medium text-gray-900">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
-            </div>
-          </div>
+            <User className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline font-medium text-xs sm:text-sm">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
+            <span className="sm:hidden font-medium text-xs">{user.user_metadata?.name || user.email?.split('@')[0] || 'User'}</span>
+          </button>
         )}
       </div>
 
