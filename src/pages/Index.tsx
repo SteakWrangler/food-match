@@ -577,14 +577,12 @@ const Index = () => {
               {/* Move icons closer to title on mobile/tablet */}
               <div className="flex items-center gap-1 lg:hidden">
                 {activeTab === 'specific' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <button
                     onClick={() => setShowFilters(true)}
-                    className="border-orange-200 hover:bg-orange-50 px-2"
+                    className="p-1.5 rounded-md hover:bg-orange-50 transition-colors text-gray-600 hover:text-orange-600"
                   >
                     <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
-                  </Button>
+                  </button>
                 )}
                 <FeedbackHeader />
               </div>
@@ -593,14 +591,12 @@ const Index = () => {
             {/* Keep icons on the right for desktop */}
             <div className="hidden lg:flex items-center gap-2">
               {activeTab === 'specific' && (
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
                   onClick={() => setShowFilters(true)}
-                  className="border-orange-200 hover:bg-orange-50 px-3"
+                  className="p-2 rounded-md hover:bg-orange-50 transition-colors text-gray-600 hover:text-orange-600"
                 >
                   <Filter className="w-4 h-4" />
-                </Button>
+                </button>
               )}
               <FeedbackHeader />
             </div>
@@ -611,16 +607,14 @@ const Index = () => {
       {/* Auth Button - Fixed to top-right */}
       <div className="fixed top-2 right-2 sm:right-4 z-50">
         {!user ? (
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={() => setShowAuthModal(true)}
-            className="bg-white/90 backdrop-blur-sm border-orange-200 hover:bg-orange-50 text-orange-600 px-2 sm:px-3 py-1.5 sm:py-2 shadow-lg text-xs sm:text-sm"
+            className="bg-white/90 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-white/95 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
           >
-            <User className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-            <span className="hidden sm:inline font-medium">Sign In/Sign Up</span>
-            <span className="sm:hidden font-medium">Sign In</span>
-          </Button>
+            <User className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline font-medium text-xs sm:text-sm">Sign In/Sign Up</span>
+            <span className="sm:hidden font-medium text-xs">Sign In</span>
+          </button>
         ) : (
           <div 
             className="bg-white/90 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 shadow-lg border border-orange-200 cursor-pointer hover:bg-white/95 transition-colors max-w-[200px] sm:max-w-none"
