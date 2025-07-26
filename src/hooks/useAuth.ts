@@ -5,7 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 export interface UserProfile {
   id: string;
   email: string;
-  name?: string;
+  first_name?: string;
+  last_name?: string;
+  name?: string; // Computed field
   avatar_url?: string;
   preferences?: {
     foodPreferences?: string[];
@@ -94,7 +96,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (data) {
-        setProfile(data);
+        // Add computed name field for compatibility
+        const profileWithName = {
+          ...data,
+          name: data.first_name && data.last_name 
+            ? `${data.first_name} ${data.last_name}`.trim()
+            : data.first_name || data.last_name || ''
+        };
+        setProfile(profileWithName);
       } else {
         // Create profile if it doesn't exist
         const { data: newProfile, error: createError } = await supabase
@@ -103,6 +112,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             {
               id: userId,
               email: user?.email || '',
+              first_name: user?.user_metadata?.name || user?.email?.split('@')[0] || '',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             }
@@ -115,7 +125,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        setProfile(newProfile);
+        const profileWithName = {
+          ...newProfile,
+          name: newProfile.first_name || ''
+        };
+        setProfile(profileWithName);
       }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
@@ -147,7 +161,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             {
               id: data.user.id,
               email: data.user.email || '',
-              name: name || email.split('@')[0],
+              first_name: name || email.split('@')[0],
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             }
@@ -228,10 +242,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
+      // Convert name field to first_name for database
+      const dbUpdates: any = { ...updates };
+      if (updates.name !== undefined) {
+        dbUpdates.first_name = updates.name;
+        delete dbUpdates.name;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .update({
-          ...updates,
+          ...dbUpdates,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -243,7 +264,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (data) {
-        setProfile(data);
+        // Add computed name field for compatibility
+        const profileWithName = {
+          ...data,
+          name: data.first_name && data.last_name 
+            ? `${data.first_name} ${data.last_name}`.trim()
+            : data.first_name || data.last_name || ''
+        };
+        setProfile(profileWithName);
       }
 
       return { error: null };
