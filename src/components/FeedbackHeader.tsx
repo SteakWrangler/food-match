@@ -85,14 +85,12 @@ const FeedbackHeader = () => {
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-gray-500 hover:text-orange-600 hover:bg-orange-50 w-4 h-4 p-0"
+          <button 
+            className="text-gray-500 hover:text-orange-600 transition-colors"
             title="Send feedback or report issues"
           >
             <MessageCircle className="w-4 h-4" />
-          </Button>
+          </button>
         </DialogTrigger>
         
         <DialogContent className="sm:max-w-md">
