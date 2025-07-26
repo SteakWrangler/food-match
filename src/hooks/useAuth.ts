@@ -252,19 +252,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('session:', session);
 
     try {
-      console.log('Starting Supabase update...');
+      console.log('Starting profile update function call...');
       
-      const updatePromise = supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id)
-        .select();
+      const { data, error } = await supabase.rpc('update_user_profile', {
+        user_id_param: user.id,
+        first_name_param: updates.first_name || null,
+        last_name_param: updates.last_name || null,
+        avatar_url_param: updates.avatar_url || null,
+        preferences_param: updates.preferences || null
+      });
 
-      console.log('Supabase update promise created, waiting for response...');
-      
-      const { data, error } = await updatePromise;
-
-      console.log('Supabase response received:', { data, error });
+      console.log('Profile update function response:', { data, error });
 
       if (error) {
         console.error('Database error:', error);
