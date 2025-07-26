@@ -179,11 +179,19 @@ export class RoomService {
   async updateSwipe(params: UpdateSwipeParams): Promise<RoomData> {
     const { roomId, participantId, itemId, direction, type } = params;
     
+    console.log('🔄 roomService.updateSwipe called:', { roomId, participantId, itemId, direction, type });
+    
     // First get the current room
     const currentRoom = await this.getRoom(roomId);
     if (!currentRoom) {
+      console.log('❌ roomService.updateSwipe: Room not found');
       throw new Error('Room not found');
     }
+
+    console.log('📊 Current room swipes before update:', {
+      restaurantSwipes: currentRoom.restaurant_swipes,
+      foodTypeSwipes: currentRoom.food_type_swipes
+    });
 
     // Update the appropriate swipes object
     const updateData: any = {
@@ -200,6 +208,8 @@ export class RoomService {
       };
       updateData.restaurant_swipes = updatedRestaurantSwipes;
       
+      console.log('🔄 Updating restaurant swipes:', updatedRestaurantSwipes);
+      
       // REMOVED: Global restaurant progress tracking
       // Each user should have their own progress through the restaurant list
       // The current_restaurant_id and viewed_restaurant_ids should be per-participant
@@ -213,7 +223,11 @@ export class RoomService {
         }
       };
       updateData.food_type_swipes = updatedFoodTypeSwipes;
+      
+      console.log('🔄 Updating food type swipes:', updatedFoodTypeSwipes);
     }
+
+    console.log('📤 Sending update to Supabase:', updateData);
 
     const { data, error } = await supabase
       .from('rooms')

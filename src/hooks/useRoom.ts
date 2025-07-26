@@ -422,7 +422,16 @@ const useRoom = () => {
   };
 
   const addSwipe = async (itemId: string, direction: 'left' | 'right', type: 'restaurant' | 'foodType' = 'restaurant') => {
-    if (!roomState) return;
+    if (!roomState) {
+      console.log('❌ addSwipe: No room state available');
+      return;
+    }
+
+    console.log('🔄 addSwipe called:', { itemId, direction, type, participantId, roomId: roomState.id });
+    console.log('📊 Current swipes before update:', {
+      restaurantSwipes: roomState.restaurantSwipes,
+      foodTypeSwipes: roomState.foodTypeSwipes
+    });
 
     try {
       const updatedRoomData = await roomService.updateSwipe({
@@ -433,10 +442,18 @@ const useRoom = () => {
         type
       });
 
+      console.log('✅ Swipe saved successfully, updated room data:', updatedRoomData);
+      console.log('📊 Updated swipes:', {
+        restaurantSwipes: updatedRoomData.restaurant_swipes,
+        foodTypeSwipes: updatedRoomData.food_type_swipes
+      });
+
       const updatedRoomState = convertRoomDataToState(updatedRoomData);
       setRoomState(updatedRoomState);
+      
+      console.log('✅ Room state updated with new swipes');
     } catch (error) {
-      console.error('Error adding swipe:', error);
+      console.error('❌ Error adding swipe:', error);
       throw error;
     }
   };
