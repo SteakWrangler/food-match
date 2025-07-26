@@ -255,8 +255,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .from('profiles')
         .update(updates)
         .eq('id', user.id)
-        .select()
-        .single();
+        .select();
 
       console.log('Supabase response:', { data, error });
 
@@ -265,7 +264,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { error };
       }
 
-      setProfile(data);
+      if (data && data.length > 0) {
+        setProfile(data[0]);
+      }
       return { error: null };
     } catch (err) {
       console.error('Caught exception:', err);
