@@ -528,7 +528,7 @@ const Index = () => {
       <header className="bg-white/80 backdrop-blur-sm border-b border-orange-100 sticky top-0 z-40">
         <div className={getHeaderClasses()}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button 
                 onClick={() => {
                   if (isInRoom && !isLeavingRoom) {
@@ -573,17 +573,33 @@ const Index = () => {
                   Toss or Taste
                 </h1>
               </button>
+              
+              {/* Move icons closer to title on mobile/tablet */}
+              <div className="flex items-center gap-1 lg:hidden">
+                {activeTab === 'specific' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters(true)}
+                    className="border-orange-200 hover:bg-orange-50 px-2"
+                  >
+                    <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
+                  </Button>
+                )}
+                <FeedbackHeader />
+              </div>
             </div>
             
-            <div className="flex items-center gap-1 sm:gap-2">
+            {/* Keep icons on the right for desktop */}
+            <div className="hidden lg:flex items-center gap-2">
               {activeTab === 'specific' && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowFilters(true)}
-                  className="border-orange-200 hover:bg-orange-50 px-2 sm:px-3"
+                  className="border-orange-200 hover:bg-orange-50 px-3"
                 >
-                  <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <Filter className="w-4 h-4" />
                 </Button>
               )}
               <FeedbackHeader />
