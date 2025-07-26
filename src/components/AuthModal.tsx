@@ -23,7 +23,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   onContinueWithoutAuth,
   defaultTab = 'signin' 
 }) => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -96,6 +96,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setConfirmPassword('');
     setName('');
   };
+
+  // If user is already authenticated, close the modal
+  React.useEffect(() => {
+    if (user && !authLoading) {
+      onClose();
+      onAuthSuccess?.();
+    }
+  }, [user, authLoading, onClose, onAuthSuccess]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
