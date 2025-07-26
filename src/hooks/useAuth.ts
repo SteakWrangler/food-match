@@ -67,10 +67,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          console.log('User authenticated, fetching profile...');
           await fetchProfile(session.user.id);
         } else {
-          console.log('User signed out, clearing profile...');
           setProfile(null);
         }
         
@@ -230,20 +228,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select()
+        .single();
 
       if (error) {
         return { error };
       }
 
-      if (profile) {
-        setProfile({ ...profile, ...updates });
+      if (data) {
+        setProfile(data);
       }
 
       return { error: null };

@@ -66,9 +66,10 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
     setSuccess(null);
 
     try {
-      const { error } = await updateProfile({ name: name.trim() });
-      if (error) {
-        setError(error.message);
+      const result = await updateProfile({ name: name.trim() });
+      
+      if (result.error) {
+        setError(result.error.message);
       } else {
         setSuccess('Profile updated successfully!');
       }
