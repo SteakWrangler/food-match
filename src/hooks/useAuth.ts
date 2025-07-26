@@ -248,10 +248,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      // Convert name field to first_name for database
+      // Remove the computed name field if present (it shouldn't be in updates)
       const dbUpdates: any = { ...updates };
-      if (updates.name !== undefined) {
-        dbUpdates.first_name = updates.name;
+      if (dbUpdates.name !== undefined) {
         delete dbUpdates.name;
       }
 

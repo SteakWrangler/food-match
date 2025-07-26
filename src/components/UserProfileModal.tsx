@@ -23,7 +23,8 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
   const isEmailVerified = user?.email_confirmed_at;
 
@@ -42,14 +43,20 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
     }
   }, [user, isOpen, onClose]);
 
-  // Update name when profile changes
+  // Update names when profile changes
   useEffect(() => {
-    setName(profile?.name || user?.user_metadata?.name || '');
-  }, [profile?.name, user?.user_metadata?.name]);
+    setFirstName(profile?.first_name || user?.user_metadata?.firstName || '');
+    setLastName(profile?.last_name || user?.user_metadata?.lastName || '');
+  }, [profile?.first_name, profile?.last_name, user?.user_metadata?.firstName, user?.user_metadata?.lastName]);
 
   // Clear success message when user starts typing
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setName(e.target.value);
+  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFirstName(e.target.value);
+    setSuccess(null);
+  };
+
+  const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLastName(e.target.value);
     setSuccess(null);
   };
 
@@ -64,14 +71,17 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
   };
 
   const handleUpdateProfile = async () => {
-    if (!name.trim()) return;
+    if (!firstName.trim() && !lastName.trim()) return;
     
     setIsLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      const result = await updateProfile({ name: name.trim() });
+      const result = await updateProfile({ 
+        first_name: firstName.trim(),
+        last_name: lastName.trim()
+      });
       
       if (result.error) {
         setError(result.error.message);
@@ -228,24 +238,41 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
           <div className="space-y-4">
             <h3 className="font-medium text-gray-900">Profile Settings</h3>
             
-            <div className="space-y-2">
-              <Label htmlFor="name">Display Name</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={handleNameChange}
-                  placeholder="Enter your name"
-                  className="pl-10"
-                />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={handleFirstNameChange}
+                    placeholder="Enter your first name"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={handleLastNameChange}
+                    placeholder="Enter your last name"
+                    className="pl-10"
+                  />
+                </div>
               </div>
             </div>
 
             <Button
               onClick={handleUpdateProfile}
-              disabled={isLoading || !name.trim()}
+              disabled={isLoading || (!firstName.trim() && !lastName.trim())}
               className="w-full"
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
