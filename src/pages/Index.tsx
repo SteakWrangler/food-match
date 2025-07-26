@@ -47,7 +47,6 @@ const Index = () => {
   const [isLeavingRoom, setIsLeavingRoom] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authRequiredForRestaurants, setAuthRequiredForRestaurants] = useState(false);
-  const [isAuthenticatedRoom, setIsAuthenticatedRoom] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
 
   const { user, signOut } = useAuth();
@@ -222,6 +221,8 @@ const Index = () => {
     }
   }, [roomState?.participants?.length]);
 
+
+
   // Check for room parameter in URL
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -256,7 +257,6 @@ const Index = () => {
     // Close the modal immediately when room creation starts
     setShowCreateRoom(false);
     setIsCreatingRoom(true);
-    setIsAuthenticatedRoom(isAuthenticated || false);
     
         try {
       if (isAuthenticated !== false) {
@@ -752,7 +752,6 @@ const Index = () => {
                   <TabsTrigger 
                     value="specific" 
                     className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
-                    disabled={!isAuthenticatedRoom}
                   >
                     Restaurants
                   </TabsTrigger>
@@ -778,21 +777,7 @@ const Index = () => {
                 </div>
                 
                 <TabsContent value="specific" className="mt-2">
-                  {!isAuthenticatedRoom ? (
-                    <div className="text-center py-6 sm:py-8 md:py-12">
-                      <div className="text-3xl sm:text-4xl md:text-6xl mb-3 sm:mb-4">🔒</div>
-                      <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-2">Sign in for restaurants</h3>
-                      <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-3 sm:mb-4 px-2">
-                        Create an account to access restaurant swiping and location-based features.
-                      </p>
-                      <Button
-                        onClick={() => setShowAuthModal(true)}
-                        className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
-                      >
-                        Sign In
-                      </Button>
-                    </div>
-                  ) : filteredRestaurants.length === 0 ? (
+                  {filteredRestaurants.length === 0 ? (
                     <div className="text-center py-6 sm:py-8 md:py-12">
                       <div className="text-3xl sm:text-4xl md:text-6xl mb-3 sm:mb-4">🍽️</div>
                       <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-2">No restaurants found</h3>
