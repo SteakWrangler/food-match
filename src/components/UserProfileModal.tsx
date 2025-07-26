@@ -23,7 +23,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [name, setName] = useState(profile?.name || user?.user_metadata?.name || '');
+  const [name, setName] = useState('');
 
   const isEmailVerified = user?.email_confirmed_at;
 
@@ -41,6 +41,11 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
       onClose();
     }
   }, [user, isOpen, onClose]);
+
+  // Update name when profile changes
+  useEffect(() => {
+    setName(profile?.name || user?.user_metadata?.name || '');
+  }, [profile?.name, user?.user_metadata?.name]);
 
   // Clear success message when user starts typing
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,7 +176,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <div className="flex-1">
                 <div className="font-medium text-gray-900">
-                  {user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}
+                  {profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}
                 </div>
                 <div className="text-sm text-gray-500">{user?.email}</div>
               </div>
