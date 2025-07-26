@@ -27,7 +27,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   currentLocation = null,
   needsLocation = false
 }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [name, setName] = useState('');
   const [location, setLocation] = useState(currentLocation || '');
   const [formattedAddress, setFormattedAddress] = useState<string | null>(null);
@@ -42,9 +42,9 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && !isLoading) {
+    if ((user ? (profile?.name || user.email?.split('@')[0] || 'User') : name.trim()) && !isLoading) {
       const roomData = {
-        name: name.trim(),
+        name: user ? (profile?.name || user.email?.split('@')[0] || 'User') : name.trim(),
         location: needsLocation ? location.trim() : undefined,
         formattedAddress: needsLocation ? (formattedAddress || undefined) : undefined,
       };
@@ -250,7 +250,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     }
   };
 
-  const isFormValid = name.trim() && (!needsLocation || location.trim());
+  const isFormValid = (user || name.trim()) && (!needsLocation || location.trim());
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
@@ -275,7 +275,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-green-600" />
                   <span className="text-sm text-green-700">
-                    Signed in as {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
+                    Signed in as {profile?.name || user.email?.split('@')[0] || 'User'}
                   </span>
                 </div>
               </div>
@@ -291,19 +291,21 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             )}
 
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-            <div>
-              <Label htmlFor="name" className="text-gray-700 text-sm sm:text-base">Your Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-                className="mt-1 text-sm sm:text-base"
-                autoFocus
-                disabled={isLoading}
-              />
-            </div>
+            {!user && (
+              <div>
+                <Label htmlFor="name" className="text-gray-700 text-sm sm:text-base">Your Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  className="mt-1 text-sm sm:text-base"
+                  autoFocus
+                  disabled={isLoading}
+                />
+              </div>
+            )}
 
             {needsLocation && (
               <>
