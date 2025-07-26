@@ -88,7 +88,7 @@ const FeedbackHeader = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-gray-500 hover:text-orange-600 hover:bg-orange-50 p-0.5 sm:p-1 md:p-1.5 lg:p-2 h-auto w-auto rounded-r-md"
+            className="text-gray-500 hover:text-orange-600 hover:bg-orange-50 p-1.5 h-auto w-auto rounded-md"
             title="Send feedback or report issues"
           >
             <MessageCircle className="w-4 h-4" />
