@@ -902,7 +902,6 @@ const Index = () => {
           onClose={() => setShowCreateRoom(false)}
           isLoading={isCreatingRoom}
           currentLocation=""
-          needsLocation={!location}
         />
       )}
 

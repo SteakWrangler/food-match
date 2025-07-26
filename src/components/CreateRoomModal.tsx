@@ -17,15 +17,13 @@ interface CreateRoomModalProps {
   onClose: () => void;
   isLoading?: boolean;
   currentLocation?: string | null;
-  needsLocation?: boolean;
 }
 
 const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ 
   onCreateRoom, 
   onClose, 
   isLoading = false,
-  currentLocation = null,
-  needsLocation = false
+  currentLocation = null
 }) => {
   const { user, profile } = useAuth();
   const [name, setName] = useState('');
@@ -34,47 +32,31 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const [displayLocation, setDisplayLocation] = useState('');
   const [isDetecting, setIsDetecting] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [pendingRoomData, setPendingRoomData] = useState<{
-    name: string;
-    location?: string;
-    formattedAddress?: string;
-  } | null>(null);
+  const [showAccessChoice, setShowAccessChoice] = useState(!user); // Show choice if not authenticated
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if ((user ? (profile?.name || user.email?.split('@')[0] || 'User') : name.trim()) && !isLoading) {
-      const roomData = {
-        name: user ? (profile?.name || user.email?.split('@')[0] || 'User') : name.trim(),
-        location: needsLocation ? location.trim() : undefined,
-        formattedAddress: needsLocation ? (formattedAddress || undefined) : undefined,
-      };
-
-      if (user) {
-        // User is authenticated, create room normally
-        onCreateRoom(roomData.name, roomData.location, roomData.formattedAddress, true);
-      } else {
-        // User is not authenticated, show auth modal
-        setPendingRoomData(roomData);
-        setShowAuthModal(true);
-      }
+    if (!isLoading && user && location.trim()) {
+      // Authenticated user creating complete room
+      const userName = profile?.name || user.email?.split('@')[0] || 'User';
+      onCreateRoom(userName, location.trim(), formattedAddress || undefined, true);
     }
+  };
+
+  const handleLimitedAccess = () => {
+    // Create food type room only (no location needed)
+    onCreateRoom(name.trim(), undefined, undefined, false);
+  };
+
+  const handleSignInChoice = () => {
+    setShowAccessChoice(false);
+    setShowAuthModal(true);
   };
 
   const handleAuthSuccess = () => {
-    if (pendingRoomData) {
-      // Allow room creation for users who have signed up (even if email not verified)
-      onCreateRoom(pendingRoomData.name, pendingRoomData.location, pendingRoomData.formattedAddress, true);
-      setPendingRoomData(null);
-      setShowAuthModal(false);
-    }
-  };
-
-  const handleContinueWithoutAuth = () => {
-    if (pendingRoomData) {
-      onCreateRoom(pendingRoomData.name, pendingRoomData.location, pendingRoomData.formattedAddress, false);
-      setPendingRoomData(null);
-      setShowAuthModal(false);
-    }
+    // After successful auth, user will be authenticated and can create complete room
+    setShowAuthModal(false);
+    setShowAccessChoice(false);
   };
 
   const handleGeocode = async (name: string, address: string) => {
@@ -250,7 +232,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     }
   };
 
-  const isFormValid = (user || name.trim()) && (!needsLocation || location.trim());
+  const isFormValid = user ? location.trim() : name.trim();
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
@@ -270,7 +252,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
             </div>
 
             {/* Authentication Status */}
-            {user ? (
+            {user && (
               <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-green-600" />
@@ -279,87 +261,109 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   </span>
                 </div>
               </div>
-            ) : (
-              <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-orange-600" />
-                  <span className="text-sm text-orange-700">
-                    Sign in for full features
-                  </span>
-                </div>
-              </div>
             )}
 
-          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-            {!user && (
-              <div>
-                <Label htmlFor="name" className="text-gray-700 text-sm sm:text-base">Your Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your name"
-                  className="mt-1 text-sm sm:text-base"
-                  autoFocus
+          {/* Show access choice for unauthenticated users */}
+          {showAccessChoice && !user ? (
+            <div className="space-y-4">
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Choose Your Experience</h3>
+                <p className="text-sm text-gray-600">Sign in for restaurants and food types, or continue with food types only</p>
+              </div>
+
+              <div className="space-y-3">
+                <Button 
+                  onClick={handleSignInChoice}
+                  className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white"
                   disabled={isLoading}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Sign in for Complete Access
+                </Button>
+                
+                <div className="text-center">
+                  <span className="text-xs text-gray-500">or</span>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="name" className="text-gray-700 text-sm">Your Name</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Enter your name"
+                      className="mt-1 text-sm"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  
+                  <Button 
+                    onClick={handleLimitedAccess}
+                    variant="outline"
+                    className="w-full"
+                    disabled={!name.trim() || isLoading}
+                  >
+                    Continue with Limited Access
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : user ? (
+            // Authenticated user - show location form
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+              <div>
+                <Label htmlFor="location" className="text-gray-700 text-sm sm:text-base">
+                  Enter your city or zip code
+                </Label>
+                <Input
+                  id="location"
+                  type="text"
+                  value={displayLocation}
+                  onChange={(e) => {
+                    setLocation(e.target.value);
+                    setDisplayLocation(e.target.value);
+                  }}
+                  onBlur={(e) => handleAddressInput(e.target.value)}
+                  placeholder="e.g., San Francisco, CA or 94102"
+                  className="mt-1 text-sm sm:text-base"
+                  disabled={isLoading}
+                  autoFocus
                 />
               </div>
-            )}
 
-            {needsLocation && (
-              <>
-                <div>
-                  <Label htmlFor="location" className="text-gray-700 text-sm sm:text-base">
-                    Enter your city or zip code
-                  </Label>
-                  <Input
-                    id="location"
-                    type="text"
-                    value={displayLocation}
-                    onChange={(e) => {
-                      setLocation(e.target.value);
-                      setDisplayLocation(e.target.value);
-                    }}
-                    onBlur={(e) => handleAddressInput(e.target.value)}
-                    placeholder="e.g., San Francisco, CA or 94102"
-                    className="mt-1 text-sm sm:text-base"
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full text-sm sm:text-base"
-                  onClick={handleUseCurrentLocation}
-                  disabled={isDetecting || isLoading}
-                >
-                  <Navigation className="w-4 h-4 mr-2" />
-                  {isDetecting ? 'Detecting...' : 'Use Current Location'}
-                </Button>
-              </>
-            )}
-
-            <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4">
-              <Button 
+              <Button
                 type="button"
-                variant="outline" 
-                className="flex-1 text-sm sm:text-base"
-                onClick={onClose}
-                disabled={isLoading}
+                variant="outline"
+                className="w-full text-sm sm:text-base"
+                onClick={handleUseCurrentLocation}
+                disabled={isDetecting || isLoading}
               >
-                Cancel
+                <Navigation className="w-4 h-4 mr-2" />
+                {isDetecting ? 'Detecting...' : 'Use Current Location'}
               </Button>
-              <Button 
-                type="submit"
-                className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-sm sm:text-base"
-                disabled={!isFormValid || isLoading}
-              >
-                {isLoading ? 'Creating Room...' : 'Create Room'}
-              </Button>
-            </div>
-          </form>
+
+              <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4">
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  className="flex-1 text-sm sm:text-base"
+                  onClick={onClose}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-sm sm:text-base"
+                  disabled={!isFormValid || isLoading}
+                >
+                  {isLoading ? 'Creating Room...' : 'Create Room'}
+                </Button>
+              </div>
+            </form>
+          ) : null}
         </div>
       </Card>
 
@@ -368,10 +372,13 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
         isOpen={showAuthModal}
         onClose={() => {
           setShowAuthModal(false);
-          setPendingRoomData(null);
+          setShowAccessChoice(true);
         }}
         onAuthSuccess={handleAuthSuccess}
-        onContinueWithoutAuth={handleContinueWithoutAuth}
+        onContinueWithoutAuth={() => {
+          setShowAuthModal(false);
+          setShowAccessChoice(true);
+        }}
         defaultTab="signin"
       />
     </div>
