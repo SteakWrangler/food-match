@@ -20,8 +20,10 @@ import { Restaurant } from '@/data/restaurants';
 import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { getRoomHistoryService, RoomHistoryEntry } from '@/integrations/supabase/roomHistoryService';
 import AuthModal from '@/components/AuthModal';
 import UserProfileModal from '@/components/UserProfileModal';
+import UserSettingsModal from '@/components/UserSettingsModal';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('specific');
@@ -48,6 +50,7 @@ const Index = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authRequiredForRestaurants, setAuthRequiredForRestaurants] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
+  const [showUserSettings, setShowUserSettings] = useState(false);
 
   const { user, profile, signOut } = useAuth();
   
@@ -344,6 +347,25 @@ const Index = () => {
     
     setIsLeavingRoom(true);
     try {
+      // Save room to history if user is authenticated and is the host
+      if (user && isHost && roomState) {
+        const roomHistoryService = getRoomHistoryService();
+        try {
+          await roomHistoryService.saveRoomHistoryIfNotExists({
+            userId: user.id,
+            roomId: roomState.id,
+            roomName: roomState.participants.find(p => p.id === roomState.hostId)?.name,
+            location: roomState.location,
+            restaurants: roomState.restaurants,
+            filters: roomState.filters
+          });
+          console.log('Room saved to history');
+        } catch (historyError) {
+          console.error('Error saving room to history:', historyError);
+          // Don't block room leaving if history saving fails
+        }
+      }
+      
       // Clean up session storage
       sessionStorage.removeItem('toss_leaving_room');
       sessionStorage.removeItem('toss_participant_id');
@@ -371,6 +393,33 @@ const Index = () => {
 
   const handleBringFoodTypeToFront = (foodTypeId: string) => {
     setFoodTypeOrder(prev => [foodTypeId, ...prev.filter(id => id !== foodTypeId)]);
+  };
+
+  const handleRecreateRoom = async (roomData: RoomHistoryEntry) => {
+    if (!user) return;
+
+    try {
+      // Create a new room with the same data
+      const roomName = roomData.room_name || `Room ${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      
+      // Use the createRoom function from useRoom hook
+      const roomId = await createRoom(
+        roomName,
+        roomData.location,
+        roomData.filters || defaultFilters,
+        undefined // formattedAddress - we'll use the coordinates
+      );
+
+      if (roomId) {
+        // The room will be created with the saved restaurants
+        // The useRoom hook will handle loading the restaurants
+        console.log('Room recreated successfully with saved data');
+      } else {
+        console.error('Failed to recreate room');
+      }
+    } catch (error) {
+      console.error('Error recreating room:', error);
+    }
   };
 
   const handleGenerateMore = async () => {
@@ -620,7 +669,7 @@ const Index = () => {
                   </button>
                 ) : profile?.first_name && profile?.last_name ? (
                   <button
-                    onClick={() => setShowUserProfile(true)}
+                    onClick={() => setShowUserSettings(true)}
                     className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
                   >
                     <User className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -657,7 +706,7 @@ const Index = () => {
           </button>
         ) : profile?.first_name && profile?.last_name ? (
           <button
-            onClick={() => setShowUserProfile(true)}
+            onClick={() => setShowUserSettings(true)}
             className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
           >
             <User className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -1000,6 +1049,14 @@ const Index = () => {
         isOpen={showUserProfile}
         onClose={() => setShowUserProfile(false)}
       />
+
+      {/* User Settings Modal */}
+      {showUserSettings && (
+        <UserSettingsModal
+          onClose={() => setShowUserSettings(false)}
+          onRecreateRoom={handleRecreateRoom}
+        />
+      )}
     </div>
   );
 };

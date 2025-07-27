@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Star, MapPin, ExternalLink } from 'lucide-react';
 
 import { useDeviceType } from '@/hooks/use-mobile';
+import FavoriteButton from './FavoriteButton';
 
 interface Restaurant {
   id: string;
@@ -81,6 +82,15 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onSwipe, st
               target.src = '/placeholder.svg';
             }}
           />
+          
+          {/* Favorites Button - Overlay on top right */}
+          <div className="absolute top-2 right-2 z-10">
+            <FavoriteButton 
+              restaurant={restaurant}
+              size="sm"
+              className="shadow-lg"
+            />
+          </div>
         </div>
 
         {/* Restaurant Name and Basic Info */}
