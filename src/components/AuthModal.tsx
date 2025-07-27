@@ -37,12 +37,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔐 handleSubmit called with activeTab:', activeTab);
+    console.log('🔐 Email:', email);
+    console.log('🔐 Password length:', password.length);
+    
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
       if (activeTab === 'signup') {
+        console.log('🔐 Processing signup...');
         // Check password confirmation
         if (password !== confirmPassword) {
           setError('Passwords do not match');
@@ -69,15 +74,19 @@ const AuthModal: React.FC<AuthModalProps> = ({
           }, 3000);
         }
       } else {
+        console.log('🔐 Processing signin...');
         const { error } = await signIn(email, password);
+        console.log('🔐 Signin result:', { error });
         if (error) {
           setError(error.message);
         } else {
+          console.log('🔐 Signin successful, closing modal');
           onClose();
           onAuthSuccess?.();
         }
       }
     } catch (err) {
+      console.error('🔐 Error in handleSubmit:', err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
