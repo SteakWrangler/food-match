@@ -123,8 +123,8 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
         disabled:opacity-50
         disabled:cursor-not-allowed
         ${isFavorited 
-          ? 'bg-red-500 text-white shadow-lg' 
-          : 'bg-white text-gray-400 hover:text-red-500 hover:bg-red-50'
+          ? 'bg-destructive text-destructive-foreground shadow-lg' 
+          : 'bg-background text-muted-foreground hover:text-destructive hover:bg-destructive/10'
         }
         ${isLoading ? 'animate-pulse' : ''}
       `}
