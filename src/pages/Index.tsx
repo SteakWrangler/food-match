@@ -667,21 +667,27 @@ const Index = () => {
                     <span className="hidden sm:inline font-medium text-xs sm:text-sm">Sign In/Sign Up</span>
                     <span className="sm:hidden font-medium text-xs">Sign In</span>
                   </button>
-                ) : profile?.first_name && profile?.last_name ? (
+                ) : user ? (
                   <button
                     onClick={() => setShowUserSettings(true)}
                     className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
                   >
                     <User className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span className="hidden sm:inline font-medium text-xs sm:text-sm">
-                      {`${profile.first_name} ${profile.last_name}`}
+                      {profile?.first_name && profile?.last_name 
+                        ? `${profile.first_name} ${profile.last_name}`
+                        : profile?.name || user.email?.split('@')[0] || 'User'
+                      }
                     </span>
                     <span className="sm:hidden font-medium text-xs">
-                      {`${profile.first_name} ${profile.last_name}`}
+                      {profile?.first_name && profile?.last_name 
+                        ? `${profile.first_name} ${profile.last_name}`
+                        : profile?.name || user.email?.split('@')[0] || 'User'
+                      }
                     </span>
                   </button>
                 ) : (
-                  // Show loading state while profile loads
+                  // Show loading state while auth loads
                   <div className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1 sm:gap-2 opacity-50">
                     <User className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
                     <span className="hidden sm:inline font-medium text-xs sm:text-sm text-gray-500">Loading...</span>
@@ -704,21 +710,27 @@ const Index = () => {
             <span className="hidden sm:inline font-medium text-xs sm:text-sm">Sign In/Sign Up</span>
             <span className="sm:hidden font-medium text-xs">Sign In</span>
           </button>
-        ) : profile?.first_name && profile?.last_name ? (
+        ) : user ? (
           <button
             onClick={() => setShowUserSettings(true)}
             className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
           >
             <User className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline font-medium text-xs sm:text-sm">
-              {`${profile.first_name} ${profile.last_name}`}
+              {profile?.first_name && profile?.last_name 
+                ? `${profile.first_name} ${profile.last_name}`
+                : profile?.name || user.email?.split('@')[0] || 'User'
+              }
             </span>
             <span className="sm:hidden font-medium text-xs">
-              {`${profile.first_name} ${profile.last_name}`}
+              {profile?.first_name && profile?.last_name 
+                ? `${profile.first_name} ${profile.last_name}`
+                : profile?.name || user.email?.split('@')[0] || 'User'
+              }
             </span>
           </button>
         ) : (
-          // Show loading state while profile loads
+          // Show loading state while auth loads
           <div className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1 sm:gap-2 opacity-50">
             <User className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
             <span className="hidden sm:inline font-medium text-xs sm:text-sm text-gray-500">Loading...</span>
