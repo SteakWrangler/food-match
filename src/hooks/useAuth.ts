@@ -48,6 +48,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
+    console.log('🔍 DEBUG: fetchProfile called for userId:', userId);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -55,39 +56,58 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('id', userId)
         .maybeSingle();
 
+      console.log('📊 DEBUG: Profile query result:', { data, error });
+      console.log('📊 DEBUG: Raw profile data:', JSON.stringify(data, null, 2));
+
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('❌ DEBUG: Error fetching profile:', error);
         return null;
       }
 
       if (!data) {
+        console.log('⚠️ DEBUG: No profile data found');
         return null;
       }
 
+      console.log('🔤 DEBUG: data.first_name =', data.first_name);
+      console.log('🔤 DEBUG: data.email =', data.email);
+      console.log('🔤 DEBUG: email split =', data.email?.split('@')[0]);
+
       // Use first_name if available, otherwise fall back to email prefix
       const displayName = data.first_name || data.email?.split('@')[0] || 'User';
+      console.log('🎯 DEBUG: Computed displayName =', displayName);
 
-      return {
+      const finalProfile = {
         ...data,
         name: displayName
       };
+
+      console.log('✅ DEBUG: Final profile with name:', JSON.stringify(finalProfile, null, 2));
+      return finalProfile;
     } catch (error) {
-      console.error('Error in fetchProfile:', error);
+      console.error('💥 DEBUG: Error in fetchProfile:', error);
       return null;
     }
   };
 
   const handleAuthStateChange = async (event: string, newSession: Session | null) => {
+    console.log('🔄 DEBUG: Auth state change:', event, 'userId:', newSession?.user?.id);
+    
     setSession(newSession);
     setUser(newSession?.user || null);
 
     if (newSession?.user) {
+      console.log('👤 DEBUG: User found, fetching profile for:', newSession.user.id);
       const userProfile = await fetchProfile(newSession.user.id);
+      console.log('👤 DEBUG: Profile fetched result:', userProfile);
+      console.log('👤 DEBUG: Profile name specifically:', userProfile?.name);
       setProfile(userProfile);
     } else {
+      console.log('👤 DEBUG: No user, clearing profile');
       setProfile(null);
     }
 
+    console.log('⏳ DEBUG: Setting loading to false');
     setLoading(false);
   };
 
