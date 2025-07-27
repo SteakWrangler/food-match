@@ -98,10 +98,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (newSession?.user) {
       console.log('👤 DEBUG: User found, fetching profile for:', newSession.user.id);
+      
+      // TEMPORARY: Use metadata directly while we debug the database issue
+      const userName = newSession.user.user_metadata?.name || newSession.user.email?.split('@')[0] || 'User';
+      console.log('🎯 DEBUG: Using metadata name directly:', userName);
+      
+      const tempProfile = {
+        id: newSession.user.id,
+        email: newSession.user.email || '',
+        first_name: userName.split(' ')[0] || userName,
+        last_name: userName.split(' ')[1] || null,
+        name: userName,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      console.log('👤 DEBUG: Temporary profile created:', tempProfile);
+      setProfile(tempProfile);
+      
+      // Still try to fetch from database for debugging
       const userProfile = await fetchProfile(newSession.user.id);
-      console.log('👤 DEBUG: Profile fetched result:', userProfile);
-      console.log('👤 DEBUG: Profile name specifically:', userProfile?.name);
-      setProfile(userProfile);
+      console.log('👤 DEBUG: Database profile fetch result:', userProfile);
     } else {
       console.log('👤 DEBUG: No user, clearing profile');
       setProfile(null);
