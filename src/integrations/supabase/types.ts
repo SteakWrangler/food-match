@@ -194,10 +194,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      test_profile_access: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
       update_user_profile: {
         Args: {
           user_id_param: string
