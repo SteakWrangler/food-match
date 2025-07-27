@@ -68,7 +68,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       const profileWithName = {
         ...data,
-        name: data.first_name || data.email?.split('@')[0] || 'User'
+        name: data.first_name && data.last_name 
+          ? `${data.first_name} ${data.last_name}`.trim()
+          : data.first_name || data.last_name || data.email?.split('@')[0] || 'User'
       };
 
       console.log('✅ Profile with name computed:', profileWithName);
