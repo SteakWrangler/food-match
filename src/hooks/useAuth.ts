@@ -57,6 +57,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .maybeSingle();
       
       console.log('📊 Profile query result:', { data, error });
+      console.log('📊 Raw data from database:', JSON.stringify(data, null, 2));
+      console.log('📊 Data.first_name specifically:', data?.first_name);
+      console.log('📊 Data.last_name specifically:', data?.last_name);
 
       if (error) {
         console.error('❌ Error fetching profile:', error);
