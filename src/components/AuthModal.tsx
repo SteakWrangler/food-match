@@ -36,11 +36,21 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [success, setSuccess] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🔘 Form submission started');
     e.preventDefault();
     console.log('🔐 handleSubmit called with activeTab:', activeTab);
     console.log('🔐 Email:', email);
     console.log('🔐 Password length:', password.length);
+    console.log('🔐 Form validation check...');
     
+    // Check if form is valid
+    if (!email || !password) {
+      console.log('🔐 Form validation failed - missing email or password');
+      setError('Please fill in all fields');
+      return;
+    }
+    
+    console.log('🔐 Form validation passed, setting loading...');
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -89,6 +99,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
       console.error('🔐 Error in handleSubmit:', err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
+      console.log('🔐 Finally block - setting loading to false');
       setLoading(false);
     }
   };
@@ -157,7 +168,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </TabsList>
 
             <TabsContent value="signin" className="space-y-3 sm:space-y-4">
-              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+              <form 
+                onSubmit={(e) => {
+                  console.log('🔘 Form onSubmit triggered!');
+                  handleSubmit(e);
+                }} 
+                className="space-y-3 sm:space-y-4"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <div className="relative">
@@ -203,7 +220,16 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   </Alert>
                 )}
 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button 
+                  type="button" 
+                  className="w-full" 
+                  disabled={loading}
+                  onClick={() => {
+                    console.log('🔘 Button clicked! Loading state:', loading);
+                    console.log('🔘 Manually triggering form submission...');
+                    handleSubmit({ preventDefault: () => {} } as any);
+                  }}
+                >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign In
                 </Button>
