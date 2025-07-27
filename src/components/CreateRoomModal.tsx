@@ -36,10 +36,25 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔴 DEBUG: handleSubmit called');
+    console.log('🔴 DEBUG: isLoading:', isLoading);
+    console.log('🔴 DEBUG: user:', !!user);
+    console.log('🔴 DEBUG: location:', location);
+    console.log('🔴 DEBUG: location.trim():', location.trim());
+    console.log('🔴 DEBUG: profile?.name:', profile?.name);
+    
     if (!isLoading && user && location.trim()) {
+      console.log('🔴 DEBUG: Conditions met, calling onCreateRoom');
       // Authenticated user creating complete room
       const userName = profile?.name || user.email?.split('@')[0] || 'User';
       onCreateRoom(userName, location.trim(), formattedAddress || undefined, true);
+    } else {
+      console.log('🔴 DEBUG: Conditions NOT met - not calling onCreateRoom');
+      console.log('🔴 DEBUG: Reasons:', {
+        isLoading: isLoading,
+        hasUser: !!user,
+        hasLocation: !!location.trim()
+      });
     }
   };
 
