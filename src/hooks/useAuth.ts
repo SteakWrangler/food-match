@@ -48,71 +48,58 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
-    console.log('🔍 fetchProfile called for userId:', userId);
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-      
-      console.log('📊 Profile query result:', { data, error });
-      console.log('📊 Raw data from database:', JSON.stringify(data, null, 2));
-      console.log('📊 Data.first_name specifically:', data?.first_name);
-      console.log('📊 Data.last_name specifically:', data?.last_name);
 
       if (error) {
-        console.error('❌ Error fetching profile:', error);
+        console.error('Error fetching profile:', error);
         return null;
       }
 
-      const profileWithName = {
-        ...data,
-        name: data.first_name || data.email?.split('@')[0] || 'User'
-      };
+      if (!data) {
+        return null;
+      }
 
-      console.log('✅ Profile with name computed:', profileWithName);
-      return profileWithName;
+      // Use first_name if available, otherwise fall back to email prefix
+      const displayName = data.first_name || data.email?.split('@')[0] || 'User';
+
+      return {
+        ...data,
+        name: displayName
+      };
     } catch (error) {
-      console.error('💥 Error in fetchProfile:', error);
+      console.error('Error in fetchProfile:', error);
       return null;
     }
   };
 
   const handleAuthStateChange = async (event: string, newSession: Session | null) => {
-    console.log('🔄 Auth state change:', event, 'userId:', newSession?.user?.id);
-    console.log('🔄 Session details:', newSession ? 'exists' : 'null');
-    
     setSession(newSession);
     setUser(newSession?.user || null);
 
     if (newSession?.user) {
-      console.log('👤 User found, fetching profile for:', newSession.user.id);
       const userProfile = await fetchProfile(newSession.user.id);
-      console.log('👤 Profile fetched:', userProfile ? 'success' : 'failed');
       setProfile(userProfile);
     } else {
-      console.log('👤 No user, clearing profile');
       setProfile(null);
     }
 
-    console.log('⏳ Setting loading to false');
     setLoading(false);
-    console.log('✅ Auth state change complete');
   };
 
   useEffect(() => {
-    console.log('🚀 Starting auth initialization...');
-    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
     // Get initial session and handle it immediately
-    supabase.auth.getSession().then(({ data: { session: initialSession }, error }) => {
-      console.log('📱 Initial session check:', initialSession ? 'exists' : 'null', error ? `error: ${error.message}` : 'no error');
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       handleAuthStateChange('INITIAL_SESSION', initialSession);
     }).catch((err) => {
-      console.error('💥 Error getting initial session:', err);
-      setLoading(false); // Ensure we don't stay stuck loading
+      console.error('Error getting initial session:', err);
+      setLoading(false);
     });
 
     return () => {
