@@ -75,16 +75,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           console.log('🔍 DEBUG: Fetching profile for user:', userId, `(attempt ${i + 1}/${retries})`);
           
-          // Check if we have valid cached data
+          // Check if we have valid cached data (ignore sessionId)
           const cached = profileCacheRef.current[userId];
-          const currentSessionId = session?.access_token || 'no-session';
           const cacheAge = Date.now() - (cached?.timestamp || 0);
-          const cacheValid = cached && 
-                            cached.sessionId === currentSessionId && 
-                            cacheAge < 300000; // 5 minutes
+          const cacheValid = cached && cacheAge < 300000; // 5 minutes
+          console.log('🔍 DEBUG: Cache check:', {
+            hasCached: !!cached,
+            cacheAge,
+            cacheValid,
+            forceRefresh
+          });
           
           if (!forceRefresh && cacheValid) {
-            console.log('🔍 DEBUG: Using valid cached profile for user:', userId);
+            console.log('🔍 DEBUG: Using valid cached profile for user:', userId, cached.data);
             setProfile(cached.data);
             return;
           }
@@ -109,11 +112,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               name: data.name || data.first_name || data.email?.split('@')[0] || 'User'
             };
             
-            // Cache with timestamp and session ID
+            // Cache with timestamp (no sessionId)
             profileCacheRef.current[userId] = {
               data: profileWithName,
               timestamp: Date.now(),
-              sessionId: currentSessionId
+              sessionId: undefined // for legacy cleanup
             };
             
             console.log('🔍 DEBUG: Cached fresh profile for user:', userId, profileWithName);
