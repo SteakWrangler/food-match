@@ -93,85 +93,74 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     console.log('💥 DEBUG: Setting up auth listener');
     
-    if (authListenerSetup.current) {
-      console.log('💥 DEBUG: Auth listener already setup, skipping');
-      return;
-    }
-    
-    authListenerSetup.current = true;
-
     const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
       try {
+        console.log('🔍 DEBUG: Fetching profile for user:', userId);
+        
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', userId)
           .maybeSingle();
 
+        console.log('🔍 DEBUG: Profile fetch result:', { data, error });
+
         if (data && !error) {
           const profileWithName = {
             ...data,
             name: data.name || data.first_name || data.email?.split('@')[0] || 'User'
           };
+          console.log('🔍 DEBUG: Returning profile:', profileWithName);
           return profileWithName;
+        } else {
+          console.log('🔍 DEBUG: No profile found or error:', { data, error });
         }
       } catch (error) {
-        console.error('💥 DEBUG: Profile fetch error:', error);
+        console.error('🔍 DEBUG: Profile fetch exception:', error);
       }
       return null;
     };
 
     const handleAuthChange = async (event: string, session: Session | null) => {
-      console.log(`💥 DEBUG: Auth change event:`, event);
-      console.log('💥 DEBUG: Session exists:', !!session);
-
+      console.log('Auth state changed:', event, session?.user?.email);
+      setUser(session?.user ?? null);
       setSession(session);
-      setUser(session?.user || null);
-
+      
       if (session?.user) {
-        console.log('💥 DEBUG: User authenticated, fetching profile');
-        
         try {
           const dbProfile = await fetchUserProfile(session.user.id);
-          
           if (dbProfile) {
-            console.log('💥 DEBUG: Using database profile');
             setProfile(dbProfile);
           } else {
-            console.log('💥 DEBUG: Using fallback profile from metadata');
-            const fallbackProfile = createProfileFromUser(session.user);
-            setProfile(fallbackProfile);
+            setProfile(null);
           }
         } catch (error) {
-          console.error('💥 DEBUG: Profile fetch failed:', error);
-          const fallbackProfile = createProfileFromUser(session.user);
-          setProfile(fallbackProfile);
+          console.error('Profile fetch failed:', error);
+          setProfile(null);
         }
       } else {
-        console.log('💥 DEBUG: No user, clearing profile');
         setProfile(null);
       }
-
+      
       setLoading(false);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('💥 DEBUG: Initial session received:', !!session);
       if (error) {
-        console.error('💥 DEBUG: Error getting initial session:', error);
+        console.error('Error getting initial session:', error);
       }
       handleAuthChange('INITIAL_SESSION', session);
     }).catch((error) => {
-      console.error('💥 DEBUG: Error getting initial session:', error);
+      console.error('Error getting initial session:', error);
       setLoading(false);
     });
 
     return () => {
       console.log('💥 DEBUG: Cleaning up auth subscription');
       subscription.unsubscribe();
-      authListenerSetup.current = false;
     };
   }, []);
 
