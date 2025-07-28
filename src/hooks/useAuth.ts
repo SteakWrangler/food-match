@@ -4,6 +4,10 @@ import { supabase, clearAuthCache, forceRefreshSession } from '@/integrations/su
 
 console.log('💥 SIMPLIFIED AUTH: useAuth.ts loaded at', new Date().toISOString());
 
+// Global singleton to prevent multiple auth subscriptions
+let globalAuthSubscription: any = null;
+let globalAuthInitialized = false;
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -50,7 +54,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const authListenerSetup = useRef(false);
   const componentId = useRef(Math.random().toString(36));
 
   console.log('💥 DEBUG: AuthProvider initialized with ID:', componentId.current);
@@ -91,7 +94,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    console.log('💥 DEBUG: Setting up auth listener');
+    if (globalAuthInitialized) {
+      console.log('💥 DEBUG: Global auth already initialized, skipping');
+      return;
+    }
+    
+    console.log('💥 DEBUG: Initializing global auth subscription');
+    globalAuthInitialized = true;
     
     const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
       try {
@@ -146,6 +155,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+    globalAuthSubscription = subscription;
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -159,8 +169,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => {
-      console.log('💥 DEBUG: Cleaning up auth subscription');
-      subscription.unsubscribe();
+      console.log('💥 DEBUG: Cleaning up global auth subscription');
+      if (globalAuthSubscription) {
+        globalAuthSubscription.unsubscribe();
+        globalAuthSubscription = null;
+        globalAuthInitialized = false;
+      }
     };
   }, []);
 
