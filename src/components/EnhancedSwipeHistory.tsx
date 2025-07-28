@@ -30,6 +30,17 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
   onBringToFront
 }) => {
   const [activeTab, setActiveTab] = useState('your-likes');
+  
+  // DEBUG: Log what data we're receiving
+  console.log('🏆 DEBUG: EnhancedSwipeHistory props:', { 
+    userSwipes, 
+    roomState: roomState?.id,
+    itemsCount: items?.length,
+    type, 
+    participantId,
+    roomStateFoodTypeSwipes: roomState?.foodTypeSwipes,
+    roomStateRestaurantSwipes: roomState?.restaurantSwipes
+  });
 
   const totalParticipants = roomState?.participants?.length || 1;
   const currentUser = roomState?.participants?.find((p: any) => p.id === participantId);
@@ -69,7 +80,13 @@ const EnhancedSwipeHistory: React.FC<EnhancedSwipeHistoryProps> = ({
   };
 
   // Your Likes - items you liked (regardless of others)
-  const yourLikes = items.filter(item => userSwipes[item.id] === 'right');
+  const yourLikes = items.filter(item => {
+    const isLiked = userSwipes[item.id] === 'right';
+    console.log('🏆 DEBUG: Checking item:', item.name, 'id:', item.id, 'userSwipe:', userSwipes[item.id], 'isLiked:', isLiked);
+    return isLiked;
+  });
+  
+  console.log('🏆 DEBUG: Your likes result:', yourLikes.length, 'items:', yourLikes.map(item => item.name));
 
   // Matches - items where everyone liked it
   const matches = items.filter(item => {
