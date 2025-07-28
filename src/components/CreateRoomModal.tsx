@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X, MapPin, Navigation, User, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
 
 // RESTORED: Use real API calls instead of mock data
@@ -46,7 +46,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     if (!isLoading && user && location.trim()) {
       console.log('🔴 DEBUG: Conditions met, calling onCreateRoom');
       // Authenticated user creating complete room
-      const userName = user.user_metadata?.name || profile?.name || user.email?.split('@')[0] || 'User';
+      const userName = profile?.name || user.email?.split('@')[0] || 'User';
       onCreateRoom(userName, location.trim(), formattedAddress || undefined, true);
     } else {
       console.log('🔴 DEBUG: Conditions NOT met - not calling onCreateRoom');

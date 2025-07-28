@@ -3,7 +3,7 @@ import { getHybridRestaurantsAPI } from '@/integrations/supabase/hybridRestauran
 import { getRoomService, RoomData } from '@/integrations/supabase/roomService';
 import { supabase } from '@/integrations/supabase/client';
 import { FilterState, defaultFilters } from '@/utils/restaurantFilters';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 
 export interface RoomState {
   id: string;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { getFavoritesService } from '@/integrations/supabase/favoritesService';
 
 interface Restaurant {

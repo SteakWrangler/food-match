@@ -19,7 +19,7 @@ import { foodTypes } from '@/data/foodTypes';
 import { Restaurant } from '@/data/restaurants';
 import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { getRoomHistoryService, RoomHistoryEntry } from '@/integrations/supabase/roomHistoryService';
 import AuthModal from '@/components/AuthModal';
 import UserProfileModal from '@/components/UserProfileModal';
@@ -52,19 +52,7 @@ const Index = () => {
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
 
-  const { user, profile, signOut, loading } = useAuth();
-  
-  // EMERGENCY FIX: Use user metadata when profile is broken
-  const effectiveName = user?.user_metadata?.name || profile?.name || 'User';
-  
-  console.log('🔧 EMERGENCY DEBUG:', { 
-    hasUser: !!user, 
-    hasProfile: !!profile, 
-    loading, 
-    userMetadataName: user?.user_metadata?.name,
-    profileName: profile?.name,
-    effectiveName
-  });
+  const { user, profile, signOut } = useAuth();
   
   const deviceType = useDeviceType();
   
