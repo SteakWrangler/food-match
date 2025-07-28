@@ -46,7 +46,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     if (!isLoading && user && location.trim()) {
       console.log('🔴 DEBUG: Conditions met, calling onCreateRoom');
       // Authenticated user creating complete room
-      const userName = profile?.name || user.email?.split('@')[0] || 'User';
+      const userName = user.user_metadata?.name || profile?.name || user.email?.split('@')[0] || 'User';
       onCreateRoom(userName, location.trim(), formattedAddress || undefined, true);
     } else {
       console.log('🔴 DEBUG: Conditions NOT met - not calling onCreateRoom');
