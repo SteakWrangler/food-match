@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-console.log('🔥🔥🔥 FORCE REFRESH: useAuth.ts file loaded at', new Date().toISOString());
+console.log('💥💥💥 COMPLETE REWRITE: useAuth.ts loaded at', new Date().toISOString());
 
 export interface UserProfile {
   id: string;
@@ -49,129 +49,102 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
-    console.log('🔍 DEBUG: fetchProfile called for userId:', userId);
-    console.log('🔍 DEBUG: About to call supabase.from(profiles)');
+  console.log('💥 DEBUG: AuthProvider initialized');
+
+  const createProfileFromUser = (user: User): UserProfile => {
+    console.log('💥 DEBUG: Creating profile from user metadata');
+    console.log('💥 DEBUG: user.user_metadata:', user.user_metadata);
     
-    try {
-      console.log('🔍 DEBUG: Making database query...');
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      console.log('📊 DEBUG: Profile query completed');
-      console.log('📊 DEBUG: Profile query result - data:', data);
-      console.log('📊 DEBUG: Profile query result - error:', error);
-      console.log('📊 DEBUG: Raw profile data:', JSON.stringify(data, null, 2));
-
-      if (error) {
-        console.error('❌ DEBUG: Error fetching profile:', error);
-        console.error('❌ DEBUG: Error message:', error.message);
-        console.error('❌ DEBUG: Error details:', error.details);
-        return null;
-      }
-
-      if (!data) {
-        console.log('⚠️ DEBUG: No profile data found for user:', userId);
-        return null;
-      }
-
-      console.log('🔤 DEBUG: data.first_name =', data.first_name);
-      console.log('🔤 DEBUG: data.last_name =', data.last_name);
-      console.log('🔤 DEBUG: data.email =', data.email);
-      console.log('🔤 DEBUG: email split =', data.email?.split('@')[0]);
-
-      // Use first_name if available, otherwise fall back to email prefix
-      const displayName = data.first_name || data.email?.split('@')[0] || 'User';
-      console.log('🎯 DEBUG: Computed displayName =', displayName);
-
-      const finalProfile = {
-        ...data,
-        name: displayName
-      };
-
-      console.log('✅ DEBUG: Final profile with name:', JSON.stringify(finalProfile, null, 2));
-      return finalProfile;
-    } catch (error) {
-      console.error('💥 DEBUG: Catch block - Error in fetchProfile:', error);
-      console.error('💥 DEBUG: Error type:', typeof error);
-      console.error('💥 DEBUG: Error constructor:', error?.constructor?.name);
-      return null;
-    }
+    const fullName = user.user_metadata?.name || 'User';
+    const firstName = fullName.split(' ')[0] || user.email?.split('@')[0] || 'User';
+    const lastName = fullName.split(' ')[1] || null;
+    
+    console.log('💥 DEBUG: Computed name values:', { fullName, firstName, lastName });
+    
+    return {
+      id: user.id,
+      email: user.email || '',
+      first_name: firstName,
+      last_name: lastName,
+      name: fullName,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
   };
 
-
   useEffect(() => {
-    console.log('🚀 DEBUG: useAuth useEffect starting - setting up auth listener');
+    console.log('💥 DEBUG: Auth useEffect starting');
     
-    // Set up the auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🚀 DEBUG: Auth state change event:', event);
-      console.log('🚀 DEBUG: Session exists:', !!session);
-      console.log('🚀 DEBUG: User ID:', session?.user?.id);
-      
+    const fetchUserProfile = async (userId: string) => {
+      console.log('💥 DEBUG: Attempting to fetch profile for:', userId);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        console.log('💥 DEBUG: Profile fetch result:', { data, error });
+
+        if (data && !error) {
+          const profileWithName = {
+            ...data,
+            name: data.first_name || data.email?.split('@')[0] || 'User'
+          };
+          console.log('💥 DEBUG: Using database profile:', profileWithName);
+          return profileWithName;
+        }
+      } catch (error) {
+        console.error('💥 DEBUG: Profile fetch error:', error);
+      }
+      return null;
+    };
+
+    const handleAuthChange = async (event: string, session: Session | null) => {
+      console.log('💥 DEBUG: Auth change event:', event);
+      console.log('💥 DEBUG: Session exists:', !!session);
+      console.log('💥 DEBUG: User ID:', session?.user?.id);
+
       setSession(session);
       setUser(session?.user || null);
-      
+
       if (session?.user) {
-        console.log('🚀 DEBUG: User authenticated, calling fetchProfile');
-        try {
-          const profile = await fetchProfile(session.user.id);
-          if (profile) {
-            console.log('🚀 DEBUG: Profile loaded successfully:', profile.name);
-            setProfile(profile);
-          } else {
-            console.log('🚀 DEBUG: No profile found, using fallback');
-            // Create fallback profile from user metadata
-            const fallbackProfile = {
-              id: session.user.id,
-              email: session.user.email || '',
-              first_name: session.user.user_metadata?.name?.split(' ')[0] || session.user.email?.split('@')[0] || 'User',
-              last_name: session.user.user_metadata?.name?.split(' ')[1] || null,
-              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-            console.log('🚀 DEBUG: Setting fallback profile:', fallbackProfile);
-            setProfile(fallbackProfile);
-          }
-        } catch (error) {
-          console.error('🚀 DEBUG: Error in profile fetch, using metadata fallback:', error);
-          const fallbackProfile = {
-            id: session.user.id,
-            email: session.user.email || '',
-            first_name: session.user.user_metadata?.name?.split(' ')[0] || session.user.email?.split('@')[0] || 'User',
-            last_name: session.user.user_metadata?.name?.split(' ')[1] || null,
-            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
+        console.log('💥 DEBUG: User authenticated, processing profile');
+        
+        // Try database first
+        const dbProfile = await fetchUserProfile(session.user.id);
+        
+        if (dbProfile) {
+          console.log('💥 DEBUG: Using database profile');
+          setProfile(dbProfile);
+        } else {
+          console.log('💥 DEBUG: Using fallback profile from metadata');
+          const fallbackProfile = createProfileFromUser(session.user);
           setProfile(fallbackProfile);
         }
       } else {
-        console.log('🚀 DEBUG: No user, clearing profile');
+        console.log('💥 DEBUG: No user, clearing profile');
         setProfile(null);
       }
-      
-      console.log('🚀 DEBUG: Setting loading to false');
+
+      console.log('💥 DEBUG: Setting loading to false');
       setLoading(false);
-    });
-    
-    console.log('🚀 DEBUG: Auth listener set up, getting initial session');
-    
-    // Get initial session
+    };
+
+    console.log('💥 DEBUG: Setting up auth listener');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+
+    console.log('💥 DEBUG: Getting initial session');
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('🚀 DEBUG: Initial session retrieved:', !!session);
-      // The onAuthStateChange will handle this session automatically
-    }).catch((err) => {
-      console.error('🚀 DEBUG: Error getting initial session:', err);
+      console.log('💥 DEBUG: Initial session received:', !!session);
+      handleAuthChange('INITIAL_SESSION', session);
+    }).catch((error) => {
+      console.error('💥 DEBUG: Error getting initial session:', error);
       setLoading(false);
     });
 
     return () => {
-      console.log('🚀 DEBUG: Cleaning up auth subscription');
+      console.log('💥 DEBUG: Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, []);
@@ -292,6 +265,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     updateProfile,
     resetPassword,
   };
+
+  console.log('💥 DEBUG: AuthProvider rendering with values:', {
+    hasUser: !!user,
+    hasProfile: !!profile,
+    loading,
+    profileName: profile?.name
+  });
 
   return React.createElement(AuthContext.Provider, { value }, children);
 };
