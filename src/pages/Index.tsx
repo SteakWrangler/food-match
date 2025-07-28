@@ -261,15 +261,22 @@ const Index = () => {
     setShowCreateRoom(false);
     setIsCreatingRoom(true);
     
-        try {
+    try {
+      console.log('🔴 DEBUG: Starting room creation process');
+      console.log('🔴 DEBUG: isAuthenticated:', isAuthenticated);
+      console.log('🔴 DEBUG: locationToSet:', locationToSet);
+      
       if (isAuthenticated !== false) {
         // Regular room creation with location and restaurants
         let coordinatesForAPI = locationToSet;
     
+        console.log('🔴 DEBUG: Starting geocoding check');
         // Check if the location is already coordinates
         const coordMatch = locationToSet.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+        console.log('🔴 DEBUG: coordMatch result:', coordMatch);
         
         if (!coordMatch) {
+          console.log('🔴 DEBUG: Location is not coordinates, starting geocoding');
           // It's an address, need to geocode it
           try {
             const { data, error } = await supabase.functions.invoke('geocoding', {
@@ -278,6 +285,8 @@ const Index = () => {
                 address: locationToSet
               },
             });
+
+            console.log('🔴 DEBUG: Geocoding response:', { data, error });
 
             if (error || !data?.lat || !data?.lng) {
               console.error('Geocoding failed for room creation:', error);
@@ -289,34 +298,51 @@ const Index = () => {
             coordinatesForAPI = `${data.lat}, ${data.lng}`;
             console.log('Geocoded address to coordinates:', coordinatesForAPI);
           } catch (error) {
-            console.error('Geocoding error for room creation:', error);
+            console.error('🔴 DEBUG: Geocoding error caught:', error);
             setError('Unable to find that location. Try entering your location in a format like "San Francisco, CA", "94102", or "New York, NY".');
             setIsCreatingRoom(false);
             return;
           }
+        } else {
+          console.log('🔴 DEBUG: Location is already coordinates');
         }
         
+        // Normalize formattedAddress - handle the weird object format
+        const normalizedFormattedAddress = formattedAddress && typeof formattedAddress === 'object' && (formattedAddress as any)._type === 'undefined' 
+          ? undefined 
+          : formattedAddress;
+        
         // Create room with coordinates
-        console.log('🔴 DEBUG: About to call createRoom with:', { name, coordinatesForAPI, filters, formattedAddress });
-        await createRoom(name, coordinatesForAPI, filters, formattedAddress);
+        console.log('🔴 DEBUG: About to call createRoom with:', { 
+          name, 
+          coordinatesForAPI, 
+          filters, 
+          normalizedFormattedAddress 
+        });
+        
+        await createRoom(name, coordinatesForAPI, filters, normalizedFormattedAddress);
         console.log('🔴 DEBUG: createRoom completed successfully');
       } else {
         // Demo room creation - food types only, no API calls
-        console.log('Creating demo room...');
+        console.log('🔴 DEBUG: Creating demo room...');
         const roomId = await createDemoRoom(name, 'Demo Mode');
         console.log('Demo room created with ID:', roomId);
         console.log('Room state after demo creation:', roomState);
         // Don't show QR modal for demo rooms - just go straight to the room
       }
       
+      console.log('🔴 DEBUG: Room creation process completed');
+      
       // Show QR modal after successful room creation (only for authenticated rooms)
       if (isAuthenticated !== false) {
+        console.log('🔴 DEBUG: Setting showQRCode to true');
         setShowQRCode(true);
       }
     } catch (err) {
-      console.error('Error creating room:', err);
+      console.error('🔴 DEBUG: Error in handleCreateRoom:', err);
       setError('Failed to create room. Please try again.');
     } finally {
+      console.log('🔴 DEBUG: Setting isCreatingRoom to false');
       setIsCreatingRoom(false);
     }
   };
