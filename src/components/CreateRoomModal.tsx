@@ -33,8 +33,9 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const [isDetecting, setIsDetecting] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showAccessChoice, setShowAccessChoice] = useState(!user); // Show choice if not authenticated
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('🔴 DEBUG: handleSubmit called');
     console.log('🔴 DEBUG: isLoading:', isLoading);
@@ -45,9 +46,22 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     
     if (!isLoading && user && location.trim()) {
       console.log('🔴 DEBUG: Conditions met, calling onCreateRoom');
-      // Authenticated user creating complete room
-      const userName = profile?.name || user.email?.split('@')[0] || 'User';
-      onCreateRoom(userName, location.trim(), formattedAddress || undefined, true);
+      try {
+        // Disable form to prevent multiple submissions
+        setIsSubmitting(true);
+        
+        // Authenticated user creating complete room
+        const userName = profile?.name || user.email?.split('@')[0] || 'User';
+        await onCreateRoom(userName, location.trim(), formattedAddress || undefined, true);
+        
+        // Only close modal after successful room creation
+        onClose();
+      } catch (error) {
+        console.error('🔴 DEBUG: Room creation failed:', error);
+        // Don't close modal on error, let user try again
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
       console.log('🔴 DEBUG: Conditions NOT met - not calling onCreateRoom');
       console.log('🔴 DEBUG: Reasons:', {

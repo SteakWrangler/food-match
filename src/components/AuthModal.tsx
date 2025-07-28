@@ -117,13 +117,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setName('');
   };
 
-  // If user is already authenticated, close the modal immediately
+  // If user is already authenticated, close the modal with a small delay to ensure stability
   React.useEffect(() => {
     console.log('AuthModal effect - user:', user, 'authLoading:', authLoading, 'isOpen:', isOpen);
     if (user && !authLoading && isOpen) {
       console.log('User already authenticated, closing auth modal');
-      onClose();
-      onAuthSuccess?.();
+      // Add a small delay to ensure auth state is stable
+      const timeoutId = setTimeout(() => {
+        onClose();
+        onAuthSuccess?.();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [user, authLoading, isOpen, onClose, onAuthSuccess]);
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -27,6 +27,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   fetchProfile: (userId: string) => Promise<void>;
+  refreshProfile: (userId: string) => Promise<void>;
   setProfile: (profile: UserProfile | null) => void;
 }
 
@@ -49,70 +50,185 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Cache with timestamp and session validation
+  const profileCacheRef = useRef<{ 
+    [userId: string]: { 
+      data: UserProfile; 
+      timestamp: number; 
+      sessionId: string; 
+    } 
+  }>({});
 
-  const fetchProfile = async (userId: string) => {
+  // Track in-progress fetches to prevent duplicates
+  const fetchInProgressRef = useRef<{ [userId: string]: Promise<void> }>({});
+
+  const fetchProfileWithRetry = async (userId: string, forceRefresh = false, retries = 3) => {
+    // If a fetch is already in progress, wait for it
+    if (fetchInProgressRef.current[userId] && !forceRefresh) {
+      console.log('🔍 DEBUG: Fetch already in progress for user:', userId);
+      return await fetchInProgressRef.current[userId];
+    }
+
+    const fetchPromise = (async () => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          console.log('🔍 DEBUG: Fetching profile for user:', userId, `(attempt ${i + 1}/${retries})`);
+          
+          // Check if we have valid cached data
+          const cached = profileCacheRef.current[userId];
+          const currentSessionId = session?.access_token || 'no-session';
+          const cacheAge = Date.now() - (cached?.timestamp || 0);
+          const cacheValid = cached && 
+                            cached.sessionId === currentSessionId && 
+                            cacheAge < 300000; // 5 minutes
+          
+          if (!forceRefresh && cacheValid) {
+            console.log('🔍 DEBUG: Using valid cached profile for user:', userId);
+            setProfile(cached.data);
+            return;
+          }
+          
+          // Fetch fresh data
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+          console.log('🔍 DEBUG: Profile fetch result:', { data, error });
+
+          if (error) {
+            console.error('🔍 DEBUG: Profile fetch error:', error);
+            throw error;
+          }
+
+          if (data) {
+            const profileWithName = {
+              ...data,
+              name: data.name || data.first_name || data.email?.split('@')[0] || 'User'
+            };
+            
+            // Cache with timestamp and session ID
+            profileCacheRef.current[userId] = {
+              data: profileWithName,
+              timestamp: Date.now(),
+              sessionId: currentSessionId
+            };
+            
+            console.log('🔍 DEBUG: Cached fresh profile for user:', userId, profileWithName);
+            setProfile(profileWithName);
+            return; // Success
+          } else {
+            throw new Error('No profile data returned');
+          }
+        } catch (error) {
+          console.error(`🔍 DEBUG: Profile fetch attempt ${i + 1} failed:`, error);
+          if (i === retries - 1) {
+            // Last attempt failed, clear cache and set null
+            delete profileCacheRef.current[userId];
+            setProfile(null);
+            throw error;
+          } else {
+            // Wait before retry with exponential backoff
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+          }
+        }
+      }
+    })();
+
+    // Store the promise to prevent duplicate fetches
+    fetchInProgressRef.current[userId] = fetchPromise;
+    
     try {
-      console.log('🔍 DEBUG: Fetching profile for user:', userId);
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      console.log('🔍 DEBUG: Profile fetch result:', { data, error });
-
-      if (error) {
-        console.error('🔍 DEBUG: Profile fetch error:', error);
-        setProfile(null);
-        return;
-      }
-
-      if (data) {
-        const profileWithName = {
-          ...data,
-          name: data.name || data.first_name || data.email?.split('@')[0] || 'User'
-        };
-        console.log('🔍 DEBUG: Setting profile:', profileWithName);
-        setProfile(profileWithName);
-      }
-    } catch (error) {
-      console.error('🔍 DEBUG: Profile fetch exception:', error);
-      setProfile(null);
+      await fetchPromise;
+    } finally {
+      // Clean up the promise reference
+      delete fetchInProgressRef.current[userId];
     }
   };
 
-  useEffect(() => {
-    // Get initial session - ONLY ONCE
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('🔍 DEBUG: Initial session:', session?.user?.email);
-      setUser(session?.user ?? null);
-      setSession(session);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setLoading(false);
+  const fetchProfile = async (userId: string) => {
+    await fetchProfileWithRetry(userId, false);
+  };
+
+  const refreshProfile = async (userId: string) => {
+    await fetchProfileWithRetry(userId, true);
+  };
+
+  // Clean up old cache entries
+  const cleanupCache = () => {
+    const now = Date.now();
+    const maxAge = 300000; // 5 minutes
+    
+    Object.keys(profileCacheRef.current).forEach(userId => {
+      const cached = profileCacheRef.current[userId];
+      if (now - cached.timestamp > maxAge) {
+        console.log('🔍 DEBUG: Cleaning up old cache for user:', userId);
+        delete profileCacheRef.current[userId];
       }
     });
+  };
 
-    // Listen for auth changes - SINGLE SUBSCRIPTION
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔍 DEBUG: Auth state changed:', event, session?.user?.email);
+  useEffect(() => {
+    let isMounted = true;
+
+    // Clean up cache periodically
+    const cleanupInterval = setInterval(cleanupCache, 60000); // Every minute
+
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        
+        console.log('🔍 DEBUG: Initial session:', session?.user?.email);
         setUser(session?.user ?? null);
         setSession(session);
         
         if (session?.user) {
           await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
         }
         
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('🔍 DEBUG: Initial session error:', error);
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!isMounted) return;
+        
+        console.log('🔍 DEBUG: Auth state changed:', event, session?.user?.email);
+        
+        setUser(session?.user ?? null);
+        setSession(session);
+        
+        if (session?.user) {
+          // For re-authentication, use cache if valid, otherwise fetch fresh
+          await fetchProfile(session.user.id);
+        } else {
+          // Clear profile when signed out
+          setProfile(null);
+          // Don't clear cache immediately - let cleanup handle it
+        }
+        
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     );
 
-    return () => subscription.unsubscribe();
+    initializeAuth();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+      clearInterval(cleanupInterval);
+    };
   }, []);
 
   const signUp = async (email: string, password: string, name?: string) => {
@@ -148,6 +264,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      // Clear cache when user signs out
+      profileCacheRef.current = {};
+      fetchInProgressRef.current = {};
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -162,6 +281,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signIn,
     signOut,
     fetchProfile,
+    refreshProfile,
     setProfile
   };
 

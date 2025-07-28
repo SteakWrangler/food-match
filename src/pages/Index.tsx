@@ -260,8 +260,7 @@ const Index = () => {
       setFormattedLocation(formattedAddress || null);
     }
     
-    // Close the modal immediately when room creation starts
-    setShowCreateRoom(false);
+    // Don't close modal immediately - let the modal handle its own state
     setIsCreatingRoom(true);
     
     try {
