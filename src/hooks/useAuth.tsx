@@ -182,7 +182,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // DISABLED: Auto-login functionality removed to prevent session reconstruction issues
     // Instead, app starts unauthenticated and users must sign in manually
     const initializeAuth = async () => {
-      console.log('🔍 DEBUG: Auto-login disabled - starting unauthenticated');
+      console.log('🔍 DEBUG: Auto-login disabled - clearing any stored session');
+      
+      // Clear any stored session data to prevent Supabase from auto-restoring
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+        console.log('🔍 DEBUG: Cleared stored session data');
+      } catch (error) {
+        console.log('🔍 DEBUG: No stored session to clear');
+      }
+      
       if (isMounted) {
         setLoading(false); // Start with loading false, no user
       }
