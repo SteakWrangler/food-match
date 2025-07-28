@@ -1,7 +1,7 @@
 -- Create room_history table for storing past room data
 CREATE TABLE public.room_history (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   room_id TEXT NOT NULL,
   room_name TEXT,
   location TEXT NOT NULL,
@@ -23,22 +23,22 @@ ALTER TABLE public.room_history ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own room history" 
   ON public.room_history 
   FOR SELECT 
-  USING (auth.uid()::text = user_id);
+  USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can create own room history" 
   ON public.room_history 
   FOR INSERT 
-  WITH CHECK (auth.uid()::text = user_id);
+  WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can update own room history" 
   ON public.room_history 
   FOR UPDATE 
-  USING (auth.uid()::text = user_id);
+  USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete own room history" 
   ON public.room_history 
   FOR DELETE 
-  USING (auth.uid()::text = user_id);
+  USING (auth.uid() = user_id);
 
 -- Create a function to update last_accessed timestamp
 CREATE OR REPLACE FUNCTION update_room_history_last_accessed()

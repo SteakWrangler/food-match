@@ -1,7 +1,7 @@
 -- Create user_favorites table for storing user favorite restaurants
 CREATE TABLE public.user_favorites (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   restaurant_id TEXT NOT NULL,
   restaurant_data JSONB NOT NULL, -- Store complete restaurant data
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -19,17 +19,17 @@ ALTER TABLE public.user_favorites ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own favorites" 
   ON public.user_favorites 
   FOR SELECT 
-  USING (auth.uid()::text = user_id);
+  USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can create own favorites" 
   ON public.user_favorites 
   FOR INSERT 
-  WITH CHECK (auth.uid()::text = user_id);
+  WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete own favorites" 
   ON public.user_favorites 
   FOR DELETE 
-  USING (auth.uid()::text = user_id);
+  USING (auth.uid() = user_id);
 
 -- Create a function to handle new user creation (if not exists)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
