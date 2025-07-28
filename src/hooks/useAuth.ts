@@ -51,8 +51,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const authListenerSetup = useRef(false);
+  const componentId = useRef(Math.random().toString(36));
 
-  console.log('💥 DEBUG: AuthProvider initialized');
+  console.log('💥 DEBUG: AuthProvider initialized with ID:', componentId.current);
 
   const createProfileFromUser = (user: User): UserProfile => {
     console.log('💥 DEBUG: Creating profile from user metadata');
