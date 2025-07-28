@@ -720,7 +720,7 @@ const Index = () => {
                   </button>
                 ) : profile?.name ? (
                   <button
-                    onClick={() => setShowUserSettings(true)}
+                    onClick={() => setShowUserProfile(true)}
                     className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
                   >
                     <User className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -767,7 +767,7 @@ const Index = () => {
           </button>
         ) : profile?.name ? (
           <button
-            onClick={() => setShowUserSettings(true)}
+            onClick={() => setShowUserProfile(true)}
             className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
           >
             <User className="w-3 h-3 sm:w-4 sm:h-4" />
