@@ -240,34 +240,41 @@ const useRoom = () => {
 
   const createDemoRoom = async (hostName: string, formattedAddress?: string) => {
     try {
-      console.log('Creating demo room for food types only...');
+      console.log('Creating LOCAL demo room for food types only...');
       console.log('Host name:', hostName);
       console.log('Participant ID:', participantId);
       
-      // Create room in Supabase but with minimal data
-      const roomData = await roomService.createRoom({
+      // Create LOCAL room state - NO database calls for demo mode
+      const demoRoomId = `DEMO_${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      
+      const localRoomState: RoomState = {
+        id: demoRoomId,
         hostId: participantId,
-        hostName,
+        participants: [{
+          id: participantId,
+          name: hostName,
+        }],
+        currentRestaurantId: undefined,
+        viewedRestaurantIds: [],
+        restaurantSwipes: {},
+        foodTypeSwipes: {},
+        restaurants: [], // No restaurants for demo mode
         location: 'demo', // Special location for demo rooms
-        filters: defaultFilters // Use default filters for demo
-      });
-
-      console.log(`Created demo room ${roomData.id}`);
-      console.log('Room data:', roomData);
+        formattedAddress: formattedAddress || 'Demo Mode',
+        lastUpdated: Date.now(),
+        filters: defaultFilters,
+        nextPageToken: undefined
+      };
       
-      // Create room state immediately without loading restaurants
-      const roomState = convertRoomDataToState(roomData);
-      if (formattedAddress) {
-        roomState.formattedAddress = formattedAddress;
-      }
+      console.log('Created LOCAL demo room:', demoRoomId);
+      console.log('Demo room state:', localRoomState);
       
-      console.log('Setting room state:', roomState);
-      setRoomState(roomState);
+      setRoomState(localRoomState);
       setIsHost(true);
       setIsLoadingRestaurants(false);
       
-      console.log('Demo room ready - food types only');
-      return roomData.id;
+      console.log('Demo room ready - food types only, NO database calls');
+      return demoRoomId;
     } catch (error) {
       console.error('Error creating demo room:', error);
       setRoomState(null);
