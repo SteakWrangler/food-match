@@ -53,7 +53,18 @@ const Index = () => {
   const [showUserSettings, setShowUserSettings] = useState(false);
 
   const { user, profile, signOut, loading } = useAuth();
-  console.log('🎯 Index.tsx - Auth state:', { user: !!user, profile: !!profile, loading, profileName: profile?.name, userMetadataName: user?.user_metadata?.name });
+  
+  // TEMPORARY FIX: Use user metadata when profile is missing
+  const displayName = profile?.name || user?.user_metadata?.name || 'User';
+  
+  console.log('🎯 Index.tsx - Auth state:', { 
+    user: !!user, 
+    profile: !!profile, 
+    loading, 
+    profileName: profile?.name, 
+    userMetadataName: user?.user_metadata?.name,
+    displayName 
+  });
   
   const deviceType = useDeviceType();
   
