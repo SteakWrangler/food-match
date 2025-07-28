@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import SwipeInterface from '@/components/SwipeInterface';
 import GeneralSwipeInterface from '@/components/GeneralSwipeInterface';
 import FilterPanel from '@/components/FilterPanel';
@@ -12,7 +12,7 @@ import EnhancedSwipeHistory from '@/components/EnhancedSwipeHistory';
 import FeedbackHeader from '@/components/FeedbackHeader';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Filter, Users, MapPin, QrCode, UserPlus, Loader2, BarChart3, User, MessageCircle } from 'lucide-react';
+import { Filter, Users, MapPin, QrCode, UserPlus, Loader2, BarChart3, User, MessageCircle, Settings, LogOut, Plus, History, RefreshCw, AlertCircle } from 'lucide-react';
 import useRoom from '@/hooks/useRoom';
 import { useDeviceType } from '@/hooks/use-mobile';
 import { foodTypes } from '@/data/foodTypes';
@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getRoomHistoryService, RoomHistoryEntry } from '@/integrations/supabase/roomHistoryService';
 import AuthModal from '@/components/AuthModal';
 import UserProfileModal from '@/components/UserProfileModal';
+import { AuthDebugPanel } from '@/components/AuthDebugPanel';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('specific');
@@ -1120,6 +1121,9 @@ const Index = () => {
         onClose={() => setShowUserProfile(false)}
         onRecreateRoom={handleRecreateRoom}
       />
+
+             {/* Auth Debug Panel */}
+       <AuthDebugPanel />
     </div>
   );
 };

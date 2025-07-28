@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, clearAuthCache, forceRefreshSession, isSessionStale } from '@/integrations/supabase/client';
 
 console.log('💥💥💥 COMPLETE REWRITE: useAuth.ts loaded at', new Date().toISOString());
 
@@ -31,6 +31,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: any | null }>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
+  clearCache: () => Promise<void>;
+  forceRefresh: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -48,6 +50,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const authChangeCount = useRef(0);
+  const lastProfileUpdate = useRef<number>(0);
+  const sessionCheckInterval = useRef<NodeJS.Timeout | null>(null);
 
   console.log('💥 DEBUG: AuthProvider initialized');
 
@@ -83,6 +88,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   };
 
+  // Function to clear cache and refresh session
+  const clearCache = async () => {
+    console.log('💥 DEBUG: Clearing auth cache...');
+    clearAuthCache();
+    
+    // Force a fresh session check
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('💥 DEBUG: Error getting session after cache clear:', error);
+    } else if (session) {
+      console.log('💥 DEBUG: Session restored after cache clear');
+      setSession(session);
+      setUser(session.user);
+    }
+  };
+
+  const forceRefresh = async (): Promise<boolean> => {
+    return await forceRefreshSession();
+  };
+
   useEffect(() => {
     console.log('💥 DEBUG: Auth useEffect starting');
     
@@ -112,9 +137,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const handleAuthChange = async (event: string, session: Session | null) => {
-      console.log('💥 DEBUG: Auth change event:', event);
+      authChangeCount.current++;
+      const changeNumber = authChangeCount.current;
+      console.log(`💥 DEBUG: Auth change event #${changeNumber}:`, event);
       console.log('💥 DEBUG: Session exists:', !!session);
       console.log('💥 DEBUG: User ID:', session?.user?.id);
+
+      // Prevent race conditions by tracking the latest auth change
+      const currentChangeNumber = changeNumber;
 
       setSession(session);
       setUser(session?.user || null);
@@ -125,21 +155,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Try database first
         const dbProfile = await fetchUserProfile(session.user.id);
         
-        if (dbProfile) {
-          console.log('💥 DEBUG: Using database profile');
-          setProfile(dbProfile);
+        // Only update if this is still the latest auth change
+        if (currentChangeNumber === authChangeCount.current) {
+          if (dbProfile) {
+            console.log('💥 DEBUG: Using database profile');
+            setProfile(dbProfile);
+            lastProfileUpdate.current = Date.now();
+          } else {
+            console.log('💥 DEBUG: Using fallback profile from metadata');
+            const fallbackProfile = createProfileFromUser(session.user);
+            setProfile(fallbackProfile);
+            lastProfileUpdate.current = Date.now();
+          }
         } else {
-          console.log('💥 DEBUG: Using fallback profile from metadata');
-          const fallbackProfile = createProfileFromUser(session.user);
-          setProfile(fallbackProfile);
+          console.log('💥 DEBUG: Auth change superseded, skipping profile update');
         }
       } else {
         console.log('💥 DEBUG: No user, clearing profile');
-        setProfile(null);
+        if (currentChangeNumber === authChangeCount.current) {
+          setProfile(null);
+        }
       }
 
-      console.log('💥 DEBUG: Setting loading to false');
-      setLoading(false);
+      // Only set loading to false if this is the latest auth change
+      if (currentChangeNumber === authChangeCount.current) {
+        console.log('💥 DEBUG: Setting loading to false');
+        setLoading(false);
+      }
     };
 
     console.log('💥 DEBUG: Setting up auth listener');
@@ -159,6 +201,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Add a periodic check to ensure profile doesn't get lost
+  useEffect(() => {
+    const checkProfileConsistency = () => {
+      if (user && !profile && !loading) {
+        console.log('💥 DEBUG: Profile lost, recreating from user data');
+        const fallbackProfile = createProfileFromUser(user);
+        setProfile(fallbackProfile);
+        lastProfileUpdate.current = Date.now();
+      }
+    };
+
+    // Check every 30 seconds
+    const interval = setInterval(checkProfileConsistency, 30000);
+    return () => clearInterval(interval);
+  }, [user, profile, loading]);
+
+  // Add session staleness check
+  useEffect(() => {
+    const checkSessionStaleness = async () => {
+      const stale = await isSessionStale();
+      if (stale && session) {
+        console.log('💥 DEBUG: Session is stale, attempting refresh');
+        try {
+          const { error } = await supabase.auth.refreshSession();
+          if (error) {
+            console.error('💥 DEBUG: Failed to refresh stale session:', error);
+            // If refresh fails, clear the session
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+          } else {
+            console.log('💥 DEBUG: Session refreshed successfully');
+          }
+        } catch (error) {
+          console.error('💥 DEBUG: Error refreshing session:', error);
+        }
+      }
+    };
+
+    // Check session staleness every 2 minutes
+    sessionCheckInterval.current = setInterval(checkSessionStaleness, 2 * 60 * 1000);
+
+    return () => {
+      if (sessionCheckInterval.current) {
+        clearInterval(sessionCheckInterval.current);
+      }
+    };
+  }, [session]);
 
   const signUp = async (email: string, password: string, name?: string) => {
     try {
@@ -211,6 +302,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      // Clear cache on sign out
+      clearAuthCache();
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -244,6 +337,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         name: data.first_name || data.email?.split('@')[0] || 'User'
       };
       setProfile(profileWithName);
+      lastProfileUpdate.current = Date.now();
       return { error: null };
     } catch (error) {
       console.error('Update profile error:', error);
@@ -275,13 +369,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signOut,
     updateProfile,
     resetPassword,
+    clearCache,
+    forceRefresh,
   };
 
   console.log('💥 DEBUG: AuthProvider rendering with values:', {
     hasUser: !!user,
     hasProfile: !!profile,
     loading,
-    profileName: profile?.name
+    profileName: profile?.name,
+    lastProfileUpdate: new Date(lastProfileUpdate.current).toISOString()
   });
 
   return React.createElement(AuthContext.Provider, { value }, children);
