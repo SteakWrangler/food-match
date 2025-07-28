@@ -353,25 +353,6 @@ const Index = () => {
       
       console.log('🔴 DEBUG: Room creation process completed');
       
-      // Save room to history if user is authenticated and room creation succeeded
-      if (user && roomState) {
-        const roomHistoryService = getRoomHistoryService();
-        try {
-          await roomHistoryService.saveRoomHistoryIfNotExists({
-            userId: user.id,
-            roomId: roomState.id,
-            roomName: name,
-            location: locationToUse || 'Demo Mode',
-            restaurants: roomState.restaurants || [],
-            filters: roomState.filters
-          });
-          console.log('Room saved to history after creation');
-        } catch (historyError) {
-          console.error('Error saving room to history after creation:', historyError);
-          // Don't block room creation if history saving fails
-        }
-      }
-      
       // Show QR modal after successful room creation (only for authenticated rooms)
       if (isAuthenticated !== false) {
         console.log('🔴 DEBUG: Setting showQRCode to true');

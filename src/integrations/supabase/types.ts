@@ -110,45 +110,6 @@ export type Database = {
         }
         Relationships: []
       }
-      room_history: {
-        Row: {
-          created_at: string
-          filters: Json | null
-          id: string
-          last_accessed: string
-          location: string
-          restaurants: Json
-          room_id: string
-          room_name: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          filters?: Json | null
-          id?: string
-          last_accessed?: string
-          location: string
-          restaurants?: Json
-          room_id: string
-          room_name?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          filters?: Json | null
-          id?: string
-          last_accessed?: string
-          location?: string
-          restaurants?: Json
-          room_id?: string
-          room_name?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       rooms: {
         Row: {
           created_at: string
