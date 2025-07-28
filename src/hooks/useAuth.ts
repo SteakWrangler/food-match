@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-console.log('🔥 DEBUG: useAuth.ts file loaded!');
+console.log('🔥🔥🔥 FORCE REFRESH: useAuth.ts file loaded at', new Date().toISOString());
 
 export interface UserProfile {
   id: string;
