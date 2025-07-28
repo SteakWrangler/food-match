@@ -348,7 +348,8 @@ const Index = () => {
         const roomId = await createDemoRoom(name, 'Demo Mode');
         console.log('🔴 DEBUG: Demo room created with ID:', roomId);
         console.log('🔴 DEBUG: Room state after demo creation:', roomState);
-        // Don't show QR modal for demo rooms - just go straight to the room
+        // Close modal for demo rooms - go straight to the room
+        setShowCreateRoom(false);
       }
       
       console.log('🔴 DEBUG: Room creation process completed');
