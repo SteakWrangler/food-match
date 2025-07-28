@@ -179,25 +179,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Clean up cache periodically
     const cleanupInterval = setInterval(cleanupCache, 60000); // Every minute
 
+    // DISABLED: Auto-login functionality removed to prevent session reconstruction issues
+    // Instead, app starts unauthenticated and users must sign in manually
     const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!isMounted) return;
-        
-        console.log('🔍 DEBUG: Initial session:', session?.user?.email);
-        setUser(session?.user ?? null);
-        setSession(session);
-        
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        }
-        
-        if (isMounted) {
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('🔍 DEBUG: Initial session error:', error);
-        if (isMounted) setLoading(false);
+      console.log('🔍 DEBUG: Auto-login disabled - starting unauthenticated');
+      if (isMounted) {
+        setLoading(false); // Start with loading false, no user
       }
     };
 
@@ -211,7 +198,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(session);
         
         if (session?.user) {
-          // For re-authentication, use cache if valid, otherwise fetch fresh
+          // For manual authentication, fetch profile fresh
           await fetchProfile(session.user.id);
         } else {
           // Clear profile when signed out
