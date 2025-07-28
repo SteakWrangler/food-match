@@ -1121,9 +1121,6 @@ const Index = () => {
         onClose={() => setShowUserProfile(false)}
         onRecreateRoom={handleRecreateRoom}
       />
-
-             {/* Auth Debug Panel */}
-       <AuthDebugPanel />
     </div>
   );
 };

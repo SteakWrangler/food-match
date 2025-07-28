@@ -53,6 +53,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const authChangeCount = useRef(0);
   const lastProfileUpdate = useRef<number>(0);
   const sessionCheckInterval = useRef<NodeJS.Timeout | null>(null);
+  const authStartTime = useRef<number>(Date.now());
+  const lastAuthEvent = useRef<string>('');
+  const profileFetchPromise = useRef<Promise<UserProfile | null> | null>(null);
 
   console.log('💥 DEBUG: AuthProvider initialized');
 
@@ -110,8 +113,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     console.log('💥 DEBUG: Auth useEffect starting');
+    authStartTime.current = Date.now();
     
-    const fetchUserProfile = async (userId: string) => {
+    const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
       console.log('💥 DEBUG: Attempting to fetch profile for:', userId);
       try {
         const { data, error } = await supabase
@@ -137,38 +141,73 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const handleAuthChange = async (event: string, session: Session | null) => {
+      const now = Date.now();
+      const timeSinceStart = now - authStartTime.current;
+      const timeSinceLastEvent = lastAuthEvent.current ? now - parseInt(lastAuthEvent.current.split('_')[1] || '0') : 0;
+      
       authChangeCount.current++;
       const changeNumber = authChangeCount.current;
+      lastAuthEvent.current = `${event}_${now}`;
+      
       console.log(`💥 DEBUG: Auth change event #${changeNumber}:`, event);
+      console.log('💥 DEBUG: Time since auth start:', timeSinceStart, 'ms');
+      console.log('💥 DEBUG: Time since last event:', timeSinceLastEvent, 'ms');
       console.log('💥 DEBUG: Session exists:', !!session);
       console.log('💥 DEBUG: User ID:', session?.user?.id);
 
       // Prevent race conditions by tracking the latest auth change
       const currentChangeNumber = changeNumber;
 
+      // Update session and user immediately
       setSession(session);
       setUser(session?.user || null);
 
       if (session?.user) {
         console.log('💥 DEBUG: User authenticated, processing profile');
+        console.log('💥 DEBUG: User metadata:', session.user.user_metadata);
+        console.log('💥 DEBUG: User email:', session.user.email);
         
-        // Try database first
-        const dbProfile = await fetchUserProfile(session.user.id);
-        
-        // Only update if this is still the latest auth change
+        // Only process profile if this is still the latest auth change
         if (currentChangeNumber === authChangeCount.current) {
-          if (dbProfile) {
-            console.log('💥 DEBUG: Using database profile');
-            setProfile(dbProfile);
-            lastProfileUpdate.current = Date.now();
-          } else {
-            console.log('💥 DEBUG: Using fallback profile from metadata');
-            const fallbackProfile = createProfileFromUser(session.user);
-            setProfile(fallbackProfile);
-            lastProfileUpdate.current = Date.now();
+          // Cancel any existing profile fetch
+          if (profileFetchPromise.current) {
+            console.log('💥 DEBUG: Cancelling previous profile fetch');
+          }
+          
+          // Start new profile fetch
+          profileFetchPromise.current = fetchUserProfile(session.user.id);
+          
+          try {
+            const dbProfile = await profileFetchPromise.current;
+            
+            // Only update if this is still the latest auth change
+            if (currentChangeNumber === authChangeCount.current) {
+              if (dbProfile) {
+                console.log('💥 DEBUG: Using database profile');
+                setProfile(dbProfile);
+                lastProfileUpdate.current = Date.now();
+              } else {
+                console.log('💥 DEBUG: Using fallback profile from metadata');
+                const fallbackProfile = createProfileFromUser(session.user);
+                setProfile(fallbackProfile);
+                lastProfileUpdate.current = Date.now();
+              }
+            } else {
+              console.log('💥 DEBUG: Auth change superseded, skipping profile update');
+            }
+          } catch (error) {
+            console.error('💥 DEBUG: Profile fetch failed:', error);
+            // Use fallback profile on error
+            if (currentChangeNumber === authChangeCount.current) {
+              const fallbackProfile = createProfileFromUser(session.user);
+              setProfile(fallbackProfile);
+              lastProfileUpdate.current = Date.now();
+            }
+          } finally {
+            profileFetchPromise.current = null;
           }
         } else {
-          console.log('💥 DEBUG: Auth change superseded, skipping profile update');
+          console.log('💥 DEBUG: Auth change superseded, skipping profile processing');
         }
       } else {
         console.log('💥 DEBUG: No user, clearing profile');
@@ -177,19 +216,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
 
-      // Only set loading to false if this is the latest auth change
-      if (currentChangeNumber === authChangeCount.current) {
-        console.log('💥 DEBUG: Setting loading to false');
-        setLoading(false);
-      }
+      // Set loading to false for any auth change, not just the latest
+      // This prevents the loading state from getting stuck
+      console.log('💥 DEBUG: Setting loading to false');
+      setLoading(false);
     };
 
     console.log('💥 DEBUG: Setting up auth listener');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
     console.log('💥 DEBUG: Getting initial session');
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       console.log('💥 DEBUG: Initial session received:', !!session);
+      console.log('💥 DEBUG: Initial session error:', error);
+      if (error) {
+        console.error('💥 DEBUG: Error getting initial session:', error);
+      }
       handleAuthChange('INITIAL_SESSION', session);
     }).catch((error) => {
       console.error('💥 DEBUG: Error getting initial session:', error);
