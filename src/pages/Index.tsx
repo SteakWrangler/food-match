@@ -535,9 +535,16 @@ const Index = () => {
   };
 
   const handleFoodTypeSwipe = (foodTypeId: string, direction: 'left' | 'right') => {
-    if (!roomState || !participantId) return;
+    console.log('🍕 DEBUG: handleFoodTypeSwipe called:', { foodTypeId, direction, participantId });
+    console.log('🍕 DEBUG: roomState exists:', !!roomState);
+    console.log('🍕 DEBUG: participantId exists:', !!participantId);
     
-    console.log('handleFoodTypeSwipe called:', { foodTypeId, direction, participantId });
+    if (!roomState || !participantId) {
+      console.error('🍕 DEBUG: Early return - missing roomState or participantId');
+      return;
+    }
+    
+    console.log('🍕 DEBUG: Validation passed, proceeding with swipe logic');
     console.log('Current room state before swipe:', roomState);
     
     // Check for match BEFORE adding the swipe (since we know what direction we're swiping)
@@ -577,7 +584,9 @@ const Index = () => {
       }
     }
     
+    console.log('🍕 DEBUG: About to call addSwipe with:', { foodTypeId, direction, type: 'foodType' });
     addSwipe(foodTypeId, direction, 'foodType');
+    console.log('🍕 DEBUG: addSwipe call completed');
   };
 
   // Responsive container classes

@@ -472,9 +472,20 @@ const useRoom = () => {
   };
 
   const addSwipe = async (itemId: string, direction: 'left' | 'right', type: 'restaurant' | 'foodType' = 'restaurant') => {
-    if (!roomState) return;
+    console.log('🎯 DEBUG: addSwipe called with:', { itemId, direction, type, roomId: roomState?.id, participantId });
+    
+    if (!roomState) {
+      console.error('🎯 DEBUG: addSwipe failed - no roomState');
+      return;
+    }
+    
+    if (!participantId) {
+      console.error('🎯 DEBUG: addSwipe failed - no participantId');
+      return;
+    }
 
     try {
+      console.log('🎯 DEBUG: Calling roomService.updateSwipe...');
       const updatedRoomData = await roomService.updateSwipe({
         roomId: roomState.id,
         participantId,
@@ -482,11 +493,13 @@ const useRoom = () => {
         direction,
         type
       });
-
+      console.log('🎯 DEBUG: roomService.updateSwipe succeeded, updating room state');
+      
       const updatedRoomState = convertRoomDataToState(updatedRoomData);
       setRoomState(updatedRoomState);
+      console.log('🎯 DEBUG: addSwipe completed successfully');
     } catch (error) {
-      console.error('Error adding swipe:', error);
+      console.error('🎯 DEBUG: Error in addSwipe:', error);
       throw error;
     }
   };
