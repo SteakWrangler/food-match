@@ -93,43 +93,48 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const handleAuthStateChange = async (event: string, newSession: Session | null) => {
     console.log('🔄 DEBUG: Auth state change:', event, 'userId:', newSession?.user?.id);
     
-    setSession(newSession);
-    setUser(newSession?.user || null);
+    try {
+      setSession(newSession);
+      setUser(newSession?.user || null);
 
-    if (newSession?.user) {
-      console.log('👤 DEBUG: User found, fetching profile for:', newSession.user.id);
-      
-      // Try to fetch from database first
-      const userProfile = await fetchProfile(newSession.user.id);
-      console.log('👤 DEBUG: Database profile fetch result:', userProfile);
-      
-      if (userProfile) {
-        setProfile(userProfile);
+      if (newSession?.user) {
+        console.log('👤 DEBUG: User found, fetching profile for:', newSession.user.id);
+        
+        // Try to fetch from database first
+        const userProfile = await fetchProfile(newSession.user.id);
+        console.log('👤 DEBUG: Database profile fetch result:', userProfile);
+        
+        if (userProfile) {
+          console.log('✅ DEBUG: Setting profile from database');
+          setProfile(userProfile);
+        } else {
+          // Fall back to metadata if no database profile exists
+          const userName = newSession.user.user_metadata?.name || newSession.user.email?.split('@')[0] || 'User';
+          console.log('🎯 DEBUG: Using metadata name as fallback:', userName);
+          
+          const tempProfile = {
+            id: newSession.user.id,
+            email: newSession.user.email || '',
+            first_name: userName.split(' ')[0] || userName,
+            last_name: userName.split(' ')[1] || null,
+            name: userName,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          console.log('👤 DEBUG: Temporary profile created:', tempProfile);
+          setProfile(tempProfile);
+        }
       } else {
-        // Fall back to metadata if no database profile exists
-        const userName = newSession.user.user_metadata?.name || newSession.user.email?.split('@')[0] || 'User';
-        console.log('🎯 DEBUG: Using metadata name as fallback:', userName);
-        
-        const tempProfile = {
-          id: newSession.user.id,
-          email: newSession.user.email || '',
-          first_name: userName.split(' ')[0] || userName,
-          last_name: userName.split(' ')[1] || null,
-          name: userName,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        console.log('👤 DEBUG: Temporary profile created:', tempProfile);
-        setProfile(tempProfile);
+        console.log('👤 DEBUG: No user, clearing profile');
+        setProfile(null);
       }
-    } else {
-      console.log('👤 DEBUG: No user, clearing profile');
-      setProfile(null);
+    } catch (error) {
+      console.error('❌ DEBUG: Error in handleAuthStateChange:', error);
+    } finally {
+      console.log('⏳ DEBUG: Setting loading to false');
+      setLoading(false);
     }
-
-    console.log('⏳ DEBUG: Setting loading to false');
-    setLoading(false);
   };
 
   useEffect(() => {
