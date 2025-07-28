@@ -182,14 +182,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // DISABLED: Auto-login functionality removed to prevent session reconstruction issues
     // Instead, app starts unauthenticated and users must sign in manually
     const initializeAuth = async () => {
-      console.log('🔍 DEBUG: Auto-login disabled - clearing any stored session');
+      console.log('🔍 DEBUG: Auto-login disabled - clearing ALL auth storage');
       
-      // Clear any stored session data to prevent Supabase from auto-restoring
+      // Nuclear option: Clear all possible auth storage locations
       try {
+        // Clear Supabase auth storage directly from localStorage
+        const supabaseKeys = Object.keys(localStorage).filter(key => 
+          key.startsWith('sb-') || key.includes('supabase') || key.includes('auth')
+        );
+        supabaseKeys.forEach(key => {
+          localStorage.removeItem(key);
+          console.log('🔍 DEBUG: Removed storage key:', key);
+        });
+        
+        // Also try the official signOut
         await supabase.auth.signOut({ scope: 'local' });
-        console.log('🔍 DEBUG: Cleared stored session data');
+        console.log('🔍 DEBUG: Completed aggressive session clearing');
       } catch (error) {
-        console.log('🔍 DEBUG: No stored session to clear');
+        console.log('🔍 DEBUG: Error during session clearing:', error);
       }
       
       if (isMounted) {
