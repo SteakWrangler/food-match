@@ -52,7 +52,8 @@ const Index = () => {
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
 
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, loading } = useAuth();
+  console.log('⚡ Index.tsx - Auth state:', { user: !!user, profile, loading, profileName: profile?.name });
   
   const deviceType = useDeviceType();
   
