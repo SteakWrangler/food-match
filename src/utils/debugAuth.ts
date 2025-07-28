@@ -104,7 +104,7 @@ export const logAuthState = () => {
   });
 };
 
-// Auto-log auth state every 30 seconds in development
-if (import.meta.env.DEV) {
-  setInterval(logAuthState, 30000);
-} 
+// Disabled auto-logging to prevent re-auth loops
+// if (import.meta.env.DEV) {
+//   setInterval(logAuthState, 30000);
+// }
