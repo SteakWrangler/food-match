@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw, Trash2, AlertTriangle, Info } from 'lucide-react';
 
 export const AuthDebugPanel = () => {
-  const { user, profile, session, loading, clearCache, forceRefresh } = useAuth();
+  const { user, profile, session, loading, clearAuthCache, forceRefreshSession } = useAuth();
   const [debugInfo, setDebugInfo] = useState<any>({});
   const [isClearing, setIsClearing] = useState(false);
   const [localStorageInfo, setLocalStorageInfo] = useState<any>({});
@@ -55,7 +55,7 @@ export const AuthDebugPanel = () => {
   const handleClearCache = async () => {
     setIsClearing(true);
     try {
-      await clearCache();
+      clearAuthCache();
       console.log('Cache cleared successfully');
     } catch (error) {
       console.error('Failed to clear cache:', error);
@@ -67,7 +67,7 @@ export const AuthDebugPanel = () => {
   const handleForceRefresh = async () => {
     setIsClearing(true);
     try {
-      const success = await forceRefresh();
+      const success = await forceRefreshSession();
       console.log('Force refresh result:', success);
     } catch (error) {
       console.error('Force refresh failed:', error);
@@ -99,7 +99,7 @@ export const AuthDebugPanel = () => {
     setIsClearing(true);
     try {
       // Clear cache first
-      await clearCache();
+      clearAuthCache();
       
       // Force immediate session refresh
       const { supabase } = await import('@/integrations/supabase/client');

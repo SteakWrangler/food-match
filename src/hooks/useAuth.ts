@@ -279,24 +279,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        profile,
-        loading,
-        signUp,
-        signIn,
-        signOut,
-        signInWithGoogle,
-        updateProfile,
-        resetPassword,
-        clearAuthCache: clearCache,
-        forceRefreshSession: forceRefresh,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const contextValue: AuthContextType = {
+    user,
+    session,
+    profile,
+    loading,
+    signUp,
+    signIn,
+    signOut,
+    signInWithGoogle,
+    updateProfile,
+    resetPassword,
+    clearAuthCache: clearCache,
+    forceRefreshSession: forceRefresh,
+  };
+
+  return React.createElement(
+    AuthContext.Provider,
+    { value: contextValue },
+    children
   );
 };
