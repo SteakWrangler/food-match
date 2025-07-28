@@ -49,27 +49,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
     console.log('🔍 DEBUG: fetchProfile called for userId:', userId);
+    console.log('🔍 DEBUG: About to call supabase.from(profiles)');
+    
     try {
+      console.log('🔍 DEBUG: Making database query...');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-      console.log('📊 DEBUG: Profile query result:', { data, error });
+      console.log('📊 DEBUG: Profile query completed');
+      console.log('📊 DEBUG: Profile query result - data:', data);
+      console.log('📊 DEBUG: Profile query result - error:', error);
       console.log('📊 DEBUG: Raw profile data:', JSON.stringify(data, null, 2));
 
       if (error) {
         console.error('❌ DEBUG: Error fetching profile:', error);
+        console.error('❌ DEBUG: Error message:', error.message);
+        console.error('❌ DEBUG: Error details:', error.details);
         return null;
       }
 
       if (!data) {
-        console.log('⚠️ DEBUG: No profile data found');
+        console.log('⚠️ DEBUG: No profile data found for user:', userId);
         return null;
       }
 
       console.log('🔤 DEBUG: data.first_name =', data.first_name);
+      console.log('🔤 DEBUG: data.last_name =', data.last_name);
       console.log('🔤 DEBUG: data.email =', data.email);
       console.log('🔤 DEBUG: email split =', data.email?.split('@')[0]);
 
@@ -85,7 +93,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('✅ DEBUG: Final profile with name:', JSON.stringify(finalProfile, null, 2));
       return finalProfile;
     } catch (error) {
-      console.error('💥 DEBUG: Error in fetchProfile:', error);
+      console.error('💥 DEBUG: Catch block - Error in fetchProfile:', error);
+      console.error('💥 DEBUG: Error type:', typeof error);
+      console.error('💥 DEBUG: Error constructor:', error?.constructor?.name);
       return null;
     }
   };
@@ -138,17 +148,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    console.log('🚀 DEBUG: useAuth useEffect starting - setting up auth listener');
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+    console.log('🚀 DEBUG: Auth state change listener set up');
 
     // Get initial session and handle it immediately
+    console.log('🚀 DEBUG: Getting initial session...');
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      console.log('🚀 DEBUG: Initial session received:', !!initialSession);
+      console.log('🚀 DEBUG: Initial session user:', initialSession?.user?.id);
       handleAuthStateChange('INITIAL_SESSION', initialSession);
     }).catch((err) => {
-      console.error('Error getting initial session:', err);
+      console.error('🚀 DEBUG: Error getting initial session:', err);
       setLoading(false);
     });
 
     return () => {
+      console.log('🚀 DEBUG: Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, []);

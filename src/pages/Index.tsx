@@ -279,6 +279,7 @@ const Index = () => {
           console.log('🔴 DEBUG: Location is not coordinates, starting geocoding');
           // It's an address, need to geocode it
           try {
+            console.log('🔴 DEBUG: About to call geocoding function with address:', locationToSet);
             const { data, error } = await supabase.functions.invoke('geocoding', {
               body: {
                 action: 'geocode',
@@ -286,25 +287,30 @@ const Index = () => {
               },
             });
 
-            console.log('🔴 DEBUG: Geocoding response:', { data, error });
+            console.log('🔴 DEBUG: Geocoding response received');
+            console.log('🔴 DEBUG: Geocoding data:', data);
+            console.log('🔴 DEBUG: Geocoding error:', error);
 
             if (error || !data?.lat || !data?.lng) {
-              console.error('Geocoding failed for room creation:', error);
+              console.error('🔴 DEBUG: Geocoding failed - error:', error);
+              console.error('🔴 DEBUG: Geocoding failed - data:', data);
               setError('Unable to find that location. Try entering your location in a format like "San Francisco, CA", "94102", or "New York, NY".');
               setIsCreatingRoom(false);
               return;
             }
             
             coordinatesForAPI = `${data.lat}, ${data.lng}`;
-            console.log('Geocoded address to coordinates:', coordinatesForAPI);
+            console.log('🔴 DEBUG: Geocoded address to coordinates:', coordinatesForAPI);
           } catch (error) {
-            console.error('🔴 DEBUG: Geocoding error caught:', error);
+            console.error('🔴 DEBUG: Geocoding error caught in catch block:', error);
+            console.error('🔴 DEBUG: Error type:', typeof error);
+            console.error('🔴 DEBUG: Error message:', error?.message);
             setError('Unable to find that location. Try entering your location in a format like "San Francisco, CA", "94102", or "New York, NY".');
             setIsCreatingRoom(false);
             return;
           }
         } else {
-          console.log('🔴 DEBUG: Location is already coordinates');
+          console.log('🔴 DEBUG: Location is already coordinates - skipping geocoding');
         }
         
         // Normalize formattedAddress - handle the weird object format
@@ -313,21 +319,33 @@ const Index = () => {
           : formattedAddress;
         
         // Create room with coordinates
-        console.log('🔴 DEBUG: About to call createRoom with:', { 
-          name, 
-          coordinatesForAPI, 
-          filters, 
-          normalizedFormattedAddress 
-        });
+        console.log('🔴 DEBUG: About to call createRoom with:');
+        console.log('🔴 DEBUG: - name:', name);
+        console.log('🔴 DEBUG: - coordinatesForAPI:', coordinatesForAPI);
+        console.log('🔴 DEBUG: - filters:', filters);
+        console.log('🔴 DEBUG: - normalizedFormattedAddress:', normalizedFormattedAddress);
+        console.log('🔴 DEBUG: - user:', user);
+        console.log('🔴 DEBUG: - user.id:', user?.id);
         
-        await createRoom(name, coordinatesForAPI, filters, normalizedFormattedAddress);
+        const createRoomResult = await createRoom(name, coordinatesForAPI, filters, normalizedFormattedAddress);
+        console.log('🔴 DEBUG: createRoom result:', createRoomResult);
+        console.log('🔴 DEBUG: createRoom result type:', typeof createRoomResult);
+        
+        // Check if it's a string (room ID) or an object with success property
+        if (typeof createRoomResult === 'string') {
+          console.log('🔴 DEBUG: createRoom returned room ID:', createRoomResult);
+        } else if (!createRoomResult || typeof createRoomResult === 'object') {
+          console.error('🔴 DEBUG: createRoom failed with result:', createRoomResult);
+          throw new Error('Room creation failed');
+        }
+        
         console.log('🔴 DEBUG: createRoom completed successfully');
       } else {
         // Demo room creation - food types only, no API calls
         console.log('🔴 DEBUG: Creating demo room...');
         const roomId = await createDemoRoom(name, 'Demo Mode');
-        console.log('Demo room created with ID:', roomId);
-        console.log('Room state after demo creation:', roomState);
+        console.log('🔴 DEBUG: Demo room created with ID:', roomId);
+        console.log('🔴 DEBUG: Room state after demo creation:', roomState);
         // Don't show QR modal for demo rooms - just go straight to the room
       }
       

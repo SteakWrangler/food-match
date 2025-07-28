@@ -156,10 +156,19 @@ const useRoom = () => {
   }, [roomState?.id, participantId]);
 
   const createRoom = async (hostName: string, location: string, filters: FilterState, formattedAddress?: string) => {
+    console.log('🏠 DEBUG: createRoom function called with:');
+    console.log('🏠 DEBUG: - hostName:', hostName);
+    console.log('🏠 DEBUG: - location:', location);
+    console.log('🏠 DEBUG: - filters:', filters);
+    console.log('🏠 DEBUG: - formattedAddress:', formattedAddress);
+    console.log('🏠 DEBUG: - participantId:', participantId);
+    
     try {
       // Set loading state immediately
+      console.log('🏠 DEBUG: Setting isLoadingRestaurants to true');
       setIsLoadingRestaurants(true);
       
+      console.log('🏠 DEBUG: About to call roomService.createRoom');
       const roomData = await roomService.createRoom({
         hostId: participantId,
         hostName,
@@ -167,25 +176,41 @@ const useRoom = () => {
         filters
       });
 
+      console.log('🏠 DEBUG: roomService.createRoom completed successfully');
+      console.log('🏠 DEBUG: roomData:', roomData);
+      console.log('🏠 DEBUG: roomData.id:', roomData.id);
       console.log(`Created room ${roomData.id} from ${location}`);
       
       // Load initial 3 restaurants first, then set room state immediately
+      console.log('🏠 DEBUG: About to call loadInitialRestaurants');
       const success = await loadInitialRestaurants(roomData.id, location, filters, true);
+      console.log('🏠 DEBUG: loadInitialRestaurants result:', success);
       
       if (success) {
+        console.log('🏠 DEBUG: loadInitialRestaurants succeeded, getting updated room data');
         // Set room state immediately after initial 3 restaurants are loaded
         const updatedRoomData = await roomService.getRoom(roomData.id);
+        console.log('🏠 DEBUG: updatedRoomData:', updatedRoomData);
+        
         if (updatedRoomData) {
+          console.log('🏠 DEBUG: Converting room data to state');
           const roomState = convertRoomDataToState(updatedRoomData);
+          console.log('🏠 DEBUG: converted roomState:', roomState);
+          
           // Set the formatted address in the room state
           if (formattedAddress) {
+            console.log('🏠 DEBUG: Setting formattedAddress in room state:', formattedAddress);
             roomState.formattedAddress = formattedAddress;
           }
+          console.log('🏠 DEBUG: Setting room state');
           setRoomState(roomState);
           setIsHost(true);
           console.log(`Room ready with ${updatedRoomData.restaurants?.length || 0} initial restaurants`);
+        } else {
+          console.error('🏠 DEBUG: Failed to get updated room data');
         }
       } else {
+        console.log('🏠 DEBUG: loadInitialRestaurants failed, creating room with empty restaurants');
         // If loading failed, still create the room but with empty restaurants
         const roomState = convertRoomDataToState(roomData);
         // Set the formatted address in the room state
@@ -197,10 +222,15 @@ const useRoom = () => {
         console.log('Room created but restaurant loading failed');
       }
       
+      console.log('🏠 DEBUG: Setting isLoadingRestaurants to false');
       setIsLoadingRestaurants(false);
+      console.log('🏠 DEBUG: Returning room ID:', roomData.id);
       return roomData.id;
     } catch (error) {
-      console.error('Error creating room:', error);
+      console.error('🏠 DEBUG: Error in createRoom:', error);
+      console.error('🏠 DEBUG: Error type:', typeof error);
+      console.error('🏠 DEBUG: Error message:', error?.message);
+      console.error('🏠 DEBUG: Error stack:', error?.stack);
       setRoomState(null);
       setIsHost(false);
       setIsLoadingRestaurants(false);

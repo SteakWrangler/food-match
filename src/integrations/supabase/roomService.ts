@@ -82,14 +82,26 @@ export class RoomService {
   }
 
   async createRoom(params: CreateRoomParams): Promise<RoomData> {
-    console.log('roomService.createRoom called with params:', params);
+    console.log('🏢 DEBUG: roomService.createRoom called with params:', params);
+    console.log('🏢 DEBUG: params type check:');
+    console.log('🏢 DEBUG: - hostId type:', typeof params.hostId);
+    console.log('🏢 DEBUG: - hostId value:', params.hostId);
+    console.log('🏢 DEBUG: - hostName type:', typeof params.hostName);
+    console.log('🏢 DEBUG: - hostName value:', params.hostName);
+    console.log('🏢 DEBUG: - location type:', typeof params.location);
+    console.log('🏢 DEBUG: - location value:', params.location);
+    console.log('🏢 DEBUG: - filters:', params.filters);
+    
     const { hostId, hostName, location, filters } = params;
     
     // Ensure hostId is a valid UUID
+    console.log('🏢 DEBUG: Checking hostId validity');
     if (!hostId || typeof hostId !== 'string') {
+      console.error('🏢 DEBUG: Invalid host ID provided:', hostId);
       throw new Error('Invalid host ID provided');
     }
     
+    console.log('🏢 DEBUG: Creating room data object');
     const roomData = {
       id: Math.random().toString(36).substr(2, 9).toUpperCase(),
       host_id: hostId, // This should now be a UUID
@@ -108,7 +120,8 @@ export class RoomService {
       // - next_page_token: null
     };
 
-    console.log('About to insert room data:', roomData);
+    console.log('🏢 DEBUG: Room data created:', roomData);
+    console.log('🏢 DEBUG: About to insert room data into Supabase');
 
     const { data, error } = await supabase
       .from('rooms')
@@ -116,14 +129,21 @@ export class RoomService {
       .select()
       .single();
 
-    console.log('Supabase response:', { data, error });
+    console.log('🏢 DEBUG: Supabase insert completed');
+    console.log('🏢 DEBUG: Supabase response data:', data);
+    console.log('🏢 DEBUG: Supabase response error:', error);
 
     if (error) {
-      console.error('Error creating room:', error);
+      console.error('🏢 DEBUG: Error creating room - full error object:', error);
+      console.error('🏢 DEBUG: Error message:', error.message);
+      console.error('🏢 DEBUG: Error details:', error.details);
+      console.error('🏢 DEBUG: Error hint:', error.hint);
+      console.error('🏢 DEBUG: Error code:', error.code);
       throw new Error(`Failed to create room: ${error.message}`);
     }
 
-    console.log('Room created successfully:', data);
+    console.log('🏢 DEBUG: Room created successfully in database');
+    console.log('🏢 DEBUG: Returning room data:', data);
     return data;
   }
 
