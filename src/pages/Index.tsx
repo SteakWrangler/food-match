@@ -237,7 +237,7 @@ const Index = () => {
   }, [roomState]);
 
   const handleCreateRoom = async (name: string, locationToUse?: string, formattedAddress?: string, isAuthenticated?: boolean) => {
-    console.log('handleCreateRoom called with:', { name, locationToUse, formattedAddress, isAuthenticated });
+    console.log('🔴 DEBUG: handleCreateRoom called with:', { name, locationToUse, formattedAddress, isAuthenticated });
     
     if (isCreatingRoom) return; // Prevent multiple submissions
     
@@ -297,7 +297,9 @@ const Index = () => {
         }
         
         // Create room with coordinates
+        console.log('🔴 DEBUG: About to call createRoom with:', { name, coordinatesForAPI, filters, formattedAddress });
         await createRoom(name, coordinatesForAPI, filters, formattedAddress);
+        console.log('🔴 DEBUG: createRoom completed successfully');
       } else {
         // Demo room creation - food types only, no API calls
         console.log('Creating demo room...');
