@@ -7,8 +7,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce', // Use PKCE flow for better security and reliability
+    detectSessionInUrl: false, // Disable this to prevent duplicate events
     storage: {
       getItem: (key) => {
         try {
@@ -40,55 +39,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     }
   }
 });
-
-// Add session monitoring and automatic refresh
-let refreshTimer: NodeJS.Timeout | null = null;
-
-export const setupSessionMonitoring = () => {
-  // Clear any existing timer
-  if (refreshTimer) {
-    clearTimeout(refreshTimer);
-  }
-
-  // Check session every 5 minutes
-  refreshTimer = setInterval(async () => {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.warn('Session check error:', error);
-        return;
-      }
-
-      if (session) {
-        // Check if token expires in the next 10 minutes
-        const expiresAt = session.expires_at;
-        const now = Math.floor(Date.now() / 1000);
-        const timeUntilExpiry = expiresAt - now;
-        
-        if (timeUntilExpiry < 600) { // 10 minutes
-          console.log('Token expiring soon, refreshing...');
-          const { error: refreshError } = await supabase.auth.refreshSession();
-          if (refreshError) {
-            console.error('Failed to refresh session:', refreshError);
-          } else {
-            console.log('Session refreshed successfully');
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Session monitoring error:', error);
-    }
-  }, 5 * 60 * 1000); // 5 minutes
-};
-
-// Cleanup function
-export const cleanupSessionMonitoring = () => {
-  if (refreshTimer) {
-    clearTimeout(refreshTimer);
-    refreshTimer = null;
-  }
-};
 
 // Cache clearing functions
 export const clearAuthCache = () => {

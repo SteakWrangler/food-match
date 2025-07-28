@@ -22,17 +22,17 @@ export interface UserProfile {
 
 interface AuthContextType {
   user: User | null;
-  profile: UserProfile | null;
   session: Session | null;
+  profile: UserProfile | null;
   loading: boolean;
-  signUp: (email: string, password: string, name?: string) => Promise<{ error: AuthError | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signInWithGoogle: () => Promise<{ error: AuthError | null }>;
+  signUp: (email: string, password: string, name?: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: any | null }>;
-  resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
-  clearCache: () => Promise<void>;
-  forceRefresh: () => Promise<boolean>;
+  signInWithGoogle: () => Promise<{ error: any }>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
+  clearAuthCache: () => boolean;
+  forceRefreshSession: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,6 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const authStartTime = useRef<number>(Date.now());
   const lastAuthEvent = useRef<string>('');
   const profileFetchPromise = useRef<Promise<UserProfile | null> | null>(null);
+  const authListenerSetup = useRef(false);
 
   console.log('💥 DEBUG: AuthProvider initialized');
 
@@ -115,6 +116,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('💥 DEBUG: Auth useEffect starting');
     authStartTime.current = Date.now();
     
+    // Prevent multiple auth listener setups
+    if (authListenerSetup.current) {
+      console.log('💥 DEBUG: Auth listener already setup, skipping');
+      return;
+    }
+    
+    authListenerSetup.current = true;
+    
     const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
       console.log('💥 DEBUG: Attempting to fetch profile for:', userId);
       try {
@@ -169,42 +178,54 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         // Only process profile if this is still the latest auth change
         if (currentChangeNumber === authChangeCount.current) {
-          // Cancel any existing profile fetch
-          if (profileFetchPromise.current) {
-            console.log('💥 DEBUG: Cancelling previous profile fetch');
-          }
+          // Check if we already have a profile for this user to prevent duplicate processing
+          const existingProfile = profile;
+          const isDuplicateSignIn = event === 'SIGNED_IN' && 
+                                   existingProfile && 
+                                   existingProfile.id === session.user.id;
           
-          // Start new profile fetch
-          profileFetchPromise.current = fetchUserProfile(session.user.id);
-          
-          try {
-            const dbProfile = await profileFetchPromise.current;
+          if (isDuplicateSignIn) {
+            console.log('💥 DEBUG: Detected duplicate SIGNED_IN event, skipping profile processing');
+            console.log('💥 DEBUG: Existing profile:', existingProfile.name);
+            console.log('💥 DEBUG: Time since last event:', timeSinceLastEvent, 'ms');
+          } else {
+            // Cancel any existing profile fetch
+            if (profileFetchPromise.current) {
+              console.log('💥 DEBUG: Cancelling previous profile fetch');
+            }
             
-            // Only update if this is still the latest auth change
-            if (currentChangeNumber === authChangeCount.current) {
-              if (dbProfile) {
-                console.log('💥 DEBUG: Using database profile');
-                setProfile(dbProfile);
-                lastProfileUpdate.current = Date.now();
+            // Start new profile fetch
+            profileFetchPromise.current = fetchUserProfile(session.user.id);
+            
+            try {
+              const dbProfile = await profileFetchPromise.current;
+              
+              // Only update if this is still the latest auth change
+              if (currentChangeNumber === authChangeCount.current) {
+                if (dbProfile) {
+                  console.log('💥 DEBUG: Using database profile');
+                  setProfile(dbProfile);
+                  lastProfileUpdate.current = Date.now();
+                } else {
+                  console.log('💥 DEBUG: Using fallback profile from metadata');
+                  const fallbackProfile = createProfileFromUser(session.user);
+                  setProfile(fallbackProfile);
+                  lastProfileUpdate.current = Date.now();
+                }
               } else {
-                console.log('💥 DEBUG: Using fallback profile from metadata');
+                console.log('💥 DEBUG: Auth change superseded, skipping profile update');
+              }
+            } catch (error) {
+              console.error('💥 DEBUG: Profile fetch failed:', error);
+              // Use fallback profile on error
+              if (currentChangeNumber === authChangeCount.current) {
                 const fallbackProfile = createProfileFromUser(session.user);
                 setProfile(fallbackProfile);
                 lastProfileUpdate.current = Date.now();
               }
-            } else {
-              console.log('💥 DEBUG: Auth change superseded, skipping profile update');
+            } finally {
+              profileFetchPromise.current = null;
             }
-          } catch (error) {
-            console.error('💥 DEBUG: Profile fetch failed:', error);
-            // Use fallback profile on error
-            if (currentChangeNumber === authChangeCount.current) {
-              const fallbackProfile = createProfileFromUser(session.user);
-              setProfile(fallbackProfile);
-              lastProfileUpdate.current = Date.now();
-            }
-          } finally {
-            profileFetchPromise.current = null;
           }
         } else {
           console.log('💥 DEBUG: Auth change superseded, skipping profile processing');
@@ -241,6 +262,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       console.log('💥 DEBUG: Cleaning up auth subscription');
       subscription.unsubscribe();
+      authListenerSetup.current = false;
     };
   }, []);
 
@@ -259,6 +281,73 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const interval = setInterval(checkProfileConsistency, 30000);
     return () => clearInterval(interval);
   }, [user, profile, loading]);
+
+  // Add corruption detection and automatic recovery
+  useEffect(() => {
+    const detectAndFixCorruption = () => {
+      // Check for common corruption indicators
+      const hasUser = !!user;
+      const hasProfile = !!profile;
+      const hasSession = !!session;
+      const isLoading = loading;
+      
+      // Corruption indicators:
+      // 1. User exists but no profile (and not loading)
+      // 2. Session exists but no user
+      // 3. Profile exists but no user
+      // 4. Loading stuck for more than 10 seconds
+      
+      const timeSinceStart = Date.now() - authStartTime.current;
+      const isStuckLoading = isLoading && timeSinceStart > 10000;
+      
+      if ((hasUser && !hasProfile && !isLoading) || 
+          (hasSession && !hasUser) || 
+          (hasProfile && !hasUser) ||
+          isStuckLoading) {
+        
+        console.warn('🚨 AUTH CORRUPTION DETECTED:', {
+          hasUser,
+          hasProfile,
+          hasSession,
+          isLoading,
+          timeSinceStart,
+          userId: user?.id,
+          profileName: profile?.name,
+          sessionExpiresAt: session?.expires_at
+        });
+        
+        // Auto-recovery: Clear cache and force fresh session
+        console.log('🔄 Attempting auto-recovery...');
+        clearAuthCache();
+        
+        // Force a fresh session check
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
+          if (error) {
+            console.error('Auto-recovery failed:', error);
+          } else if (session) {
+            console.log('Auto-recovery successful, session restored');
+            setSession(session);
+            setUser(session.user);
+            if (session.user) {
+              const fallbackProfile = createProfileFromUser(session.user);
+              setProfile(fallbackProfile);
+            }
+          } else {
+            console.log('Auto-recovery: No session found, clearing state');
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+          }
+          setLoading(false);
+        });
+      }
+    };
+
+    // Check for corruption every 15 seconds
+    const corruptionCheck = setInterval(detectAndFixCorruption, 15000);
+    
+    return () => clearInterval(corruptionCheck);
+  }, [user, profile, session, loading]);
 
   // Add session staleness check
   useEffect(() => {
@@ -400,28 +489,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const value = {
-    user,
-    profile,
-    session,
-    loading,
-    signUp,
-    signIn,
-    signInWithGoogle,
-    signOut,
-    updateProfile,
-    resetPassword,
-    clearCache,
-    forceRefresh,
-  };
 
-  console.log('💥 DEBUG: AuthProvider rendering with values:', {
-    hasUser: !!user,
-    hasProfile: !!profile,
-    loading,
-    profileName: profile?.name,
-    lastProfileUpdate: new Date(lastProfileUpdate.current).toISOString()
-  });
 
-  return React.createElement(AuthContext.Provider, { value }, children);
+  return (
+    <AuthContext.Provider value={{
+      user,
+      session,
+      profile,
+      loading,
+      signUp,
+      signIn,
+      signOut,
+      signInWithGoogle,
+      updateProfile,
+      resetPassword,
+      clearAuthCache,
+      forceRefreshSession
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
