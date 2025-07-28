@@ -84,9 +84,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .eq('id', userId)
           .maybeSingle();
 
-        console.log('💥 DEBUG: Profile fetch result:', { data, error });
+        console.log('💥 DEBUG: Profile fetch result:', { data, error, hasData: !!data });
 
-        if (data && !error) {
+        if (error) {
+          console.error('💥 DEBUG: Profile fetch error:', error);
+          return null;
+        }
+
+        if (data) {
           const profileWithName = {
             ...data,
             name: data.first_name ? 
@@ -95,11 +100,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           };
           console.log('💥 DEBUG: Using database profile:', profileWithName);
           return profileWithName;
+        } else {
+          console.log('💥 DEBUG: No profile data found in database');
+          return null;
         }
       } catch (error) {
-        console.error('💥 DEBUG: Profile fetch error:', error);
+        console.error('💥 DEBUG: Profile fetch exception:', error);
+        return null;
       }
-      return null;
     };
 
     const handleAuthChange = async (event: string, session: Session | null) => {
