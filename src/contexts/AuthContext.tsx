@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-console.log('🚀 NEW AUTH CONTEXT LOADED:', new Date().toISOString());
+console.log('🚀🚀🚀 NEW AUTH CONTEXT LOADED:', new Date().toISOString());
 
 export interface UserProfile {
   id: string;
