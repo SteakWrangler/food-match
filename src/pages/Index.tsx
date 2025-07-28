@@ -52,7 +52,7 @@ const Index = () => {
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
 
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, loading: authLoading } = useAuth();
   
   const deviceType = useDeviceType();
   
@@ -239,16 +239,19 @@ const Index = () => {
   const handleCreateRoom = async (name: string, locationToUse?: string, formattedAddress?: string, isAuthenticated?: boolean) => {
     console.log('🔴 DEBUG: handleCreateRoom called with:', { name, locationToUse, formattedAddress, isAuthenticated });
     
-    if (isCreatingRoom) return; // Prevent multiple submissions
-    
-    const locationToSet = locationToUse || location;
-    
-    if (!locationToSet && isAuthenticated !== false) {
-      console.error('No location provided for room creation');
-      setError('Location is required to create a room.');
+    // Validate inputs
+    if (!name || name.trim() === '') {
+      console.error('🔴 DEBUG: No name provided');
+      setError('Please provide a name for the room.');
       return;
     }
-    
+
+    if (isAuthenticated !== false && (!locationToUse || locationToUse.trim() === '')) {
+      console.error('🔴 DEBUG: No location provided for authenticated room');
+      setError('Please provide a location for the room.');
+      return;
+    }
+
     // Update the location state if a new location was provided
     if (locationToUse) {
       console.log('Setting location:', locationToUse);
@@ -264,26 +267,26 @@ const Index = () => {
     try {
       console.log('🔴 DEBUG: Starting room creation process');
       console.log('🔴 DEBUG: isAuthenticated:', isAuthenticated);
-      console.log('🔴 DEBUG: locationToSet:', locationToSet);
+      console.log('🔴 DEBUG: locationToSet:', locationToUse);
       
       if (isAuthenticated !== false) {
         // Regular room creation with location and restaurants
-        let coordinatesForAPI = locationToSet;
+        let coordinatesForAPI = locationToUse;
     
         console.log('🔴 DEBUG: Starting geocoding check');
         // Check if the location is already coordinates
-        const coordMatch = locationToSet.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+        const coordMatch = locationToUse.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
         console.log('🔴 DEBUG: coordMatch result:', coordMatch);
         
         if (!coordMatch) {
           console.log('🔴 DEBUG: Location is not coordinates, starting geocoding');
           // It's an address, need to geocode it
           try {
-            console.log('🔴 DEBUG: About to call geocoding function with address:', locationToSet);
+            console.log('🔴 DEBUG: About to call geocoding function with address:', locationToUse);
             const { data, error } = await supabase.functions.invoke('geocoding', {
               body: {
                 action: 'geocode',
-                address: locationToSet
+                address: locationToUse
               },
             });
 
@@ -359,6 +362,8 @@ const Index = () => {
     } catch (err) {
       console.error('🔴 DEBUG: Error in handleCreateRoom:', err);
       setError('Failed to create room. Please try again.');
+      // Reopen the modal if room creation failed
+      setShowCreateRoom(true);
     } finally {
       console.log('🔴 DEBUG: Setting isCreatingRoom to false');
       setIsCreatingRoom(false);
@@ -713,25 +718,35 @@ const Index = () => {
                     <span className="hidden sm:inline font-medium text-xs sm:text-sm">Sign In/Sign Up</span>
                     <span className="sm:hidden font-medium text-xs">Sign In</span>
                   </button>
-                ) : profile?.first_name && profile?.last_name ? (
+                ) : profile?.name ? (
                   <button
                     onClick={() => setShowUserSettings(true)}
                     className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
                   >
                     <User className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span className="hidden sm:inline font-medium text-xs sm:text-sm">
-                      {`${profile.first_name} ${profile.last_name}`}
+                      {profile.name}
                     </span>
                     <span className="sm:hidden font-medium text-xs">
-                      {`${profile.first_name} ${profile.last_name}`}
+                      {profile.name}
                     </span>
                   </button>
-                ) : (
-                  // Show loading state while profile loads
+                ) : authLoading ? (
+                  // Show loading state while auth loads
                   <div className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1 sm:gap-2 opacity-50">
                     <User className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
                     <span className="hidden sm:inline font-medium text-xs sm:text-sm text-gray-500">Loading...</span>
                   </div>
+                ) : (
+                  // Auth loaded but no profile - show sign in button
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
+                  >
+                    <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline font-medium text-xs sm:text-sm">Sign In/Sign Up</span>
+                    <span className="sm:hidden font-medium text-xs">Sign In</span>
+                  </button>
                 )}
               </div>
             </div>
@@ -750,25 +765,35 @@ const Index = () => {
             <span className="hidden sm:inline font-medium text-xs sm:text-sm">Sign In/Sign Up</span>
             <span className="sm:hidden font-medium text-xs">Sign In</span>
           </button>
-        ) : profile?.first_name && profile?.last_name ? (
+        ) : profile?.name ? (
           <button
             onClick={() => setShowUserSettings(true)}
             className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
           >
             <User className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline font-medium text-xs sm:text-sm">
-              {`${profile.first_name} ${profile.last_name}`}
+              {profile.name}
             </span>
             <span className="sm:hidden font-medium text-xs">
-              {`${profile.first_name} ${profile.last_name}`}
+              {profile.name}
             </span>
           </button>
-        ) : (
-          // Show loading state while profile loads
+        ) : authLoading ? (
+          // Show loading state while auth loads
           <div className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1 sm:gap-2 opacity-50">
             <User className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
             <span className="hidden sm:inline font-medium text-xs sm:text-sm text-gray-500">Loading...</span>
           </div>
+        ) : (
+          // Auth loaded but no profile - show sign in button
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className="rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-orange-50 transition-colors text-orange-600 hover:text-orange-700 flex items-center gap-1 sm:gap-2"
+          >
+            <User className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline font-medium text-xs sm:text-sm">Sign In/Sign Up</span>
+            <span className="sm:hidden font-medium text-xs">Sign In</span>
+          </button>
         )}
       </div>
 

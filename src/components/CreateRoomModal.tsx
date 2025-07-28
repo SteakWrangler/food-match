@@ -202,17 +202,63 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
   const handleUseCurrentLocation = async () => {
     setIsDetecting(true);
+    console.log('🔴 DEBUG: Starting location detection...');
 
     try {
+      // Check if geolocation is supported
+      if (!navigator.geolocation) {
+        console.error('🔴 DEBUG: Geolocation not supported');
+        alert('Location detection is not supported in your browser. Please enter your location manually.');
+        return;
+      }
+
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject);
+        const timeoutId = setTimeout(() => {
+          reject(new Error('Location detection timed out'));
+        }, 10000); // 10 second timeout
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            clearTimeout(timeoutId);
+            resolve(pos);
+          },
+          (error) => {
+            clearTimeout(timeoutId);
+            console.error('🔴 DEBUG: Geolocation error:', error);
+            let errorMessage = 'Unable to detect your location. ';
+            
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                errorMessage += 'Please allow location access in your browser settings.';
+                break;
+              case error.POSITION_UNAVAILABLE:
+                errorMessage += 'Location information is unavailable.';
+                break;
+              case error.TIMEOUT:
+                errorMessage += 'Location detection timed out.';
+                break;
+              default:
+                errorMessage += 'Please enter your location manually.';
+            }
+            
+            reject(new Error(errorMessage));
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000 // 1 minute cache
+          }
+        );
       });
       
       const { latitude, longitude } = position.coords;
-      const coordinates = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
+      console.log('🔴 DEBUG: Got coordinates:', { latitude, longitude });
+      
+      const coordinates = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
       
       // Get formatted address for display purposes
       try {
+        console.log('🔴 DEBUG: Starting reverse geocoding...');
         const { data, error } = await supabase.functions.invoke('geocoding', {
           body: {
             action: 'reverse-geocode',
@@ -221,27 +267,34 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
           },
         });
 
+        console.log('🔴 DEBUG: Reverse geocoding response:', { data, error });
+
         if (error || !data?.address) {
-          console.error('Reverse geocoding failed:', error);
-          // Different error message for "Use Current Location" failure
-          alert('Unable to detect your location. Please enter your location manually or check your browser\'s location permissions.');
-          return;
+          console.error('🔴 DEBUG: Reverse geocoding failed:', error);
+          // Still use coordinates even if reverse geocoding fails
+          setLocation(coordinates);
+          setDisplayLocation('Current Location');
+          setFormattedAddress('Current Location');
+          console.log('🔴 DEBUG: Using fallback display for coordinates');
         } else {
           // Use coordinates for API calls, formatted address for display
           setLocation(coordinates);
           setDisplayLocation(data.address);
           setFormattedAddress(data.address);
+          console.log('🔴 DEBUG: Location set successfully:', { coordinates, address: data.address });
         }
       } catch (error) {
-        console.error('Reverse geocoding error:', error);
-        // Different error message for "Use Current Location" failure
-        alert('Unable to detect your location. Please enter your location manually or check your browser\'s location permissions.');
+        console.error('🔴 DEBUG: Reverse geocoding error:', error);
+        // Still use coordinates even if reverse geocoding fails
+        setLocation(coordinates);
+        setDisplayLocation('Current Location');
+        setFormattedAddress('Current Location');
+        console.log('🔴 DEBUG: Using fallback display after error');
       }
       
     } catch (error) {
-      console.error('Error getting location:', error);
-      // Different error message for "Use Current Location" failure
-      alert('Unable to detect your location. Please enter your location manually or check your browser\'s location permissions.');
+      console.error('🔴 DEBUG: Location detection error:', error);
+      alert(error.message || 'Unable to detect your location. Please enter your location manually or check your browser\'s location permissions.');
     } finally {
       setIsDetecting(false);
     }

@@ -55,9 +55,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('💥 DEBUG: Creating profile from user metadata');
     console.log('💥 DEBUG: user.user_metadata:', user.user_metadata);
     
-    const fullName = user.user_metadata?.name || 'User';
-    const firstName = fullName.split(' ')[0] || user.email?.split('@')[0] || 'User';
-    const lastName = fullName.split(' ')[1] || null;
+    // Extract name from various possible sources
+    let fullName = user.user_metadata?.name || 
+                   user.user_metadata?.full_name ||
+                   user.user_metadata?.display_name ||
+                   user.email?.split('@')[0] || 
+                   'User';
+    
+    // Clean up the name - remove any extra whitespace
+    fullName = fullName.trim();
+    
+    // Split into first and last name
+    const nameParts = fullName.split(' ');
+    const firstName = nameParts[0] || user.email?.split('@')[0] || 'User';
+    const lastName = nameParts.slice(1).join(' ') || null;
     
     console.log('💥 DEBUG: Computed name values:', { fullName, firstName, lastName });
     
@@ -89,7 +100,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (data && !error) {
           const profileWithName = {
             ...data,
-            name: data.first_name || data.email?.split('@')[0] || 'User'
+            name: data.name || data.first_name || data.email?.split('@')[0] || 'User'
           };
           console.log('💥 DEBUG: Using database profile:', profileWithName);
           return profileWithName;
