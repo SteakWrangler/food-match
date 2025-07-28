@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { X, Heart, Clock, Trash2, RefreshCw, MapPin, Users } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { getFavoritesService, Restaurant } from '@/integrations/supabase/favoritesService';
 import { getRoomHistoryService, RoomHistoryEntry } from '@/integrations/supabase/roomHistoryService';
 import { useToast } from '@/hooks/use-toast';

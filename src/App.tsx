@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();

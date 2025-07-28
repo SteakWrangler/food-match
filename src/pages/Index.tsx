@@ -19,7 +19,7 @@ import { foodTypes } from '@/data/foodTypes';
 import { Restaurant } from '@/data/restaurants';
 import { FilterState, defaultFilters, filterRestaurants } from '@/utils/restaurantFilters';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { getRoomHistoryService, RoomHistoryEntry } from '@/integrations/supabase/roomHistoryService';
 import AuthModal from '@/components/AuthModal';
 import UserProfileModal from '@/components/UserProfileModal';
@@ -53,7 +53,7 @@ const Index = () => {
   const [showUserSettings, setShowUserSettings] = useState(false);
 
   const { user, profile, signOut, loading } = useAuth();
-  console.log('⚡ Index.tsx - Auth state:', { user: !!user, profile: !!profile, loading, profileName: profile?.name, userMetadataName: user?.user_metadata?.name });
+  console.log('🎯 Index.tsx - Auth state:', { user: !!user, profile: !!profile, loading, profileName: profile?.name, userMetadataName: user?.user_metadata?.name });
   
   const deviceType = useDeviceType();
   

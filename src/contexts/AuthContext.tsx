@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-console.log('💥💥💥 COMPLETE REWRITE: useAuth.ts loaded at', new Date().toISOString());
+console.log('🚀 NEW AUTH CONTEXT LOADED:', new Date().toISOString());
 
 export interface UserProfile {
   id: string;
@@ -49,34 +49,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  console.log('💥 DEBUG: AuthProvider initialized');
-
-  const createProfileFromUser = (user: User): UserProfile => {
-    console.log('💥 DEBUG: Creating profile from user metadata');
-    console.log('💥 DEBUG: user.user_metadata:', user.user_metadata);
-    
-    const fullName = user.user_metadata?.name || 'User';
-    const firstName = fullName.split(' ')[0] || user.email?.split('@')[0] || 'User';
-    const lastName = fullName.split(' ')[1] || null;
-    
-    console.log('💥 DEBUG: Computed name values:', { fullName, firstName, lastName });
-    
-    return {
-      id: user.id,
-      email: user.email || '',
-      first_name: firstName,
-      last_name: lastName,
-      name: fullName,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-  };
+  console.log('🚀 AuthProvider initialized');
 
   useEffect(() => {
-    console.log('💥 DEBUG: Auth useEffect starting');
+    console.log('🚀 Starting auth effect');
     
     const fetchUserProfile = async (userId: string) => {
-      console.log('💥 DEBUG: Attempting to fetch profile for:', userId);
+      console.log('🚀 Fetching profile for:', userId);
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -84,77 +63,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .eq('id', userId)
           .maybeSingle();
 
-        console.log('💥 DEBUG: Profile fetch result:', { data, error, hasData: !!data });
+        console.log('🚀 Profile fetch result:', { data, error });
 
-        if (error) {
-          console.error('💥 DEBUG: Profile fetch error:', error);
-          return null;
-        }
-
-        if (data) {
+        if (!error && data) {
           const profileWithName = {
             ...data,
             name: data.first_name ? 
               `${data.first_name}${data.last_name ? ' ' + data.last_name : ''}` : 
               data.email?.split('@')[0] || 'User'
           };
-          console.log('💥 DEBUG: Using database profile:', profileWithName);
+          console.log('🚀 Using database profile:', profileWithName);
           return profileWithName;
-        } else {
-          console.log('💥 DEBUG: No profile data found in database');
-          return null;
         }
       } catch (error) {
-        console.error('💥 DEBUG: Profile fetch exception:', error);
-        return null;
+        console.error('🚀 Profile fetch error:', error);
       }
+      return null;
     };
 
     const handleAuthChange = async (event: string, session: Session | null) => {
-      console.log('💥 DEBUG: Auth change event:', event);
-      console.log('💥 DEBUG: Session exists:', !!session);
-      console.log('💥 DEBUG: User ID:', session?.user?.id);
-
+      console.log('🚀 Auth change:', event, !!session);
+      
       setSession(session);
       setUser(session?.user || null);
 
       if (session?.user) {
-        console.log('💥 DEBUG: User authenticated, processing profile');
-        
-        // Try database first
+        console.log('🚀 Fetching profile for authenticated user');
         const dbProfile = await fetchUserProfile(session.user.id);
-        
-        if (dbProfile) {
-          console.log('💥 DEBUG: Using database profile');
-          setProfile(dbProfile);
-        } else {
-          console.log('💥 DEBUG: Using fallback profile from metadata');
-          const fallbackProfile = createProfileFromUser(session.user);
-          setProfile(fallbackProfile);
-        }
+        setProfile(dbProfile);
       } else {
-        console.log('💥 DEBUG: No user, clearing profile');
+        console.log('🚀 No user, clearing profile');
         setProfile(null);
       }
 
-      console.log('💥 DEBUG: Setting loading to false');
+      console.log('🚀 Setting loading to false');
       setLoading(false);
     };
 
-    console.log('💥 DEBUG: Setting up auth listener');
+    console.log('🚀 Setting up auth listener');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
-    console.log('💥 DEBUG: Getting initial session');
+    console.log('🚀 Getting initial session');
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('💥 DEBUG: Initial session received:', !!session);
+      console.log('🚀 Initial session received:', !!session);
       handleAuthChange('INITIAL_SESSION', session);
     }).catch((error) => {
-      console.error('💥 DEBUG: Error getting initial session:', error);
+      console.error('🚀 Error getting initial session:', error);
       setLoading(false);
     });
 
     return () => {
-      console.log('💥 DEBUG: Cleaning up auth subscription');
+      console.log('🚀 Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, []);
@@ -240,7 +199,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       const profileWithName = {
         ...data,
-        name: data.first_name || data.email?.split('@')[0] || 'User'
+        name: data.first_name ? 
+          `${data.first_name}${data.last_name ? ' ' + data.last_name : ''}` : 
+          data.email?.split('@')[0] || 'User'
       };
       setProfile(profileWithName);
       return { error: null };
@@ -276,7 +237,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     resetPassword,
   };
 
-  console.log('💥 DEBUG: AuthProvider rendering with values:', {
+  console.log('🚀 AuthProvider rendering with:', {
     hasUser: !!user,
     hasProfile: !!profile,
     loading,
