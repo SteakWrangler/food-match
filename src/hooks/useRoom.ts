@@ -3,6 +3,7 @@ import { getHybridRestaurantsAPI } from '@/integrations/supabase/hybridRestauran
 import { getRoomService, RoomData } from '@/integrations/supabase/roomService';
 import { supabase } from '@/integrations/supabase/client';
 import { FilterState, defaultFilters } from '@/utils/restaurantFilters';
+import { useAuth } from './useAuth';
 
 export interface RoomState {
   id: string;
@@ -24,14 +25,24 @@ export interface RoomState {
 }
 
 const useRoom = () => {
+  const { user } = useAuth();
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const [isHost, setIsHost] = useState(false);
-  const [participantId] = useState(() => `user_${Math.random().toString(36).substr(2, 9)}`);
+  const [participantId, setParticipantId] = useState<string>('');
   const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
   const [isLoadingMoreRestaurants, setIsLoadingMoreRestaurants] = useState(false); // Add separate state for background loading
   const [hasReachedEnd, setHasReachedEnd] = useState(false); // Track if we've reached the end of available restaurants
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const roomService = getRoomService();
+
+  // Set participant ID based on authenticated user or generate one for guests
+  useEffect(() => {
+    if (user?.id) {
+      setParticipantId(user.id);
+    } else if (!participantId) {
+      setParticipantId(`guest_${Math.random().toString(36).substr(2, 12)}`);
+    }
+  }, [user?.id, participantId]);
   
   // Reset loading state when there's no room to prevent stuck loading screen
   useEffect(() => {

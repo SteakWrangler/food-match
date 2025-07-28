@@ -85,11 +85,16 @@ export class RoomService {
     console.log('roomService.createRoom called with params:', params);
     const { hostId, hostName, location, filters } = params;
     
+    // Ensure hostId is a valid UUID
+    if (!hostId || typeof hostId !== 'string') {
+      throw new Error('Invalid host ID provided');
+    }
+    
     const roomData = {
       id: Math.random().toString(36).substr(2, 9).toUpperCase(),
-      host_id: hostId,
+      host_id: hostId, // This should now be a UUID
       participants: [{
-        id: hostId,
+        id: hostId, // This should now be a UUID
         name: hostName,
       }],
       restaurants: [],
