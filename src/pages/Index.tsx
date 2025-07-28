@@ -23,7 +23,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { getRoomHistoryService, RoomHistoryEntry } from '@/integrations/supabase/roomHistoryService';
 import AuthModal from '@/components/AuthModal';
 import UserProfileModal from '@/components/UserProfileModal';
-import UserSettingsModal from '@/components/UserSettingsModal';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('specific');
@@ -50,7 +49,7 @@ const Index = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authRequiredForRestaurants, setAuthRequiredForRestaurants] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
-  const [showUserSettings, setShowUserSettings] = useState(false);
+  
 
   const { user, profile, signOut, loading: authLoading } = useAuth();
   
@@ -1119,15 +1118,8 @@ const Index = () => {
       <UserProfileModal
         isOpen={showUserProfile}
         onClose={() => setShowUserProfile(false)}
+        onRecreateRoom={handleRecreateRoom}
       />
-
-      {/* User Settings Modal */}
-      {showUserSettings && (
-        <UserSettingsModal
-          onClose={() => setShowUserSettings(false)}
-          onRecreateRoom={handleRecreateRoom}
-        />
-      )}
     </div>
   );
 };
