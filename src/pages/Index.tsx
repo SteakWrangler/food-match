@@ -1033,15 +1033,34 @@ const Index = () => {
               <EnhancedSwipeHistory
                 isOpen={showHistory}
                 onClose={() => setShowHistory(false)}
-                userSwipes={activeTab === 'specific' 
-                  ? roomState.restaurantSwipes?.[participantId || ''] || {}
-                  : roomState.foodTypeSwipes?.[participantId || ''] || {}
+                userSwipes={
+                  // For demo rooms, always show food type swipes
+                  roomState?.location === 'demo' 
+                    ? roomState.foodTypeSwipes?.[participantId || ''] || {}
+                    : activeTab === 'specific' 
+                      ? roomState.restaurantSwipes?.[participantId || ''] || {}
+                      : roomState.foodTypeSwipes?.[participantId || ''] || {}
                 }
                 roomState={roomState}
-                items={activeTab === 'specific' ? filteredRestaurants : foodTypes}
-                type={activeTab === 'specific' ? 'restaurants' : 'foodTypes'}
+                items={
+                  // For demo rooms, always show food types
+                  roomState?.location === 'demo' 
+                    ? foodTypes 
+                    : activeTab === 'specific' ? filteredRestaurants : foodTypes
+                }
+                type={
+                  // For demo rooms, always use foodTypes
+                  roomState?.location === 'demo' 
+                    ? 'foodTypes' 
+                    : activeTab === 'specific' ? 'restaurants' : 'foodTypes'
+                }
                 participantId={participantId || 'user'}
-                onBringToFront={activeTab === 'specific' ? handleBringRestaurantToFront : handleBringFoodTypeToFront}
+                onBringToFront={
+                  // For demo rooms, always use food type handler
+                  roomState?.location === 'demo' 
+                    ? handleBringFoodTypeToFront 
+                    : activeTab === 'specific' ? handleBringRestaurantToFront : handleBringFoodTypeToFront
+                }
               />
             )}
             
