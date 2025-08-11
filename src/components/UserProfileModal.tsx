@@ -314,15 +314,6 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
     });
   };
 
-  const formatLocation = (location: string) => {
-    // If location is coordinates, try to format nicely
-    if (location.includes(',')) {
-      const [lat, lng] = location.split(',').map(coord => parseFloat(coord.trim()));
-      return `${lat.toFixed(2)}, ${lng.toFixed(2)}`;
-    }
-    return location;
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -606,13 +597,18 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
                           {room.room_name || `Room ${room.room_id.slice(-4)}`}
                         </h4>
                         <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                          <MapPin className="w-3 h-3" />
-                          <span className="truncate">{formatLocation(room.location)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                           <Users className="w-3 h-3" />
                           <span>{room.restaurants.length} restaurants</span>
                         </div>
+                        {room.matches && room.matches.length > 0 && (
+                          <div className="text-sm text-green-600 mt-1">
+                            <span className="font-medium">Matches: </span>
+                            <span className="truncate">
+                              {room.matches.slice(0, 2).join(', ')}
+                              {room.matches.length > 2 && ` +${room.matches.length - 2} more`}
+                            </span>
+                          </div>
+                        )}
                         <p className="text-xs text-gray-500 mt-1">
                           Last accessed: {formatDate(room.last_accessed)}
                         </p>

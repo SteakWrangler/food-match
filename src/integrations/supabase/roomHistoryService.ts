@@ -8,6 +8,7 @@ export interface RoomHistoryEntry {
   room_name: string | null;
   location: string;
   restaurants: any[];
+  matches: string[];
   filters: FilterState | null;
   created_at: string;
   last_accessed: string;
@@ -19,6 +20,7 @@ export interface SaveRoomHistoryParams {
   roomName?: string;
   location: string;
   restaurants: any[];
+  matches?: string[];
   filters?: FilterState;
 }
 
@@ -27,6 +29,7 @@ export interface RecreateRoomParams {
   roomName?: string;
   location: string;
   restaurants: any[];
+  matches?: string[];
   filters?: FilterState;
 }
 
@@ -44,6 +47,7 @@ export class RoomHistoryService {
           room_name: params.roomName,
           location: params.location,
           restaurants: params.restaurants,
+          matches: params.matches || [],
           filters: params.filters
         });
 
@@ -144,6 +148,45 @@ export class RoomHistoryService {
     } catch (error) {
       console.error('Error checking room history:', error);
       return { exists: false, error };
+    }
+  }
+
+  /**
+   * Add a match to an existing room history entry
+   */
+  async addMatchToRoomHistory(userId: string, roomId: string, matchName: string): Promise<{ error: any | null }> {
+    try {
+      // Get the existing room history entry
+      const { data: existingEntries, error: fetchError } = await supabase
+        .from('room_history')
+        .select('id, matches')
+        .eq('user_id', userId)
+        .eq('room_id', roomId);
+
+      if (fetchError || !existingEntries || existingEntries.length === 0) {
+        console.log('No room history entry found for roomId:', roomId);
+        return { error: fetchError };
+      }
+
+      const entry = existingEntries[0];
+      const currentMatches = entry.matches || [];
+      
+      // Only add if not already in matches
+      if (!currentMatches.includes(matchName)) {
+        const updatedMatches = [...currentMatches, matchName];
+        
+        const { error } = await supabase
+          .from('room_history')
+          .update({ matches: updatedMatches })
+          .eq('id', entry.id);
+
+        return { error };
+      }
+
+      return { error: null };
+    } catch (error) {
+      console.error('Error adding match to room history:', error);
+      return { error };
     }
   }
 

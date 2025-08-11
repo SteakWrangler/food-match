@@ -165,6 +165,14 @@ const Index = () => {
               setMatchedRestaurant(restaurant);
               setShowMatch(true);
               setShownMatches(prev => new Set([...prev, restaurant.id]));
+              
+              // Add match to room history if user is authenticated and is host
+              if (user && isHost && roomState) {
+                const roomHistoryService = getRoomHistoryService();
+                roomHistoryService.addMatchToRoomHistory(user.id, roomState.id, restaurant.name).catch(error => {
+                  console.error('Error adding match to room history:', error);
+                });
+              }
             }
           }
         }
@@ -201,6 +209,14 @@ const Index = () => {
             setMatchedRestaurant(restaurantMatch);
             setShowMatch(true);
             setShownMatches(prev => new Set([...prev, foodType.id]));
+            
+            // Add match to room history if user is authenticated and is host
+            if (user && isHost && roomState) {
+              const roomHistoryService = getRoomHistoryService();
+              roomHistoryService.addMatchToRoomHistory(user.id, roomState.id, foodType.name).catch(error => {
+                console.error('Error adding match to room history:', error);
+              });
+            }
           }
         }
       });
