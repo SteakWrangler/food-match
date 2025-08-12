@@ -252,7 +252,7 @@ const Index = () => {
     }
   }, [roomState]);
 
-  const handleCreateRoom = async (name: string, locationToUse?: string, formattedAddress?: string, roomType?: 'demo' | 'paid' | 'subscription') => {
+  const handleCreateRoom = async (name: string, locationToUse?: string, formattedAddress?: string, roomType?: 'demo' | 'full') => {
     console.log('🔴 DEBUG: handleCreateRoom called with:', { name, locationToUse, formattedAddress, roomType });
     
     // Validate inputs
@@ -290,48 +290,46 @@ const Index = () => {
         const roomId = await createDemoRoom(name, 'Demo Mode');
         console.log('🔴 DEBUG: Demo room created with ID:', roomId);
         setShowCreateRoom(false);
-      } else if (roomType === 'paid') {
-        // Check if user has credits, if not, this will need to trigger payment flow
+      } else if (roomType === 'full') {
+        // Full room - check subscription then credits
         if (user) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('room_credits')
-            .eq('id', user.id)
-            .single();
+          // First check if user has active subscription
+          const { data: hasActiveSubscription } = await supabase.rpc('has_active_subscription', { user_id: user.id });
           
-          if (profileData && profileData.room_credits > 0) {
-            // User has credits, consume one and create room
-            const { error } = await supabase.rpc('consume_room_credit', { user_id: user.id });
+          if (hasActiveSubscription) {
+            // User has active subscription - create room directly
+            console.log('🔴 DEBUG: User has active subscription, creating full room...');
+            await createFullRoom(name, locationToUse);
+          } else {
+            // No active subscription - check for credits
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('room_credits')
+              .eq('id', user.id)
+              .single();
             
-            if (error) {
-              console.error('Error consuming credit:', error);
-              setError('Failed to use credit. Please try again.');
+            if (profileData && profileData.room_credits > 0) {
+              // User has credits, consume one and create room
+              console.log('🔴 DEBUG: User has credits, consuming one and creating room...');
+              const { error } = await supabase.rpc('consume_room_credit', { user_id: user.id });
+              
+              if (error) {
+                console.error('Error consuming credit:', error);
+                setError('Failed to use credit. Please try again.');
+                return;
+              }
+              
+              // Create full room
+              await createFullRoom(name, locationToUse);
+            } else {
+              // User has no credits - need to purchase or subscribe
+              setError('You need an active subscription or room credits to create a full room. Please subscribe or purchase credits.');
               return;
             }
-            
-            // Create full room
-            await createFullRoom(name, locationToUse);
-          } else {
-            // User has no credits - trigger payment flow (placeholder for now)
-            setError('No credits available. Payment integration will be added here.');
-            return;
-          }
-        }
-      } else if (roomType === 'subscription') {
-        // Subscription user - verify active subscription and create room
-        if (user) {
-          const hasActiveSubscription = await supabase.rpc('has_active_subscription', { user_id: user.id });
-          
-          if (hasActiveSubscription.data) {
-            // Create full room
-            await createFullRoom(name, locationToUse);
-          } else {
-            setError('No active subscription. Please subscribe to create full rooms.');
-            return;
           }
         }
       } else {
-        // Legacy path - treat as subscription room
+        // Legacy path - treat as full room
         await createFullRoom(name, locationToUse);
       }
     } catch (err) {

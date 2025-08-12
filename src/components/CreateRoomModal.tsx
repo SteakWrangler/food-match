@@ -13,7 +13,7 @@ import AuthModal from '@/components/AuthModal';
 const USE_MOCK_LOCATION = false;
 
 interface CreateRoomModalProps {
-  onCreateRoom: (name: string, location?: string, formattedAddress?: string, roomType?: 'demo' | 'paid' | 'subscription') => void;
+  onCreateRoom: (name: string, location?: string, formattedAddress?: string, roomType?: 'demo' | 'full') => void;
   onClose: () => void;
   isLoading?: boolean;
   currentLocation?: string | null;
@@ -82,31 +82,16 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     fetchSubscriptionData();
   }, [user]);
 
-  const handleCreateSubscriptionRoom = async () => {
+  const handleCreateFullRoom = async () => {
     if (!user || !location.trim()) return;
     
     setIsSubmitting(true);
     try {
       const userName = profile?.name || user.email?.split('@')[0] || 'User';
-      await onCreateRoom(userName, location.trim(), formattedAddress || undefined, 'subscription');
+      await onCreateRoom(userName, location.trim(), formattedAddress || undefined, 'full');
       onClose();
     } catch (error) {
-      console.error('Subscription room creation failed:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCreatePaidRoom = async () => {
-    if (!user || !location.trim()) return;
-    
-    setIsSubmitting(true);
-    try {
-      const userName = profile?.name || user.email?.split('@')[0] || 'User';
-      await onCreateRoom(userName, location.trim(), formattedAddress || undefined, 'paid');
-      onClose();
-    } catch (error) {
-      console.error('Paid room creation failed:', error);
+      console.error('Full room creation failed:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -480,85 +465,48 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                   </Button>
 
                   {/* Room Creation Options */}
-                  <div className="space-y-3 pt-2">
+                  <div className="space-y-4 pt-2">
                     <h3 className="text-lg font-semibold text-gray-800">Choose Room Type</h3>
                     
-                    {/* Full Room - Subscription Required */}
-                    <div className="border rounded-lg p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Crown className="w-5 h-5 text-yellow-600" />
-                          <div>
-                            <h4 className="font-semibold text-gray-800">Full Room</h4>
-                            <p className="text-xs text-gray-600">Restaurants + Food Types</p>
-                          </div>
-                        </div>
-                        {subscriptionData?.hasActiveSubscription && (
-                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                            Subscribed
-                          </span>
-                        )}
-                      </div>
-                      
+                    {/* Full Room - Restaurants + Food Types */}
+                    <div className="space-y-3">
                       <Button
-                        onClick={handleCreateSubscriptionRoom}
-                        disabled={!subscriptionData?.hasActiveSubscription || !location.trim() || isLoading}
-                        className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 disabled:opacity-50"
-                      >
-                        {subscriptionData?.hasActiveSubscription 
-                          ? 'Create Full Room' 
-                          : 'Subscribe for Full Access'
-                        }
-                      </Button>
-                    </div>
-
-                    {/* Pay-Per-Room */}
-                    <div className="border rounded-lg p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="w-5 h-5 text-blue-600" />
-                          <div>
-                            <h4 className="font-semibold text-gray-800">One-Time Room</h4>
-                            <p className="text-xs text-gray-600">Restaurants + Food Types</p>
-                          </div>
-                        </div>
-                        {subscriptionData && subscriptionData.roomCredits > 0 && (
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                            {subscriptionData.roomCredits} credits
-                          </span>
-                        )}
-                      </div>
-                      
-                      <Button
-                        onClick={handleCreatePaidRoom}
+                        onClick={handleCreateFullRoom}
                         disabled={!location.trim() || isLoading}
-                        variant="outline"
-                        className="w-full border-blue-200 hover:bg-blue-50"
+                        className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white py-6"
                       >
-                        {subscriptionData && subscriptionData.roomCredits > 0 
-                          ? 'Use 1 Credit' 
-                          : 'Buy Credits ($1)'
-                        }
+                        <Crown className="w-5 h-5 mr-2" />
+                        <div className="text-left">
+                          <div className="font-semibold">Create Full Room</div>
+                          <div className="text-xs opacity-90">Restaurants + Food Types</div>
+                        </div>
                       </Button>
+                      
+                      {/* Show subscription status info */}
+                      <div className="text-xs text-center text-gray-500">
+                        {subscriptionData?.hasActiveSubscription ? (
+                          <span className="text-green-600">✓ Active subscription</span>
+                        ) : subscriptionData && subscriptionData.roomCredits > 0 ? (
+                          <span className="text-blue-600">{subscriptionData.roomCredits} room credits available</span>
+                        ) : (
+                          <span>Requires subscription or credits</span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Food Types Only - Free */}
-                    <div className="border rounded-lg p-4 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Star className="w-5 h-5 text-gray-600" />
-                        <div>
-                          <h4 className="font-semibold text-gray-800">Food Types Only</h4>
-                          <p className="text-xs text-gray-600">Free • No location needed</p>
-                        </div>
-                      </div>
-                      
+                    <div className="space-y-3">
                       <Button
                         onClick={handleCreateFoodTypesRoom}
                         disabled={isLoading}
                         variant="outline"
-                        className="w-full"
+                        className="w-full py-6"
                       >
-                        Create Free Room
+                        <Star className="w-5 h-5 mr-2" />
+                        <div className="text-left">
+                          <div className="font-semibold">Create Food Types Room</div>
+                          <div className="text-xs text-gray-500">Free • No location needed</div>
+                        </div>
                       </Button>
                     </div>
                   </div>
