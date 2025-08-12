@@ -254,6 +254,7 @@ const Index = () => {
 
   const handleCreateRoom = async (name: string, locationToUse?: string, formattedAddress?: string, roomType?: 'demo' | 'full') => {
     console.log('🔴 DEBUG: handleCreateRoom called with:', { name, locationToUse, formattedAddress, roomType });
+    console.log('🔴 DEBUG: user exists:', !!user);
     
     // Validate inputs
     if (!name || name.trim() === '') {
@@ -292,10 +293,17 @@ const Index = () => {
         setShowCreateRoom(false);
       } else if (roomType === 'full') {
         // DEMO MODE: Temporarily allow all users to create full rooms
-        console.log('🔴 DEBUG: DEMO MODE - Creating full room without subscription check...');
-        await createFullRoom(name, locationToUse);
+        if (user) {
+          console.log('🔴 DEBUG: DEMO MODE - Creating full room without subscription check...');
+          await createFullRoom(name, locationToUse);
+        } else {
+          console.log('🔴 DEBUG: No user for full room creation');
+          setError('Please sign in to create a full room.');
+          return;
+        }
       } else {
         // Legacy path - treat as full room
+        console.log('🔴 DEBUG: Legacy path - creating full room...');
         await createFullRoom(name, locationToUse);
       }
     } catch (err) {

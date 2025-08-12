@@ -83,16 +83,29 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   }, [user]);
 
   const handleCreateFullRoom = async () => {
-    if (!user || !location.trim()) return;
+    console.log('🟢 DEBUG: handleCreateFullRoom called');
+    console.log('🟢 DEBUG: user:', !!user);
+    console.log('🟢 DEBUG: location:', location);
+    console.log('🟢 DEBUG: location.trim():', location.trim());
+    
+    if (!user || !location.trim()) {
+      console.log('🟢 DEBUG: Early return - missing user or location');
+      return;
+    }
     
     setIsSubmitting(true);
     try {
       const userName = profile?.name || user.email?.split('@')[0] || 'User';
+      console.log('🟢 DEBUG: About to call onCreateRoom with userName:', userName);
+      console.log('🟢 DEBUG: location.trim():', location.trim());
+      console.log('🟢 DEBUG: formattedAddress:', formattedAddress);
       await onCreateRoom(userName, location.trim(), formattedAddress || undefined, 'full');
+      console.log('🟢 DEBUG: onCreateRoom completed successfully');
       onClose();
     } catch (error) {
-      console.error('Full room creation failed:', error);
+      console.error('🟢 DEBUG: Full room creation failed:', error);
     } finally {
+      console.log('🟢 DEBUG: Setting isSubmitting to false');
       setIsSubmitting(false);
     }
   };
