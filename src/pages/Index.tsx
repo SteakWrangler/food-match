@@ -280,9 +280,40 @@ const Index = () => {
         const roomId = await createDemoRoom(name, 'Demo Mode');
         setShowCreateRoom(false);
       } else if (roomType === 'full') {
-        // DEMO MODE: Temporarily allow all users to create full rooms
+        // Full room - check subscription then credits
         if (user) {
-          await createFullRoom(name, locationToUse, formattedAddress);
+          // First check if user has active subscription
+          const { data: hasActiveSubscription } = await supabase.rpc('has_active_subscription', { user_id: user.id });
+          
+          if (hasActiveSubscription) {
+            // User has active subscription - create room directly
+            await createFullRoom(name, locationToUse, formattedAddress);
+          } else {
+            // No active subscription - check for credits
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('room_credits')
+              .eq('id', user.id)
+              .single();
+            
+            if (profileData && profileData.room_credits > 0) {
+              // User has credits, consume one and create room
+              const { error } = await supabase.rpc('consume_room_credit', { user_id: user.id });
+              
+              if (error) {
+                console.error('Error consuming credit:', error);
+                setError('Failed to use credit. Please try again.');
+                return;
+              }
+              
+              // Create full room after consuming credit
+              await createFullRoom(name, locationToUse, formattedAddress);
+            } else {
+              // User has no credits - need to purchase or subscribe
+              setError('You need an active subscription or room credits to create a full room. Please subscribe or purchase credits.');
+              return;
+            }
+          }
         } else {
           setError('Please sign in to create a full room.');
           return;
