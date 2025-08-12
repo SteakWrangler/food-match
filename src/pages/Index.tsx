@@ -295,7 +295,7 @@ const Index = () => {
         // DEMO MODE: Temporarily allow all users to create full rooms
         if (user) {
           console.log('🔴 DEBUG: DEMO MODE - Creating full room without subscription check...');
-          await createFullRoom(name, locationToUse);
+          await createFullRoom(name, locationToUse, formattedAddress);
         } else {
           console.log('🔴 DEBUG: No user for full room creation');
           setError('Please sign in to create a full room.');
@@ -304,7 +304,7 @@ const Index = () => {
       } else {
         // Legacy path - treat as full room
         console.log('🔴 DEBUG: Legacy path - creating full room...');
-        await createFullRoom(name, locationToUse);
+        await createFullRoom(name, locationToUse, formattedAddress);
       }
     } catch (err) {
       console.error('🔴 DEBUG: Error in handleCreateRoom:', err);
@@ -316,7 +316,7 @@ const Index = () => {
     }
   };
 
-  const createFullRoom = async (name: string, locationToUse?: string) => {
+  const createFullRoom = async (name: string, locationToUse?: string, formattedAddress?: string) => {
     try {
         // Regular room creation with location and restaurants
         let coordinatesForAPI = locationToUse;
