@@ -25,7 +25,12 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   isLoading = false,
   currentLocation = null
 }) => {
+  console.log('🟠🟠🟠 CreateRoomModal COMPONENT RENDERING 🟠🟠🟠');
+  console.log('🟠 DEBUG: Modal props:', { isLoading, currentLocation });
+  
   const { user, profile } = useAuth();
+  console.log('🟠 DEBUG: user exists:', !!user);
+  console.log('🟠 DEBUG: profile exists:', !!profile);
   const [name, setName] = useState('');
   const [location, setLocation] = useState(currentLocation || '');
   const [formattedAddress, setFormattedAddress] = useState<string | null>(null);

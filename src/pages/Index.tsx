@@ -863,10 +863,13 @@ const Index = () => {
                 <div className="space-y-3 sm:space-y-4 md:space-y-5">
                   <Button
                     onClick={() => {
+                      console.log('🔵🔵🔵 BUTTON CLICKED! 🔵🔵🔵');
                       console.log('🔵 DEBUG: Main Create Room button clicked');
                       console.log('🔵 DEBUG: Current showCreateRoom state:', showCreateRoom);
+                      console.log('🔵 DEBUG: About to call setShowCreateRoom(true)');
                       setShowCreateRoom(true);
-                      console.log('🔵 DEBUG: setShowCreateRoom(true) called');
+                      console.log('🔵 DEBUG: setShowCreateRoom(true) called successfully');
+                      console.log('🔵🔵🔵 BUTTON CLICK HANDLER COMPLETE 🔵🔵🔵');
                     }}
                     className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-sm sm:text-base md:text-lg py-4 sm:py-6 md:py-8 px-4 sm:px-6 md:px-8"
                   >
@@ -1111,10 +1114,22 @@ const Index = () => {
       )}
 
       {/* Modals */}
+      {(() => {
+        console.log('🔶 DEBUG: Checking showCreateRoom state:', showCreateRoom);
+        if (showCreateRoom) {
+          console.log('🔶🔶🔶 RENDERING CreateRoomModal 🔶🔶🔶');
+        } else {
+          console.log('🔶 DEBUG: CreateRoomModal NOT rendering (showCreateRoom is false)');
+        }
+        return null;
+      })()}
       {showCreateRoom && (
         <CreateRoomModal
           onCreateRoom={handleCreateRoom}
-          onClose={() => setShowCreateRoom(false)}
+          onClose={() => {
+            console.log('🔶 DEBUG: CreateRoomModal onClose called');
+            setShowCreateRoom(false);
+          }}
           isLoading={isCreatingRoom}
           currentLocation=""
         />
