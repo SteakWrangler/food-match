@@ -291,43 +291,9 @@ const Index = () => {
         console.log('🔴 DEBUG: Demo room created with ID:', roomId);
         setShowCreateRoom(false);
       } else if (roomType === 'full') {
-        // Full room - check subscription then credits
-        if (user) {
-          // First check if user has active subscription
-          const { data: hasActiveSubscription } = await supabase.rpc('has_active_subscription', { user_id: user.id });
-          
-          if (hasActiveSubscription) {
-            // User has active subscription - create room directly
-            console.log('🔴 DEBUG: User has active subscription, creating full room...');
-            await createFullRoom(name, locationToUse);
-          } else {
-            // No active subscription - check for credits
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('room_credits')
-              .eq('id', user.id)
-              .single();
-            
-            if (profileData && profileData.room_credits > 0) {
-              // User has credits, consume one and create room
-              console.log('🔴 DEBUG: User has credits, consuming one and creating room...');
-              const { error } = await supabase.rpc('consume_room_credit', { user_id: user.id });
-              
-              if (error) {
-                console.error('Error consuming credit:', error);
-                setError('Failed to use credit. Please try again.');
-                return;
-              }
-              
-              // Create full room
-              await createFullRoom(name, locationToUse);
-            } else {
-              // User has no credits - need to purchase or subscribe
-              setError('You need an active subscription or room credits to create a full room. Please subscribe or purchase credits.');
-              return;
-            }
-          }
-        }
+        // DEMO MODE: Temporarily allow all users to create full rooms
+        console.log('🔴 DEBUG: DEMO MODE - Creating full room without subscription check...');
+        await createFullRoom(name, locationToUse);
       } else {
         // Legacy path - treat as full room
         await createFullRoom(name, locationToUse);
