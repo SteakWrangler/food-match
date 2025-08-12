@@ -252,8 +252,8 @@ const Index = () => {
     }
   }, [roomState]);
 
-  const handleCreateRoom = async (name: string, locationToUse?: string, formattedAddress?: string, isAuthenticated?: boolean) => {
-    console.log('🔴 DEBUG: handleCreateRoom called with:', { name, locationToUse, formattedAddress, isAuthenticated });
+  const handleCreateRoom = async (name: string, locationToUse?: string, formattedAddress?: string, roomType?: 'demo' | 'paid' | 'subscription') => {
+    console.log('🔴 DEBUG: handleCreateRoom called with:', { name, locationToUse, formattedAddress, roomType });
     
     // Validate inputs
     if (!name || name.trim() === '') {
@@ -262,8 +262,8 @@ const Index = () => {
       return;
     }
 
-    if (isAuthenticated !== false && (!locationToUse || locationToUse.trim() === '')) {
-      console.error('🔴 DEBUG: No location provided for authenticated room');
+    if (roomType !== 'demo' && (!locationToUse || locationToUse.trim() === '')) {
+      console.error('🔴 DEBUG: No location provided for restaurant room');
       setError('Please provide a location for the room.');
       return;
     }
@@ -281,10 +281,71 @@ const Index = () => {
     
     try {
       console.log('🔴 DEBUG: Starting room creation process');
-      console.log('🔴 DEBUG: isAuthenticated:', isAuthenticated);
+      console.log('🔴 DEBUG: roomType:', roomType);
       console.log('🔴 DEBUG: locationToSet:', locationToUse);
       
-      if (isAuthenticated !== false) {
+      if (roomType === 'demo') {
+        // Demo room creation - food types only, no API calls
+        console.log('🔴 DEBUG: Creating demo room...');
+        const roomId = await createDemoRoom(name, 'Demo Mode');
+        console.log('🔴 DEBUG: Demo room created with ID:', roomId);
+        setShowCreateRoom(false);
+      } else if (roomType === 'paid') {
+        // Check if user has credits, if not, this will need to trigger payment flow
+        if (user) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('room_credits')
+            .eq('id', user.id)
+            .single();
+          
+          if (profileData && profileData.room_credits > 0) {
+            // User has credits, consume one and create room
+            const { error } = await supabase.rpc('consume_room_credit', { user_id: user.id });
+            
+            if (error) {
+              console.error('Error consuming credit:', error);
+              setError('Failed to use credit. Please try again.');
+              return;
+            }
+            
+            // Create full room
+            await createFullRoom(name, locationToUse);
+          } else {
+            // User has no credits - trigger payment flow (placeholder for now)
+            setError('No credits available. Payment integration will be added here.');
+            return;
+          }
+        }
+      } else if (roomType === 'subscription') {
+        // Subscription user - verify active subscription and create room
+        if (user) {
+          const hasActiveSubscription = await supabase.rpc('has_active_subscription', { user_id: user.id });
+          
+          if (hasActiveSubscription.data) {
+            // Create full room
+            await createFullRoom(name, locationToUse);
+          } else {
+            setError('No active subscription. Please subscribe to create full rooms.');
+            return;
+          }
+        }
+      } else {
+        // Legacy path - treat as subscription room
+        await createFullRoom(name, locationToUse);
+      }
+    } catch (err) {
+      console.error('🔴 DEBUG: Error in handleCreateRoom:', err);
+      setError('Failed to create room. Please try again.');
+      setShowCreateRoom(true);
+    } finally {
+      console.log('🔴 DEBUG: Setting isCreatingRoom to false');
+      setIsCreatingRoom(false);
+    }
+  };
+
+  const createFullRoom = async (name: string, locationToUse?: string) => {
+    try {
         // Regular room creation with location and restaurants
         let coordinatesForAPI = locationToUse;
     
@@ -342,12 +403,9 @@ const Index = () => {
         console.log('🔴 DEBUG: - coordinatesForAPI:', coordinatesForAPI);
         console.log('🔴 DEBUG: - filters:', filters);
         console.log('🔴 DEBUG: - normalizedFormattedAddress:', normalizedFormattedAddress);
-        console.log('🔴 DEBUG: - user:', user);
-        console.log('🔴 DEBUG: - user.id:', user?.id);
         
         const createRoomResult = await createRoom(name, coordinatesForAPI, filters, normalizedFormattedAddress);
         console.log('🔴 DEBUG: createRoom result:', createRoomResult);
-        console.log('🔴 DEBUG: createRoom result type:', typeof createRoomResult);
         
         // Check if it's a string (room ID) or an object with success property
         if (typeof createRoomResult === 'string') {
@@ -358,31 +416,13 @@ const Index = () => {
         }
         
         console.log('🔴 DEBUG: createRoom completed successfully');
-      } else {
-        // Demo room creation - food types only, no API calls
-        console.log('🔴 DEBUG: Creating demo room...');
-        const roomId = await createDemoRoom(name, 'Demo Mode');
-        console.log('🔴 DEBUG: Demo room created with ID:', roomId);
-        console.log('🔴 DEBUG: Room state after demo creation:', roomState);
-        // Close modal for demo rooms - go straight to the room
-        setShowCreateRoom(false);
-      }
-      
-      console.log('🔴 DEBUG: Room creation process completed');
-      
-      // Show QR modal after successful room creation (only for authenticated rooms)
-      if (isAuthenticated !== false) {
-        console.log('🔴 DEBUG: Setting showQRCode to true');
+        
+        // Show QR modal after successful room creation
         setShowQRCode(true);
-      }
-    } catch (err) {
-      console.error('🔴 DEBUG: Error in handleCreateRoom:', err);
-      setError('Failed to create room. Please try again.');
-      // Reopen the modal if room creation failed
-      setShowCreateRoom(true);
-    } finally {
-      console.log('🔴 DEBUG: Setting isCreatingRoom to false');
-      setIsCreatingRoom(false);
+        setShowCreateRoom(false);
+    } catch (error) {
+      console.error('🔴 DEBUG: Error in createFullRoom:', error);
+      throw error;
     }
   };
 

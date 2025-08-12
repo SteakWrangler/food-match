@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { X, MapPin, Navigation, User, Lock } from 'lucide-react';
+import { X, MapPin, Navigation, User, Lock, Crown, CreditCard, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
@@ -13,7 +13,7 @@ import AuthModal from '@/components/AuthModal';
 const USE_MOCK_LOCATION = false;
 
 interface CreateRoomModalProps {
-  onCreateRoom: (name: string, location?: string, formattedAddress?: string, isAuthenticated?: boolean) => void;
+  onCreateRoom: (name: string, location?: string, formattedAddress?: string, roomType?: 'demo' | 'paid' | 'subscription') => void;
   onClose: () => void;
   isLoading?: boolean;
   currentLocation?: string | null;
@@ -32,49 +32,95 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   const [displayLocation, setDisplayLocation] = useState('');
   const [isDetecting, setIsDetecting] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showAccessChoice, setShowAccessChoice] = useState(!user); // Show choice if not authenticated
+  const [showAccessChoice, setShowAccessChoice] = useState(!user);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [subscriptionData, setSubscriptionData] = useState<{
+    hasActiveSubscription: boolean;
+    roomCredits: number;
+    subscriptionType: string;
+  } | null>(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('🔴 DEBUG: handleSubmit called');
-    console.log('🔴 DEBUG: isLoading:', isLoading);
-    console.log('🔴 DEBUG: user:', !!user);
-    console.log('🔴 DEBUG: location:', location);
-    console.log('🔴 DEBUG: location.trim():', location.trim());
-    console.log('🔴 DEBUG: profile?.name:', profile?.name);
-    
-    if (!isLoading && user && location.trim()) {
-      console.log('🔴 DEBUG: Conditions met, calling onCreateRoom');
-      try {
-        // Disable form to prevent multiple submissions
-        setIsSubmitting(true);
-        
-        // Authenticated user creating complete room
-        const userName = profile?.name || user.email?.split('@')[0] || 'User';
-        await onCreateRoom(userName, location.trim(), formattedAddress || undefined, true);
-        
-        // Only close modal after successful room creation
-        onClose();
-      } catch (error) {
-        console.error('🔴 DEBUG: Room creation failed:', error);
-        // Don't close modal on error, let user try again
-      } finally {
-        setIsSubmitting(false);
+  // Fetch subscription data when user changes
+  useEffect(() => {
+    const fetchSubscriptionData = async () => {
+      if (!user) {
+        setSubscriptionData(null);
+        return;
       }
-    } else {
-      console.log('🔴 DEBUG: Conditions NOT met - not calling onCreateRoom');
-      console.log('🔴 DEBUG: Reasons:', {
-        isLoading: isLoading,
-        hasUser: !!user,
-        hasLocation: !!location.trim()
-      });
+
+      setLoadingSubscription(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('subscription_type, subscription_status, subscription_expires_at, room_credits')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching subscription data:', error);
+          setSubscriptionData(null);
+          return;
+        }
+
+        const hasActiveSubscription = data.subscription_status === 'active' && 
+          (data.subscription_expires_at === null || new Date(data.subscription_expires_at) > new Date());
+
+        setSubscriptionData({
+          hasActiveSubscription,
+          roomCredits: data.room_credits || 0,
+          subscriptionType: data.subscription_type || 'none'
+        });
+      } catch (error) {
+        console.error('Error fetching subscription data:', error);
+        setSubscriptionData(null);
+      } finally {
+        setLoadingSubscription(false);
+      }
+    };
+
+    fetchSubscriptionData();
+  }, [user]);
+
+  const handleCreateSubscriptionRoom = async () => {
+    if (!user || !location.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      const userName = profile?.name || user.email?.split('@')[0] || 'User';
+      await onCreateRoom(userName, location.trim(), formattedAddress || undefined, 'subscription');
+      onClose();
+    } catch (error) {
+      console.error('Subscription room creation failed:', error);
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleCreatePaidRoom = async () => {
+    if (!user || !location.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      const userName = profile?.name || user.email?.split('@')[0] || 'User';
+      await onCreateRoom(userName, location.trim(), formattedAddress || undefined, 'paid');
+      onClose();
+    } catch (error) {
+      console.error('Paid room creation failed:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateFoodTypesRoom = async () => {
+    const userName = profile?.name || user?.email?.split('@')[0] || 'User';
+    await onCreateRoom(userName, undefined, undefined, 'demo');
+    onClose();
   };
 
   const handleLimitedAccess = () => {
     // Create food type room only (no location needed)
-    onCreateRoom(name.trim(), undefined, undefined, false);
+    onCreateRoom(name.trim(), undefined, undefined, 'demo');
   };
 
   const handleSignInChoice = () => {
@@ -314,7 +360,6 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     }
   };
 
-  const isFormValid = user ? location.trim() : name.trim();
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
@@ -393,58 +438,145 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
               </div>
             </div>
           ) : user ? (
-            // Authenticated user - show location form
-            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-              <div>
-                <Label htmlFor="location" className="text-gray-700 text-sm sm:text-base">
-                  Enter your city or zip code
-                </Label>
-                <Input
-                  id="location"
-                  type="text"
-                  value={displayLocation}
-                  onChange={(e) => {
-                    setLocation(e.target.value);
-                    setDisplayLocation(e.target.value);
-                  }}
-                  onBlur={(e) => handleAddressInput(e.target.value)}
-                  placeholder="e.g., San Francisco, CA or 94102"
-                  className="mt-1 text-sm sm:text-base"
-                  disabled={isLoading}
-                  autoFocus
-                />
-              </div>
+            // Authenticated user - show subscription-based options
+            <div className="space-y-4">
+              {loadingSubscription ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                  <p className="text-gray-600 mt-2">Loading subscription details...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Location Input */}
+                  <div>
+                    <Label htmlFor="location" className="text-gray-700 text-sm sm:text-base">
+                      Enter your city or zip code
+                    </Label>
+                    <Input
+                      id="location"
+                      type="text"
+                      value={displayLocation}
+                      onChange={(e) => {
+                        setLocation(e.target.value);
+                        setDisplayLocation(e.target.value);
+                      }}
+                      onBlur={(e) => handleAddressInput(e.target.value)}
+                      placeholder="e.g., San Francisco, CA or 94102"
+                      className="mt-1 text-sm sm:text-base"
+                      disabled={isLoading}
+                      autoFocus
+                    />
+                  </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full text-sm sm:text-base"
-                onClick={handleUseCurrentLocation}
-                disabled={isDetecting || isLoading}
-              >
-                <Navigation className="w-4 h-4 mr-2" />
-                {isDetecting ? 'Detecting...' : 'Use Current Location'}
-              </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full text-sm sm:text-base"
+                    onClick={handleUseCurrentLocation}
+                    disabled={isDetecting || isLoading}
+                  >
+                    <Navigation className="w-4 h-4 mr-2" />
+                    {isDetecting ? 'Detecting...' : 'Use Current Location'}
+                  </Button>
 
-              <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  className="flex-1 text-sm sm:text-base"
-                  onClick={onClose}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit"
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-sm sm:text-base"
-                  disabled={!isFormValid || isLoading}
-                >
-                  {isLoading ? 'Creating Room...' : 'Create Room'}
-                </Button>
-              </div>
-            </form>
+                  {/* Room Creation Options */}
+                  <div className="space-y-3 pt-2">
+                    <h3 className="text-lg font-semibold text-gray-800">Choose Room Type</h3>
+                    
+                    {/* Full Room - Subscription Required */}
+                    <div className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Crown className="w-5 h-5 text-yellow-600" />
+                          <div>
+                            <h4 className="font-semibold text-gray-800">Full Room</h4>
+                            <p className="text-xs text-gray-600">Restaurants + Food Types</p>
+                          </div>
+                        </div>
+                        {subscriptionData?.hasActiveSubscription && (
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                            Subscribed
+                          </span>
+                        )}
+                      </div>
+                      
+                      <Button
+                        onClick={handleCreateSubscriptionRoom}
+                        disabled={!subscriptionData?.hasActiveSubscription || !location.trim() || isLoading}
+                        className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 disabled:opacity-50"
+                      >
+                        {subscriptionData?.hasActiveSubscription 
+                          ? 'Create Full Room' 
+                          : 'Subscribe for Full Access'
+                        }
+                      </Button>
+                    </div>
+
+                    {/* Pay-Per-Room */}
+                    <div className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-5 h-5 text-blue-600" />
+                          <div>
+                            <h4 className="font-semibold text-gray-800">One-Time Room</h4>
+                            <p className="text-xs text-gray-600">Restaurants + Food Types</p>
+                          </div>
+                        </div>
+                        {subscriptionData && subscriptionData.roomCredits > 0 && (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            {subscriptionData.roomCredits} credits
+                          </span>
+                        )}
+                      </div>
+                      
+                      <Button
+                        onClick={handleCreatePaidRoom}
+                        disabled={!location.trim() || isLoading}
+                        variant="outline"
+                        className="w-full border-blue-200 hover:bg-blue-50"
+                      >
+                        {subscriptionData && subscriptionData.roomCredits > 0 
+                          ? 'Use 1 Credit' 
+                          : 'Buy Credits ($1)'
+                        }
+                      </Button>
+                    </div>
+
+                    {/* Food Types Only - Free */}
+                    <div className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Star className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <h4 className="font-semibold text-gray-800">Food Types Only</h4>
+                          <p className="text-xs text-gray-600">Free • No location needed</p>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        onClick={handleCreateFoodTypesRoom}
+                        disabled={isLoading}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        Create Free Room
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 sm:gap-3 pt-3">
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      className="flex-1 text-sm sm:text-base"
+                      onClick={onClose}
+                      disabled={isLoading}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
           ) : null}
         </div>
       </Card>
