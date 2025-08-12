@@ -484,7 +484,13 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                     {/* Full Room - Restaurants + Food Types */}
                     <div className="space-y-3">
                       <Button
-                        onClick={handleCreateFullRoom}
+                        onClick={() => {
+                          console.log('🟡 DEBUG: Full Room button clicked');
+                          console.log('🟡 DEBUG: location.trim():', location.trim());
+                          console.log('🟡 DEBUG: isLoading:', isLoading);
+                          console.log('🟡 DEBUG: Button disabled?', !location.trim() || isLoading);
+                          handleCreateFullRoom();
+                        }}
                         disabled={!location.trim() || isLoading}
                         className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white py-6"
                       >
@@ -510,7 +516,11 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                     {/* Food Types Only - Free */}
                     <div className="space-y-3">
                       <Button
-                        onClick={handleCreateFoodTypesRoom}
+                        onClick={() => {
+                          console.log('🟡 DEBUG: Food Types Room button clicked');
+                          console.log('🟡 DEBUG: isLoading:', isLoading);
+                          handleCreateFoodTypesRoom();
+                        }}
                         disabled={isLoading}
                         variant="outline"
                         className="w-full py-6"
