@@ -253,65 +253,49 @@ const Index = () => {
   }, [roomState]);
 
   const handleCreateRoom = async (name: string, locationToUse?: string, formattedAddress?: string, roomType?: 'demo' | 'full') => {
-    console.log('🔴 DEBUG: handleCreateRoom called with:', { name, locationToUse, formattedAddress, roomType });
-    console.log('🔴 DEBUG: user exists:', !!user);
     
     // Validate inputs
     if (!name || name.trim() === '') {
-      console.error('🔴 DEBUG: No name provided');
       setError('Please provide a name for the room.');
       return;
     }
 
     if (roomType !== 'demo' && (!locationToUse || locationToUse.trim() === '')) {
-      console.error('🔴 DEBUG: No location provided for restaurant room');
       setError('Please provide a location for the room.');
       return;
     }
 
     // Update the location state if a new location was provided
     if (locationToUse) {
-      console.log('Setting location:', locationToUse);
-      console.log('Setting formatted location:', formattedAddress);
       setLocation(locationToUse);
       setFormattedLocation(formattedAddress || null);
     }
     
-    // Don't close modal immediately - let the modal handle its own state
     setIsCreatingRoom(true);
     
     try {
-      console.log('🔴 DEBUG: Starting room creation process');
-      console.log('🔴 DEBUG: roomType:', roomType);
-      console.log('🔴 DEBUG: locationToSet:', locationToUse);
       
       if (roomType === 'demo') {
         // Demo room creation - food types only, no API calls
-        console.log('🔴 DEBUG: Creating demo room...');
         const roomId = await createDemoRoom(name, 'Demo Mode');
-        console.log('🔴 DEBUG: Demo room created with ID:', roomId);
         setShowCreateRoom(false);
       } else if (roomType === 'full') {
         // DEMO MODE: Temporarily allow all users to create full rooms
         if (user) {
-          console.log('🔴 DEBUG: DEMO MODE - Creating full room without subscription check...');
           await createFullRoom(name, locationToUse, formattedAddress);
         } else {
-          console.log('🔴 DEBUG: No user for full room creation');
           setError('Please sign in to create a full room.');
           return;
         }
       } else {
         // Legacy path - treat as full room
-        console.log('🔴 DEBUG: Legacy path - creating full room...');
         await createFullRoom(name, locationToUse, formattedAddress);
       }
     } catch (err) {
-      console.error('🔴 DEBUG: Error in handleCreateRoom:', err);
+      console.error('Error creating room:', err);
       setError('Failed to create room. Please try again.');
       setShowCreateRoom(true);
     } finally {
-      console.log('🔴 DEBUG: Setting isCreatingRoom to false');
       setIsCreatingRoom(false);
     }
   };
@@ -321,16 +305,12 @@ const Index = () => {
         // Regular room creation with location and restaurants
         let coordinatesForAPI = locationToUse;
     
-        console.log('🔴 DEBUG: Starting geocoding check');
         // Check if the location is already coordinates
         const coordMatch = locationToUse.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
-        console.log('🔴 DEBUG: coordMatch result:', coordMatch);
         
         if (!coordMatch) {
-          console.log('🔴 DEBUG: Location is not coordinates, starting geocoding');
           // It's an address, need to geocode it
           try {
-            console.log('🔴 DEBUG: About to call geocoding function with address:', locationToUse);
             const { data, error } = await supabase.functions.invoke('geocoding', {
               body: {
                 action: 'geocode',
@@ -338,30 +318,20 @@ const Index = () => {
               },
             });
 
-            console.log('🔴 DEBUG: Geocoding response received');
-            console.log('🔴 DEBUG: Geocoding data:', data);
-            console.log('🔴 DEBUG: Geocoding error:', error);
 
             if (error || !data?.lat || !data?.lng) {
-              console.error('🔴 DEBUG: Geocoding failed - error:', error);
-              console.error('🔴 DEBUG: Geocoding failed - data:', data);
               setError('Unable to find that location. Try entering your location in a format like "San Francisco, CA", "94102", or "New York, NY".');
               setIsCreatingRoom(false);
               return;
             }
             
             coordinatesForAPI = `${data.lat}, ${data.lng}`;
-            console.log('🔴 DEBUG: Geocoded address to coordinates:', coordinatesForAPI);
           } catch (error) {
-            console.error('🔴 DEBUG: Geocoding error caught in catch block:', error);
-            console.error('🔴 DEBUG: Error type:', typeof error);
-            console.error('🔴 DEBUG: Error message:', error?.message);
+            console.error('Geocoding error:', error);
             setError('Unable to find that location. Try entering your location in a format like "San Francisco, CA", "94102", or "New York, NY".');
             setIsCreatingRoom(false);
             return;
           }
-        } else {
-          console.log('🔴 DEBUG: Location is already coordinates - skipping geocoding');
         }
         
         // Normalize formattedAddress - handle the weird object format
@@ -370,30 +340,21 @@ const Index = () => {
           : formattedAddress;
         
         // Create room with coordinates
-        console.log('🔴 DEBUG: About to call createRoom with:');
-        console.log('🔴 DEBUG: - name:', name);
-        console.log('🔴 DEBUG: - coordinatesForAPI:', coordinatesForAPI);
-        console.log('🔴 DEBUG: - filters:', filters);
-        console.log('🔴 DEBUG: - normalizedFormattedAddress:', normalizedFormattedAddress);
         
         const createRoomResult = await createRoom(name, coordinatesForAPI, filters, normalizedFormattedAddress);
-        console.log('🔴 DEBUG: createRoom result:', createRoomResult);
         
         // Check if it's a string (room ID) or an object with success property
         if (typeof createRoomResult === 'string') {
-          console.log('🔴 DEBUG: createRoom returned room ID:', createRoomResult);
+          // Success - room ID returned
         } else if (!createRoomResult || typeof createRoomResult === 'object') {
-          console.error('🔴 DEBUG: createRoom failed with result:', createRoomResult);
           throw new Error('Room creation failed');
         }
-        
-        console.log('🔴 DEBUG: createRoom completed successfully');
         
         // Show QR modal after successful room creation
         setShowQRCode(true);
         setShowCreateRoom(false);
     } catch (error) {
-      console.error('🔴 DEBUG: Error in createFullRoom:', error);
+      console.error('Error in createFullRoom:', error);
       throw error;
     }
   };
@@ -862,15 +823,7 @@ const Index = () => {
                 
                 <div className="space-y-3 sm:space-y-4 md:space-y-5">
                   <Button
-                    onClick={() => {
-                      console.log('🔵🔵🔵 BUTTON CLICKED! 🔵🔵🔵');
-                      console.log('🔵 DEBUG: Main Create Room button clicked');
-                      console.log('🔵 DEBUG: Current showCreateRoom state:', showCreateRoom);
-                      console.log('🔵 DEBUG: About to call setShowCreateRoom(true)');
-                      setShowCreateRoom(true);
-                      console.log('🔵 DEBUG: setShowCreateRoom(true) called successfully');
-                      console.log('🔵🔵🔵 BUTTON CLICK HANDLER COMPLETE 🔵🔵🔵');
-                    }}
+                    onClick={() => setShowCreateRoom(true)}
                     className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-sm sm:text-base md:text-lg py-4 sm:py-6 md:py-8 px-4 sm:px-6 md:px-8"
                   >
                     <QrCode className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2 sm:mr-3" />
@@ -1114,22 +1067,10 @@ const Index = () => {
       )}
 
       {/* Modals */}
-      {(() => {
-        console.log('🔶 DEBUG: Checking showCreateRoom state:', showCreateRoom);
-        if (showCreateRoom) {
-          console.log('🔶🔶🔶 RENDERING CreateRoomModal 🔶🔶🔶');
-        } else {
-          console.log('🔶 DEBUG: CreateRoomModal NOT rendering (showCreateRoom is false)');
-        }
-        return null;
-      })()}
       {showCreateRoom && (
         <CreateRoomModal
           onCreateRoom={handleCreateRoom}
-          onClose={() => {
-            console.log('🔶 DEBUG: CreateRoomModal onClose called');
-            setShowCreateRoom(false);
-          }}
+          onClose={() => setShowCreateRoom(false)}
           isLoading={isCreatingRoom}
           currentLocation=""
         />

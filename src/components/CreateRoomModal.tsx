@@ -25,12 +25,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   isLoading = false,
   currentLocation = null
 }) => {
-  console.log('🟠🟠🟠 CreateRoomModal COMPONENT RENDERING 🟠🟠🟠');
-  console.log('🟠 DEBUG: Modal props:', { isLoading, currentLocation });
-  
   const { user, profile } = useAuth();
-  console.log('🟠 DEBUG: user exists:', !!user);
-  console.log('🟠 DEBUG: profile exists:', !!profile);
   const [name, setName] = useState('');
   const [location, setLocation] = useState(currentLocation || '');
   const [formattedAddress, setFormattedAddress] = useState<string | null>(null);
@@ -88,29 +83,16 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
   }, [user]);
 
   const handleCreateFullRoom = async () => {
-    console.log('🟢 DEBUG: handleCreateFullRoom called');
-    console.log('🟢 DEBUG: user:', !!user);
-    console.log('🟢 DEBUG: location:', location);
-    console.log('🟢 DEBUG: location.trim():', location.trim());
-    
-    if (!user || !location.trim()) {
-      console.log('🟢 DEBUG: Early return - missing user or location');
-      return;
-    }
+    if (!user || !location.trim()) return;
     
     setIsSubmitting(true);
     try {
       const userName = profile?.name || user.email?.split('@')[0] || 'User';
-      console.log('🟢 DEBUG: About to call onCreateRoom with userName:', userName);
-      console.log('🟢 DEBUG: location.trim():', location.trim());
-      console.log('🟢 DEBUG: formattedAddress:', formattedAddress);
       await onCreateRoom(userName, location.trim(), formattedAddress || undefined, 'full');
-      console.log('🟢 DEBUG: onCreateRoom completed successfully');
       onClose();
     } catch (error) {
-      console.error('🟢 DEBUG: Full room creation failed:', error);
+      console.error('Full room creation failed:', error);
     } finally {
-      console.log('🟢 DEBUG: Setting isSubmitting to false');
       setIsSubmitting(false);
     }
   };
@@ -489,13 +471,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                     {/* Full Room - Restaurants + Food Types */}
                     <div className="space-y-3">
                       <Button
-                        onClick={() => {
-                          console.log('🟡 DEBUG: Full Room button clicked');
-                          console.log('🟡 DEBUG: location.trim():', location.trim());
-                          console.log('🟡 DEBUG: isLoading:', isLoading);
-                          console.log('🟡 DEBUG: Button disabled?', !location.trim() || isLoading);
-                          handleCreateFullRoom();
-                        }}
+                        onClick={handleCreateFullRoom}
                         disabled={!location.trim() || isLoading}
                         className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white py-6"
                       >
@@ -521,11 +497,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                     {/* Food Types Only - Free */}
                     <div className="space-y-3">
                       <Button
-                        onClick={() => {
-                          console.log('🟡 DEBUG: Food Types Room button clicked');
-                          console.log('🟡 DEBUG: isLoading:', isLoading);
-                          handleCreateFoodTypesRoom();
-                        }}
+                        onClick={handleCreateFoodTypesRoom}
                         disabled={isLoading}
                         variant="outline"
                         className="w-full py-6"
