@@ -22,7 +22,7 @@ interface SubscriptionManagerProps {
 const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseComplete }) => {
   const { user, profile } = useAuth();
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
   const [refreshing, setRefreshing] = useState(true); // Start with true for initial load
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
@@ -66,30 +66,41 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
       return;
     }
 
-    setLoading(true);
+    const buttonKey = `subscribe-${type}`;
+    setLoadingStates(prev => ({ ...prev, [buttonKey]: true }));
+    
     try {
+      console.log('🛒 Creating checkout session for:', { priceId, type });
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { priceId, type }
       });
 
+      console.log('🛒 Checkout response:', { data, error });
+
       if (error) {
-        toast.error('Failed to create checkout session');
-        console.error('Checkout error:', error);
+        console.error('❌ Checkout error:', error);
+        toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
       } else if (data?.url) {
+        console.log('✅ Opening Stripe checkout:', data.url);
         window.open(data.url, '_blank');
+      } else {
+        console.error('❌ No checkout URL returned');
+        toast.error('No checkout URL received');
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ Exception during checkout:', error);
       toast.error('Failed to start checkout');
     } finally {
-      setLoading(false);
+      setLoadingStates(prev => ({ ...prev, [buttonKey]: false }));
     }
   };
 
   const handleManageSubscription = async () => {
     if (!user) return;
 
-    setLoading(true);
+    const buttonKey = 'manage-subscription';
+    setLoadingStates(prev => ({ ...prev, [buttonKey]: true }));
+    
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
       if (error) {
@@ -102,7 +113,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
       console.error('Error:', error);
       toast.error('Failed to access customer portal');
     } finally {
-      setLoading(false);
+      setLoadingStates(prev => ({ ...prev, [buttonKey]: false }));
     }
   };
 
@@ -112,23 +123,32 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
       return;
     }
 
-    setLoading(true);
+    const buttonKey = `credits-${credits}`;
+    setLoadingStates(prev => ({ ...prev, [buttonKey]: true }));
+    
     try {
+      console.log('🛒 Creating checkout session for credits:', { priceId, credits });
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { priceId, type: 'credits' }
       });
 
+      console.log('🛒 Credits checkout response:', { data, error });
+
       if (error) {
-        toast.error('Failed to create checkout session');
-        console.error('Checkout error:', error);
+        console.error('❌ Credits checkout error:', error);
+        toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
       } else if (data?.url) {
+        console.log('✅ Opening Stripe checkout for credits:', data.url);
         window.open(data.url, '_blank');
+      } else {
+        console.error('❌ No checkout URL returned for credits');
+        toast.error('No checkout URL received');
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ Exception during credits checkout:', error);
       toast.error('Failed to start checkout');
     } finally {
-      setLoading(false);
+      setLoadingStates(prev => ({ ...prev, [buttonKey]: false }));
     }
   };
 
@@ -189,8 +209,8 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
           )}
 
           {isSubscribed && (
-            <Button onClick={handleManageSubscription} disabled={loading}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            <Button onClick={handleManageSubscription} disabled={loadingStates['manage-subscription']}>
+              {loadingStates['manage-subscription'] ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Manage Subscription
             </Button>
           )}
@@ -221,9 +241,9 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
               <Button 
                 className="w-full" 
                 onClick={() => handleSubscribe('price_1RvnXJD2Qzu3jxiC4fn6yJul', 'monthly')}
-                disabled={loading}
+                disabled={loadingStates['subscribe-monthly']}
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {loadingStates['subscribe-monthly'] ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Subscribe Monthly
               </Button>
             </CardContent>
@@ -250,9 +270,9 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
               <Button 
                 className="w-full" 
                 onClick={() => handleSubscribe('price_1RvnXJD2Qzu3jxiCZQ5TO4TR', 'yearly')}
-                disabled={loading}
+                disabled={loadingStates['subscribe-yearly']}
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {loadingStates['subscribe-yearly'] ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Subscribe Yearly
               </Button>
             </CardContent>
@@ -282,9 +302,9 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
                 <Button 
                   className="w-full"
                   onClick={() => buyCredits('price_1RvncFD2Qzu3jxiCzi4Lrh5o', 1)}
-                  disabled={loading}
+                  disabled={loadingStates['credits-1']}
                 >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {loadingStates['credits-1'] ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Buy 1 Credit
                 </Button>
               </div>
@@ -299,9 +319,9 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
                 <Button 
                   className="w-full"
                   onClick={() => buyCredits('price_1RvncpD2Qzu3jxiCbbDsb8FS', 5)}
-                  disabled={loading}
+                  disabled={loadingStates['credits-5']}
                 >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {loadingStates['credits-5'] ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Buy 5 Credits
                 </Button>
               </div>
