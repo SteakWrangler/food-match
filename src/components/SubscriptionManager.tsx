@@ -54,12 +54,22 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
   }, [user]);
 
   const handleManualRefresh = async () => {
-    if (!user || refreshing) return;
+    if (!user) {
+      console.log('🔄 Manual refresh aborted - no user');
+      return;
+    }
     
-    console.log('🔄 Manual refresh triggered');
+    if (refreshing) {
+      console.log('🔄 Manual refresh aborted - already refreshing');
+      return;
+    }
+    
+    console.log('🔄 Manual refresh started');
     setRefreshing(true);
+    
     try {
       const { data, error } = await supabase.functions.invoke('check-subscription');
+      console.log('🔄 Manual refresh response:', { data, error });
       
       if (error) {
         console.error('❌ Manual refresh error:', error);
@@ -72,10 +82,11 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
     } catch (error) {
       console.error('❌ Manual refresh exception:', error);
       toast.error('Failed to refresh subscription status');
-    } finally {
-      console.log('🔄 Manual refresh complete');
-      setRefreshing(false);
     }
+    
+    // Always reset refreshing state, even if there's an error
+    console.log('🔄 Manual refresh complete - resetting state');
+    setRefreshing(false);
   };
 
   useEffect(() => {
