@@ -86,6 +86,13 @@ export type Database = {
           id: string
           last_name: string | null
           preferences: Json | null
+          room_credits: number | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_expires_at: string | null
+          subscription_status: string | null
+          subscription_type: string | null
+          total_rooms_created: number | null
           updated_at: string | null
         }
         Insert: {
@@ -96,6 +103,13 @@ export type Database = {
           id: string
           last_name?: string | null
           preferences?: Json | null
+          room_credits?: number | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
+          subscription_type?: string | null
+          total_rooms_created?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -106,7 +120,56 @@ export type Database = {
           id?: string
           last_name?: string | null
           preferences?: Json | null
+          room_credits?: number | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
+          subscription_type?: string | null
+          total_rooms_created?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      room_history: {
+        Row: {
+          created_at: string
+          filters: Json | null
+          id: string
+          last_accessed: string
+          location: string
+          matches: Json | null
+          restaurants: Json
+          room_id: string
+          room_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json | null
+          id?: string
+          last_accessed?: string
+          location: string
+          matches?: Json | null
+          restaurants?: Json
+          room_id: string
+          room_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json | null
+          id?: string
+          last_accessed?: string
+          location?: string
+          matches?: Json | null
+          restaurants?: Json
+          room_id?: string
+          room_name?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -190,9 +253,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_room_credits: {
+        Args: { user_id: string; credits_to_add: number }
+        Returns: undefined
+      }
       cleanup_old_api_usage: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      consume_room_credit: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      get_room_credits: {
+        Args: { user_id: string }
+        Returns: number
+      }
+      has_active_subscription: {
+        Args: { user_id: string }
+        Returns: boolean
       }
       update_user_profile: {
         Args: {
