@@ -23,6 +23,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { getRoomHistoryService, RoomHistoryEntry } from '@/integrations/supabase/roomHistoryService';
 import AuthModal from '@/components/AuthModal';
 import UserProfileModal from '@/components/UserProfileModal';
+import SubscriptionManager from '@/components/SubscriptionManager';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AuthDebugPanel } from '@/components/AuthDebugPanel';
 
 const Index = () => {
@@ -44,6 +46,7 @@ const Index = () => {
   const [restaurantError, setRestaurantError] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const [isLeavingRoom, setIsLeavingRoom] = useState(false);
@@ -309,8 +312,9 @@ const Index = () => {
               // Create full room after consuming credit
               await createFullRoom(name, locationToUse, formattedAddress);
             } else {
-              // User has no credits - need to purchase or subscribe
-              setError('You need an active subscription or room credits to create a full room. Please subscribe or purchase credits.');
+              // User has no credits - show subscription modal
+              setShowSubscriptionModal(true);
+              setShowCreateRoom(false);
               return;
             }
           }
@@ -1169,6 +1173,19 @@ const Index = () => {
         onClose={() => setShowUserProfile(false)}
         onRecreateRoom={handleRecreateRoom}
       />
+
+      {/* Subscription Modal */}
+      <Dialog open={showSubscriptionModal} onOpenChange={setShowSubscriptionModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Subscribe or Purchase Credits</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              You need an active subscription or room credits to create rooms with restaurant data.
+            </p>
+          </DialogHeader>
+          <SubscriptionManager />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

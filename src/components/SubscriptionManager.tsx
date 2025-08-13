@@ -15,7 +15,11 @@ interface SubscriptionInfo {
   subscription_expires_at?: string;
 }
 
-const SubscriptionManager = () => {
+interface SubscriptionManagerProps {
+  onPurchaseComplete?: () => void;
+}
+
+const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseComplete }) => {
   const { user, profile } = useAuth();
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(false);
