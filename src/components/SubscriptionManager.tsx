@@ -250,6 +250,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
               <ul className="space-y-2 mb-4">
                 <li className="text-sm">✓ Unlimited room creation</li>
                 <li className="text-sm">✓ Advanced filtering</li>
+                <li className="text-sm invisible">Placeholder for alignment</li>
               </ul>
               <Button 
                 className="w-full" 
