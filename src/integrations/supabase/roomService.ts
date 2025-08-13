@@ -125,7 +125,12 @@ export class RoomService {
 
     const { data, error } = await supabase
       .from('rooms')
-      .insert(roomData)
+      .insert({
+        ...roomData,
+        participants: roomData.participants as any,
+        restaurants: roomData.restaurants as any,
+        filters: roomData.filters as any
+      })
       .select()
       .single();
 
@@ -144,7 +149,7 @@ export class RoomService {
 
     console.log('🏢 DEBUG: Room created successfully in database');
     console.log('🏢 DEBUG: Returning room data:', data);
-    return data;
+    return data as unknown as RoomData;
   }
 
   async getRoom(roomId: string): Promise<RoomData | null> {
@@ -159,7 +164,7 @@ export class RoomService {
       return null;
     }
 
-    return data;
+    return data as unknown as RoomData;
   }
 
   async joinRoom(params: JoinRoomParams): Promise<RoomData> {
@@ -186,7 +191,7 @@ export class RoomService {
     const { data, error } = await supabase
       .from('rooms')
       .update({ 
-        participants: updatedParticipants,
+        participants: updatedParticipants as any,
         updated_at: new Date().toISOString()
       })
       .eq('id', roomId)
@@ -198,7 +203,7 @@ export class RoomService {
       throw new Error(`Failed to update room: ${error.message}`);
     }
 
-    return data;
+    return data as unknown as RoomData;
   }
 
   async updateSwipe(params: UpdateSwipeParams): Promise<RoomData> {
@@ -223,7 +228,7 @@ export class RoomService {
           [itemId]: direction
         }
       };
-      updateData.restaurant_swipes = updatedRestaurantSwipes;
+      updateData.restaurant_swipes = updatedRestaurantSwipes as any;
       
       // REMOVED: Global restaurant progress tracking
       // Each user should have their own progress through the restaurant list
@@ -237,7 +242,7 @@ export class RoomService {
           [itemId]: direction
         }
       };
-      updateData.food_type_swipes = updatedFoodTypeSwipes;
+      updateData.food_type_swipes = updatedFoodTypeSwipes as any;
     }
 
     const { data, error } = await supabase
@@ -252,12 +257,12 @@ export class RoomService {
       throw new Error(`Failed to update swipe: ${error.message}`);
     }
 
-    return data;
+    return data as unknown as RoomData;
   }
 
   async updateRestaurants(roomId: string, restaurants: any[], nextPageToken?: string): Promise<RoomData> {
     const updateData: any = {
-      restaurants,
+      restaurants: restaurants as any,
       updated_at: new Date().toISOString()
     };
 
@@ -277,14 +282,14 @@ export class RoomService {
       throw new Error(`Failed to update restaurants: ${error.message}`);
     }
 
-    return data;
+    return data as unknown as RoomData;
   }
 
   async updateFilters(roomId: string, filters: FilterState): Promise<RoomData> {
     const { data, error } = await supabase
       .from('rooms')
       .update({ 
-        filters,
+        filters: filters as any,
         updated_at: new Date().toISOString()
       })
       .eq('id', roomId)
@@ -296,7 +301,7 @@ export class RoomService {
       throw new Error(`Failed to update filters: ${error.message}`);
     }
 
-    return data;
+    return data as unknown as RoomData;
   }
 
   async leaveRoom(roomId: string, participantId: string): Promise<void> {
@@ -324,7 +329,7 @@ export class RoomService {
       const { error } = await supabase
         .from('rooms')
         .update({ 
-          participants: updatedParticipants,
+          participants: updatedParticipants as any,
           updated_at: new Date().toISOString()
         })
         .eq('id', roomId);

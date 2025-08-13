@@ -9,13 +9,16 @@ export interface UserProfile {
   last_name?: string;
   name?: string;
   avatar_url?: string;
-  preferences?: {
-    dietary_restrictions?: string[];
-    cuisine_preferences?: string[];
-    price_range?: [number, number];
-  };
+  preferences?: any; // Changed to any to match Json type
   created_at: string;
   updated_at: string;
+  room_credits?: number;
+  subscription_status?: string;
+  subscription_type?: string;
+  subscription_expires_at?: string;
+  total_rooms_created?: number;
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
 }
 
 interface AuthContextType {
@@ -29,6 +32,9 @@ interface AuthContextType {
   fetchProfile: (userId: string) => Promise<void>;
   refreshProfile: (userId: string) => Promise<void>;
   setProfile: (profile: UserProfile | null) => void;
+  clearAuthCache: () => void;
+  forceRefreshSession: () => Promise<boolean>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -107,9 +113,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
 
           if (data) {
-            const profileWithName = {
+            const profileWithName: UserProfile = {
               ...data,
-              name: data.name || data.first_name || data.email?.split('@')[0] || 'User'
+              name: data.first_name || data.email?.split('@')[0] || 'User'
             };
             
             // Cache with timestamp (no sessionId)
@@ -281,6 +287,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const clearAuthCache = () => {
+    profileCacheRef.current = {};
+    fetchInProgressRef.current = {};
+  };
+
+  const forceRefreshSession = async (): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.refreshSession();
+      return !error;
+    } catch (error) {
+      console.error('Force refresh failed:', error);
+      return false;
+    }
+  };
+
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!user) return { error: new Error('No user logged in') };
+    
+    try {
+      const { data, error } = await supabase.rpc('update_user_profile', {
+        user_id_param: user.id,
+        first_name_param: updates.first_name,
+        last_name_param: updates.last_name,
+        avatar_url_param: updates.avatar_url,
+        preferences_param: updates.preferences
+      });
+      
+      if (error) return { error };
+      
+      // Refresh profile after update
+      await refreshProfile(user.id);
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
   const value = {
     user,
     session,
@@ -291,7 +334,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signOut,
     fetchProfile,
     refreshProfile,
-    setProfile
+    setProfile,
+    clearAuthCache,
+    forceRefreshSession,
+    updateProfile
   };
 
   return (

@@ -46,9 +46,9 @@ export class RoomHistoryService {
           room_id: params.roomId,
           room_name: params.roomName,
           location: params.location,
-          restaurants: params.restaurants,
+          restaurants: params.restaurants as any,
           matches: params.matches || [],
-          filters: params.filters
+          filters: params.filters as any
         });
 
       return { error };
@@ -69,7 +69,7 @@ export class RoomHistoryService {
         .eq('user_id', userId)
         .order('last_accessed', { ascending: false });
 
-      return { data, error };
+      return { data: data as unknown as RoomHistoryEntry[], error };
     } catch (error) {
       console.error('Error getting room history:', error);
       return { data: null, error };
@@ -121,7 +121,7 @@ export class RoomHistoryService {
         .eq('id', historyId)
         .single();
 
-      return { data, error };
+      return { data: data as unknown as RoomHistoryEntry, error };
     } catch (error) {
       console.error('Error getting room history entry:', error);
       return { data: null, error };
@@ -169,7 +169,7 @@ export class RoomHistoryService {
       }
 
       const entry = existingEntries[0];
-      const currentMatches = entry.matches || [];
+      const currentMatches = (entry.matches as string[]) || [];
       
       // Only add if not already in matches
       if (!currentMatches.includes(matchName)) {

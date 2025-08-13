@@ -33,7 +33,7 @@ export class FavoritesService {
         .insert({
           user_id: userId,
           restaurant_id: restaurant.id,
-          restaurant_data: restaurant
+          restaurant_data: restaurant as any
         });
 
       return { error };
