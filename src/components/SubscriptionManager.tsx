@@ -316,7 +316,8 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
               <div className="text-center">
                 <div className="text-2xl font-bold mb-2">1 Credit</div>
                 <div className="text-lg mb-1">$1.00</div>
-                <div className="text-sm text-muted-foreground mb-3">Create one room with real restaurant data</div>
+                <div className="text-sm mb-1 invisible">Placeholder for alignment</div>
+                <div className="text-sm text-muted-foreground mb-2">Create one room with real restaurant data</div>
                 <Button 
                   className="w-full"
                   onClick={() => buyCredits('price_1RvncFD2Qzu3jxiCzi4Lrh5o', 1)}
