@@ -53,6 +53,31 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
     }
   }, [user]);
 
+  const handleManualRefresh = async () => {
+    if (!user || refreshing) return;
+    
+    console.log('🔄 Manual refresh triggered');
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      
+      if (error) {
+        console.error('❌ Manual refresh error:', error);
+        toast.error('Failed to refresh subscription status');
+      } else {
+        console.log('✅ Manual refresh successful:', data);
+        setSubscriptionInfo(data);
+        toast.success('Subscription status updated');
+      }
+    } catch (error) {
+      console.error('❌ Manual refresh exception:', error);
+      toast.error('Failed to refresh subscription status');
+    } finally {
+      console.log('🔄 Manual refresh complete');
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       checkSubscription();
@@ -167,7 +192,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
             <Button
               variant="outline"
               size="sm"
-              onClick={checkSubscription}
+              onClick={handleManualRefresh}
               disabled={refreshing}
             >
               {refreshing ? (
