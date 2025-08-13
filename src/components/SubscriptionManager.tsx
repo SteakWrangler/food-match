@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
   const [refreshing, setRefreshing] = useState(true); // Start with true for initial load
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  const checkSubscription = async () => {
+  const checkSubscription = useCallback(async () => {
     if (!user) return;
 
     console.log('🔍 Starting subscription check for user:', user.id);
@@ -51,13 +51,13 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
       setRefreshing(false);
       setInitialLoadComplete(true);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (user) {
       checkSubscription();
     }
-  }, [user]);
+  }, [user, checkSubscription]);
 
   const handleSubscribe = async (priceId: string, type: string) => {
     if (!user) {
