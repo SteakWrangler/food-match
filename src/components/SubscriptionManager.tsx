@@ -285,9 +285,9 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
             <Card className="p-4">
               <div className="text-center">
                 <div className="text-2xl font-bold mb-2">1 Credit</div>
-                <div className="text-lg mb-3">$1.00</div>
+                <div className="text-lg mb-1">$1.00</div>
+                <div className="text-sm mb-3 invisible">Placeholder for alignment</div>
                 <Button 
-                  variant="outline" 
                   className="w-full"
                   onClick={() => buyCredits('price_1RvncFD2Qzu3jxiCzi4Lrh5o', 1)}
                   disabled={loading}
