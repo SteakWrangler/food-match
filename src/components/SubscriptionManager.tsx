@@ -23,25 +23,33 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
   const { user, profile } = useAuth();
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(true); // Start with true for initial load
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   const checkSubscription = async () => {
     if (!user) return;
 
+    console.log('🔍 Starting subscription check for user:', user.id);
     setRefreshing(true);
     try {
+      console.log('🔍 Calling check-subscription edge function...');
       const { data, error } = await supabase.functions.invoke('check-subscription');
+      console.log('🔍 Subscription check response:', { data, error });
+      
       if (error) {
-        console.error('Error checking subscription:', error);
+        console.error('❌ Error checking subscription:', error);
         toast.error('Failed to check subscription status');
       } else {
+        console.log('✅ Subscription info loaded:', data);
         setSubscriptionInfo(data);
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ Exception during subscription check:', error);
       toast.error('Failed to check subscription status');
     } finally {
+      console.log('🔍 Subscription check complete, setting refreshing to false');
       setRefreshing(false);
+      setInitialLoadComplete(true);
     }
   };
 
@@ -125,6 +133,22 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
 
   if (!user) {
     return null;
+  }
+
+  // Show loading state while initial load is happening
+  if (!initialLoadComplete && refreshing) {
+    return (
+      <div className="w-full max-w-4xl mx-auto space-y-6">
+        <Card>
+          <CardContent className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Loading subscription details...</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const isSubscribed = subscriptionInfo?.subscribed || false;
