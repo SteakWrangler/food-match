@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Crown, CreditCard, Loader2, RefreshCw } from 'lucide-react';
+import { Crown, CreditCard, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SubscriptionInfo {
@@ -53,41 +53,6 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
     }
   }, [user]);
 
-  const handleManualRefresh = async () => {
-    if (!user) {
-      console.log('🔄 Manual refresh aborted - no user');
-      return;
-    }
-    
-    if (refreshing) {
-      console.log('🔄 Manual refresh aborted - already refreshing');
-      return;
-    }
-    
-    console.log('🔄 Manual refresh started');
-    setRefreshing(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('check-subscription');
-      console.log('🔄 Manual refresh response:', { data, error });
-      
-      if (error) {
-        console.error('❌ Manual refresh error:', error);
-        toast.error('Failed to refresh subscription status');
-      } else {
-        console.log('✅ Manual refresh successful:', data);
-        setSubscriptionInfo(data);
-        toast.success('Subscription status updated');
-      }
-    } catch (error) {
-      console.error('❌ Manual refresh exception:', error);
-      toast.error('Failed to refresh subscription status');
-    }
-    
-    // Always reset refreshing state, even if there's an error
-    console.log('🔄 Manual refresh complete - resetting state');
-    setRefreshing(false);
-  };
 
   useEffect(() => {
     if (user) {
@@ -195,24 +160,9 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
       {/* Subscription Status */}
       <Card className="border-primary">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-primary" />
-              <CardTitle>Subscription Status</CardTitle>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleManualRefresh}
-              disabled={refreshing}
-            >
-              {refreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              Refresh
-            </Button>
+          <div className="flex items-center gap-2">
+            <Crown className="h-5 w-5 text-primary" />
+            <CardTitle>Subscription Status</CardTitle>
           </div>
         </CardHeader>
         <CardContent>

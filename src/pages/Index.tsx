@@ -1183,7 +1183,12 @@ const Index = () => {
               You need an active subscription or room credits to create rooms with restaurant data.
             </p>
           </DialogHeader>
-          <SubscriptionManager />
+          <SubscriptionManager 
+            onPurchaseComplete={() => {
+              setShowSubscriptionModal(false);
+              // The SubscriptionManager will auto-refresh on next mount
+            }} 
+          />
         </DialogContent>
       </Dialog>
     </div>
