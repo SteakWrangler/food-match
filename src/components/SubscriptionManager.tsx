@@ -242,14 +242,14 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Yearly Plan</CardTitle>
-                  <CardDescription>Best value - save 33%!</CardDescription>
+                  <CardDescription>Best value - save $10!</CardDescription>
                 </div>
                 <Badge>Popular</Badge>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold mb-2">$39.99<span className="text-lg font-normal">/year</span></div>
-              <p className="text-sm text-green-600 mb-4">Save $20 compared to monthly</p>
+              <div className="text-3xl font-bold mb-2">$50.00<span className="text-lg font-normal">/year</span></div>
+              <p className="text-sm text-green-600 mb-4">Save $10 compared to monthly</p>
               <ul className="space-y-2 mb-4">
                 <li className="text-sm">✓ Unlimited room creation</li>
                 <li className="text-sm">✓ Advanced filtering</li>
@@ -277,7 +277,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
             <CardTitle>Room Credits</CardTitle>
           </div>
           <CardDescription>
-            Need more room credits? Purchase them individually without a subscription.
+            Want to make a one-time room or want to use without subscribing?
           </CardDescription>
         </CardHeader>
         <CardContent>
