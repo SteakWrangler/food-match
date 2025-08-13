@@ -157,7 +157,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
       {/* Subscription Status */}
-      <Card>
+      <Card className="border-primary">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -214,17 +214,17 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
       {/* Subscription Plans */}
       {!isSubscribed && (
         <div className="grid md:grid-cols-2 gap-6">
-          <Card>
+          <Card className="border-primary">
             <CardHeader>
               <CardTitle>Monthly Plan</CardTitle>
               <CardDescription>Perfect for regular users</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold mb-2">$5.00<span className="text-lg font-normal">/month</span></div>
+              <div className="text-sm mb-4 invisible">Placeholder for alignment</div>
               <ul className="space-y-2 mb-4">
                 <li className="text-sm">✓ Unlimited room creation</li>
                 <li className="text-sm">✓ Advanced filtering</li>
-                <li className="text-sm">✓ Priority support</li>
               </ul>
               <Button 
                 className="w-full" 
@@ -253,7 +253,6 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
               <ul className="space-y-2 mb-4">
                 <li className="text-sm">✓ Unlimited room creation</li>
                 <li className="text-sm">✓ Advanced filtering</li>
-                <li className="text-sm">✓ Priority support</li>
                 <li className="text-sm">✓ 2 months free</li>
               </ul>
               <Button 
@@ -282,11 +281,11 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
         </CardHeader>
         <CardContent>
           <div className="grid sm:grid-cols-2 gap-4">
-            <Card className="p-4">
+            <Card className="p-4 border-primary">
               <div className="text-center">
                 <div className="text-2xl font-bold mb-2">1 Credit</div>
                 <div className="text-lg mb-1">$1.00</div>
-                <div className="text-sm mb-3 invisible">Placeholder for alignment</div>
+                <div className="text-sm text-muted-foreground mb-3">Create one room with real restaurant data</div>
                 <Button 
                   className="w-full"
                   onClick={() => buyCredits('price_1RvncFD2Qzu3jxiCzi4Lrh5o', 1)}
@@ -302,7 +301,8 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
               <div className="text-center">
                 <div className="text-2xl font-bold mb-2">5 Credits</div>
                 <div className="text-lg mb-1">$4.00</div>
-                <div className="text-sm text-green-600 mb-3">Save $1.00!</div>
+                <div className="text-sm text-green-600 mb-1">Save $1.00!</div>
+                <div className="text-sm text-muted-foreground mb-2">Create five rooms with real restaurant data</div>
                 <Button 
                   className="w-full"
                   onClick={() => buyCredits('price_1RvncpD2Qzu3jxiCbbDsb8FS', 5)}
