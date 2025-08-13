@@ -241,8 +241,13 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
         <div className="grid md:grid-cols-2 gap-6">
           <Card className="border-primary">
             <CardHeader>
-              <CardTitle>Monthly Plan</CardTitle>
-              <CardDescription>Perfect for regular users</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Monthly Plan</CardTitle>
+                  <CardDescription>Perfect for regular users</CardDescription>
+                </div>
+                <div className="w-16"></div> {/* Placeholder for badge alignment */}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold mb-2">$5.00<span className="text-lg font-normal">/month</span></div>
