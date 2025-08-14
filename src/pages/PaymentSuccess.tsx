@@ -10,20 +10,54 @@ import { toast } from 'sonner';
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { refreshProfile, user } = useAuth();
+  const { refreshProfile, user, forceRefreshSession } = useAuth();
   const [processing, setProcessing] = useState(true);
   const [processed, setProcessed] = useState(false);
+  const [sessionRestored, setSessionRestored] = useState(false);
 
   const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
-    const processPayment = async () => {
+    const ensureSessionAndProcess = async () => {
       if (!sessionId) {
         toast.error('No session ID found');
         setProcessing(false);
         return;
       }
 
+      try {
+        // First, ensure we have a valid session
+        let currentSession = await supabase.auth.getSession();
+        
+        // If no session, try to refresh it
+        if (!currentSession.data.session && forceRefreshSession) {
+          console.log('No session found, attempting to refresh...');
+          await forceRefreshSession();
+          currentSession = await supabase.auth.getSession();
+        }
+
+        // If still no session, redirect to login with return URL
+        if (!currentSession.data.session) {
+          console.log('Unable to restore session, redirecting to login');
+          // Store the current URL parameters so we can return here after login
+          const returnUrl = `${window.location.pathname}${window.location.search}`;
+          navigate(`/auth?returnUrl=${encodeURIComponent(returnUrl)}`);
+          return;
+        }
+
+        setSessionRestored(true);
+
+        // Now process the payment with a valid session
+        await processPayment();
+        
+      } catch (error) {
+        console.error('Error ensuring session and processing payment:', error);
+        toast.error('Error processing payment');
+        setProcessing(false);
+      }
+    };
+
+    const processPayment = async () => {
       try {
         // Process credits if this was a credit purchase
         const { data: creditsData, error: creditsError } = await supabase.functions.invoke('process-credits', {
@@ -42,9 +76,8 @@ const PaymentSuccess = () => {
           console.error('Error checking subscription:', subError);
         }
 
-        // Refresh user profile and session
+        // Refresh user profile
         if (refreshProfile) {
-          // Get fresh session to ensure user is still authenticated
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user?.id) {
             await refreshProfile(session.user.id);
@@ -61,11 +94,12 @@ const PaymentSuccess = () => {
       }
     };
 
-    processPayment();
-  }, [sessionId, refreshProfile]);
+    ensureSessionAndProcess();
+  }, [sessionId, refreshProfile, forceRefreshSession, navigate]);
 
   const handleContinue = () => {
-    navigate('/');
+    // Add subscription parameter to trigger subscription manager refresh
+    navigate('/?subscription=true');
   };
 
   return (
