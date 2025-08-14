@@ -470,28 +470,51 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                     
                     {/* Full Room - Restaurants + Food Types */}
                     <div className="space-y-3">
-                      <Button
-                        onClick={handleCreateFullRoom}
-                        disabled={!location.trim() || isLoading}
-                        className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white py-6"
-                      >
-                        <Crown className="w-5 h-5 mr-2" />
-                        <div className="text-left">
-                          <div className="font-semibold">Create Full Room</div>
-                          <div className="text-xs opacity-90">Restaurants + Food Types</div>
-                        </div>
-                      </Button>
-                      
-                      {/* Show subscription status info */}
-                      <div className="text-xs text-center text-gray-500">
-                        {subscriptionData?.hasActiveSubscription ? (
-                          <span className="text-green-600">✓ Active subscription</span>
-                        ) : subscriptionData && subscriptionData.roomCredits > 0 ? (
-                          <span className="text-blue-600">{subscriptionData.roomCredits} room credits available</span>
-                        ) : (
-                          <span>Requires subscription or credits</span>
-                        )}
-                      </div>
+                      {subscriptionData?.hasActiveSubscription || (subscriptionData && subscriptionData.roomCredits > 0) ? (
+                        <>
+                          <Button
+                            onClick={handleCreateFullRoom}
+                            disabled={!location.trim() || isLoading}
+                            className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white py-6"
+                          >
+                            <Crown className="w-5 h-5 mr-2" />
+                            <div className="text-left">
+                              <div className="font-semibold">Create Full Room</div>
+                              <div className="text-xs opacity-90">Restaurants + Food Types</div>
+                            </div>
+                          </Button>
+                          
+                          {/* Show subscription status info */}
+                          <div className="text-xs text-center text-gray-500">
+                            {subscriptionData?.hasActiveSubscription ? (
+                              <span className="text-green-600">✓ Active subscription</span>
+                            ) : (
+                              <span className="text-blue-600">{subscriptionData.roomCredits} room credits available</span>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Crown className="w-5 h-5 text-orange-600" />
+                              <span className="font-semibold text-orange-800">Full Room Access Required</span>
+                            </div>
+                            <p className="text-sm text-orange-700 mb-3">
+                              To create rooms with real restaurant data, you need an active subscription or room credits.
+                            </p>
+                            <div className="space-y-2">
+                              <Button
+                                onClick={() => window.open('/?subscription=true', '_blank')}
+                                className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white"
+                              >
+                                <CreditCard className="w-4 h-4 mr-2" />
+                                Get Subscription or Credits
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Food Types Only - Free */}

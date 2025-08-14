@@ -42,9 +42,13 @@ const PaymentSuccess = () => {
           console.error('Error checking subscription:', subError);
         }
 
-        // Refresh user profile  
-        if (refreshProfile && user?.id) {
-          await refreshProfile(user.id);
+        // Refresh user profile and session
+        if (refreshProfile) {
+          // Get fresh session to ensure user is still authenticated
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.id) {
+            await refreshProfile(session.user.id);
+          }
         }
         
         setProcessed(true);

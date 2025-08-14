@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import SwipeInterface from '@/components/SwipeInterface';
 import GeneralSwipeInterface from '@/components/GeneralSwipeInterface';
 import FilterPanel from '@/components/FilterPanel';
@@ -28,6 +29,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AuthDebugPanel } from '@/components/AuthDebugPanel';
 
 const Index = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('specific');
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
@@ -53,9 +56,21 @@ const Index = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authRequiredForRestaurants, setAuthRequiredForRestaurants] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
-  
+  const [showSubscriptionManager, setShowSubscriptionManager] = useState(false);
 
   const { user, profile, signOut, loading: authLoading } = useAuth();
+
+  // Check for subscription parameter in URL
+  useEffect(() => {
+    const subscriptionParam = searchParams.get('subscription');
+    if (subscriptionParam === 'true') {
+      setShowSubscriptionManager(true);
+      // Remove the parameter from URL without page reload
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('subscription');
+      navigate(`?${newSearchParams.toString()}`, { replace: true });
+    }
+  }, [searchParams, navigate]);
   
   const deviceType = useDeviceType();
   
@@ -1175,7 +1190,10 @@ const Index = () => {
       />
 
       {/* Subscription Modal */}
-      <Dialog open={showSubscriptionModal} onOpenChange={setShowSubscriptionModal}>
+      <Dialog open={showSubscriptionModal || showSubscriptionManager} onOpenChange={(open) => {
+        setShowSubscriptionModal(open);
+        setShowSubscriptionManager(open);
+      }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Subscribe or Purchase Credits</DialogTitle>
@@ -1186,6 +1204,7 @@ const Index = () => {
           <SubscriptionManager 
             onPurchaseComplete={() => {
               setShowSubscriptionModal(false);
+              setShowSubscriptionManager(false);
               // The SubscriptionManager will auto-refresh on next mount
             }} 
           />
