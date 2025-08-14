@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, Heart, Clock, Trash2, RefreshCw, MapPin, Users } from 'lucide-react';
+import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, Heart, Clock, Trash2, RefreshCw, MapPin, Users, CreditCard } from 'lucide-react';
+import SubscriptionManager from '@/components/SubscriptionManager';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getFavoritesService, Restaurant } from '@/integrations/supabase/favoritesService';
@@ -324,13 +325,20 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-100 rounded-lg p-1">
+          <TabsList className="grid w-full grid-cols-4 bg-gray-100 rounded-lg p-1">
             <TabsTrigger 
               value="account" 
               className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
             >
               <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Account
+            </TabsTrigger>
+            <TabsTrigger 
+              value="subscription" 
+              className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
+            >
+              <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              Billing
             </TabsTrigger>
             <TabsTrigger 
               value="favorites" 
@@ -527,6 +535,11 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
             </Button>
             </div>
             </div>
+          </TabsContent>
+
+          {/* Subscription/Billing Tab */}
+          <TabsContent value="subscription" className="mt-4">
+            <SubscriptionManager />
           </TabsContent>
 
           {/* Favorites Tab */}
