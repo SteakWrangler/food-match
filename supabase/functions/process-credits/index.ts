@@ -33,6 +33,34 @@ serve(async (req) => {
     if (!sessionId) throw new Error("sessionId is required");
     logStep("Processing session", { sessionId });
 
+    // Check if this session has already been processed
+    const { data: existingSession, error: checkError } = await supabaseClient
+      .from("processed_sessions")
+      .select("*")
+      .eq("session_id", sessionId)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+      throw new Error(`Failed to check processed sessions: ${checkError.message}`);
+    }
+
+    if (existingSession) {
+      logStep("Session already processed", { 
+        sessionId, 
+        creditsAdded: existingSession.credits_added,
+        processedAt: existingSession.processed_at 
+      });
+      return new Response(JSON.stringify({ 
+        success: true, 
+        creditsAdded: existingSession.credits_added,
+        message: "Session already processed",
+        alreadyProcessed: true
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
     // Retrieve the checkout session
@@ -99,6 +127,20 @@ serve(async (req) => {
 
     if (creditError) {
       throw new Error(`Failed to update credits: ${creditError.message}`);
+    }
+
+    // Record that this session has been processed
+    const { error: recordError } = await supabaseClient
+      .from("processed_sessions")
+      .insert({
+        session_id: sessionId,
+        user_id: userId,
+        credits_added: creditsToAdd
+      });
+
+    if (recordError) {
+      logStep("Warning: Failed to record processed session", { error: recordError.message });
+      // Don't throw error here as credits were already added successfully
     }
 
     logStep("Credits added successfully", { 

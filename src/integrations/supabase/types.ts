@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -74,6 +74,33 @@ export type Database = {
           name?: string | null
           processed_at?: string | null
           user_agent?: string | null
+        }
+        Relationships: []
+      }
+      processed_sessions: {
+        Row: {
+          created_at: string
+          credits_added: number
+          id: string
+          processed_at: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_added: number
+          id?: string
+          processed_at?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_added?: number
+          id?: string
+          processed_at?: string
+          session_id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -254,7 +281,7 @@ export type Database = {
     }
     Functions: {
       add_room_credits: {
-        Args: { user_id: string; credits_to_add: number }
+        Args: { credits_to_add: number; user_id: string }
         Returns: undefined
       }
       cleanup_old_api_usage: {
@@ -275,21 +302,21 @@ export type Database = {
       }
       update_user_profile: {
         Args: {
-          user_id_param: string
+          avatar_url_param?: string
           first_name_param?: string
           last_name_param?: string
-          avatar_url_param?: string
           preferences_param?: Json
+          user_id_param: string
         }
         Returns: Json
       }
       update_user_profile_debug: {
         Args: {
-          user_id_param: string
+          avatar_url_param?: string
           first_name_param?: string
           last_name_param?: string
-          avatar_url_param?: string
           preferences_param?: Json
+          user_id_param: string
         }
         Returns: Json
       }
