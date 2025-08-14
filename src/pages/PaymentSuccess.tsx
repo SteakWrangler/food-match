@@ -14,17 +14,19 @@ const PaymentSuccess = () => {
   const [processing, setProcessing] = useState(true);
   const [processed, setProcessed] = useState(false);
   const [sessionRestored, setSessionRestored] = useState(false);
+  const [hasStartedProcessing, setHasStartedProcessing] = useState(false);
 
   const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
-    const ensureSessionAndProcess = async () => {
-      if (!sessionId) {
-        toast.error('No session ID found');
-        setProcessing(false);
-        return;
-      }
+    // Prevent multiple processing attempts
+    if (hasStartedProcessing || !sessionId) {
+      return;
+    }
 
+    const ensureSessionAndProcess = async () => {
+      setHasStartedProcessing(true);
+      
       try {
         // First, ensure we have a valid session
         let currentSession = await supabase.auth.getSession();
@@ -39,7 +41,6 @@ const PaymentSuccess = () => {
         // If still no session, redirect to login with return URL
         if (!currentSession.data.session) {
           console.log('Unable to restore session, redirecting to login');
-          // Store the current URL parameters so we can return here after login
           const returnUrl = `${window.location.pathname}${window.location.search}`;
           navigate(`/auth?returnUrl=${encodeURIComponent(returnUrl)}`);
           return;
@@ -59,6 +60,8 @@ const PaymentSuccess = () => {
 
     const processPayment = async () => {
       try {
+        console.log('Processing payment for session:', sessionId);
+        
         // Process credits if this was a credit purchase
         const { data: creditsData, error: creditsError } = await supabase.functions.invoke('process-credits', {
           body: { sessionId }
@@ -67,7 +70,11 @@ const PaymentSuccess = () => {
         if (creditsError) {
           console.log('Credits processing error (might be subscription):', creditsError);
         } else if (creditsData?.creditsAdded) {
-          toast.success(`Added ${creditsData.creditsAdded} room credits to your account!`);
+          if (creditsData.alreadyProcessed) {
+            console.log('Session already processed, skipping duplicate notification');
+          } else {
+            toast.success(`Added ${creditsData.creditsAdded} room credits to your account!`);
+          }
         }
 
         // Refresh subscription status
@@ -85,7 +92,9 @@ const PaymentSuccess = () => {
         }
         
         setProcessed(true);
-        toast.success('Payment processed successfully!');
+        if (!creditsData?.alreadyProcessed) {
+          toast.success('Payment processed successfully!');
+        }
       } catch (error) {
         console.error('Error processing payment:', error);
         toast.error('Error processing payment');
@@ -94,8 +103,18 @@ const PaymentSuccess = () => {
       }
     };
 
-    ensureSessionAndProcess();
-  }, [sessionId, refreshProfile, forceRefreshSession, navigate]);
+    if (!hasStartedProcessing) {
+      ensureSessionAndProcess();
+    }
+  }, [sessionId]); // Only depend on sessionId
+
+  // Handle missing session ID
+  useEffect(() => {
+    if (!sessionId && !hasStartedProcessing) {
+      toast.error('No session ID found');
+      setProcessing(false);
+    }
+  }, [sessionId, hasStartedProcessing]);
 
   const handleContinue = () => {
     // Add subscription parameter to trigger subscription manager refresh
