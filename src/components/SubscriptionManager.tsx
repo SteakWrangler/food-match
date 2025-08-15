@@ -107,7 +107,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
         toast.error('Failed to access customer portal');
         console.error('Portal error:', error);
       } else if (data?.url) {
-        window.open(data.url, '_blank');
+        window.location.href = data.url;
       }
     } catch (error) {
       console.error('Error:', error);
