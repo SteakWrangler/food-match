@@ -282,6 +282,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear cache when user signs out
       profileCacheRef.current = {};
       fetchInProgressRef.current = {};
+      // Refresh the page to clear any room state and reset the app
+      window.location.reload();
     } catch (error) {
       console.error('Sign out error:', error);
     }
