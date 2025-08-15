@@ -82,7 +82,16 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
         toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
       } else if (data?.url) {
         console.log('✅ Opening Stripe checkout:', data.url);
-        window.location.href = data.url;
+        console.log('🔄 Attempting navigation to:', data.url);
+        
+        // Use a slight delay to ensure the URL is valid and navigation works
+        setTimeout(() => {
+          console.log('🚀 Navigating now...');
+          window.location.href = data.url;
+        }, 100);
+        
+        // Don't set loading to false in finally block since we're navigating away
+        return;
       } else {
         console.error('❌ No checkout URL returned');
         toast.error('No checkout URL received');
@@ -107,7 +116,16 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
         toast.error('Failed to access customer portal');
         console.error('Portal error:', error);
       } else if (data?.url) {
-        window.location.href = data.url;
+        console.log('🔄 Attempting navigation to customer portal:', data.url);
+        
+        // Use a slight delay to ensure navigation works
+        setTimeout(() => {
+          console.log('🚀 Navigating to customer portal...');
+          window.location.href = data.url;
+        }, 100);
+        
+        // Don't set loading to false since we're navigating away
+        return;
       }
     } catch (error) {
       console.error('Error:', error);
@@ -139,7 +157,16 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
         toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
       } else if (data?.url) {
         console.log('✅ Opening Stripe checkout for credits:', data.url);
-        window.location.href = data.url;
+        console.log('🔄 Attempting navigation to:', data.url);
+        
+        // Use a slight delay to ensure the URL is valid and navigation works
+        setTimeout(() => {
+          console.log('🚀 Navigating now...');
+          window.location.href = data.url;
+        }, 100);
+        
+        // Don't set loading to false in finally block since we're navigating away
+        return;
       } else {
         console.error('❌ No checkout URL returned for credits');
         toast.error('No checkout URL received');
