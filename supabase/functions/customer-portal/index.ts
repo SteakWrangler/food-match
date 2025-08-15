@@ -48,9 +48,13 @@ serve(async (req) => {
     logStep("Found Stripe customer", { customerId });
 
     const origin = req.headers.get("origin") || "https://ahfytcfndbnwrabryjnz.supabase.co";
+    
+    // Include session info in return URL for better session restoration
+    const returnUrl = `${origin}/?billing_return=true&user_id=${user.id}`;
+    
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/`,
+      return_url: returnUrl,
     });
     logStep("Customer portal session created", { sessionId: portalSession.id, url: portalSession.url });
 

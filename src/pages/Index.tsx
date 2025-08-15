@@ -27,6 +27,7 @@ import UserProfileModal from '@/components/UserProfileModal';
 import SubscriptionManager from '@/components/SubscriptionManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AuthDebugPanel } from '@/components/AuthDebugPanel';
+import { toast } from 'sonner';
 
 const Index = () => {
   const [searchParams] = useSearchParams();
@@ -60,9 +61,39 @@ const Index = () => {
 
   const { user, profile, signOut, loading: authLoading } = useAuth();
 
-  // Check for subscription parameter in URL
+  // Handle URL parameters for billing and subscription
   useEffect(() => {
     const subscriptionParam = searchParams.get('subscription');
+    const billingReturn = searchParams.get('billing_return');
+    const userId = searchParams.get('user_id');
+    
+    if (billingReturn === 'true') {
+      console.log('User returned from billing portal');
+      
+      if (user) {
+        console.log('User already authenticated, showing welcome message');
+        toast.success("Welcome back from managing your billing!");
+      } else {
+        console.log('User not authenticated after billing return, checking session');
+        // Try to get session from storage
+        supabase.auth.getSession().then(({ data: sessionData }) => {
+          if (sessionData.session) {
+            console.log('Session found, user should be logged in shortly');
+            toast.success("Session restored! Welcome back from billing.");
+          } else {
+            console.log('No session found, prompting to log in');
+            toast.info("Please log in to continue managing your account.");
+          }
+        });
+      }
+      
+      // Clean up URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('billing_return');
+      newSearchParams.delete('user_id');
+      navigate(`?${newSearchParams.toString()}`, { replace: true });
+    }
+    
     if (subscriptionParam === 'true') {
       setShowSubscriptionManager(true);
       // Remove the parameter from URL without page reload
@@ -70,7 +101,7 @@ const Index = () => {
       newSearchParams.delete('subscription');
       navigate(`?${newSearchParams.toString()}`, { replace: true });
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, user]);
   
   const deviceType = useDeviceType();
   
