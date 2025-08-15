@@ -215,7 +215,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!isMounted) return;
         
         console.log('🔍 DEBUG: Auth state changed:', event, session?.user?.email);
@@ -223,17 +223,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(session?.user ?? null);
         setSession(session);
         
+        // Always set loading to false after updating user/session state
+        if (isMounted) {
+          setLoading(false);
+        }
+        
+        // Fetch profile asynchronously without blocking the loading state
         if (session?.user) {
-          // For manual authentication, fetch profile fresh
-          await fetchProfile(session.user.id);
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+          }, 0);
         } else {
           // Clear profile when signed out
           setProfile(null);
-          // Don't clear cache immediately - let cleanup handle it
-        }
-        
-        if (isMounted) {
-          setLoading(false);
         }
       }
     );
