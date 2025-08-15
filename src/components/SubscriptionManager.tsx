@@ -82,7 +82,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
         toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
       } else if (data?.url) {
         console.log('✅ Opening Stripe checkout:', data.url);
-        window.open(data.url, '_blank');
+        window.location.href = data.url;
       } else {
         console.error('❌ No checkout URL returned');
         toast.error('No checkout URL received');
@@ -139,7 +139,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
         toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
       } else if (data?.url) {
         console.log('✅ Opening Stripe checkout for credits:', data.url);
-        window.open(data.url, '_blank');
+        window.location.href = data.url;
       } else {
         console.error('❌ No checkout URL returned for credits');
         toast.error('No checkout URL received');

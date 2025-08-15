@@ -505,7 +505,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
                             </p>
                             <div className="space-y-2">
                               <Button
-                                onClick={() => window.open('/?subscription=true', '_blank')}
+                                onClick={() => window.location.href = '/?subscription=true'}
                                 className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white"
                               >
                                 <CreditCard className="w-4 h-4 mr-2" />

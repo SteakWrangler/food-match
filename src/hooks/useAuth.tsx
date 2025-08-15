@@ -185,31 +185,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Clean up cache periodically
     const cleanupInterval = setInterval(cleanupCache, 60000); // Every minute
 
-    // DISABLED: Auto-login functionality removed to prevent session reconstruction issues
-    // Instead, app starts unauthenticated and users must sign in manually
+    // Initialize auth by checking for existing session
     const initializeAuth = async () => {
-      console.log('🔍 DEBUG: Auto-login disabled - clearing ALL auth storage');
+      console.log('🔍 DEBUG: Initializing auth - checking for existing session');
       
-      // Nuclear option: Clear all possible auth storage locations
       try {
-        // Clear Supabase auth storage directly from localStorage
-        const supabaseKeys = Object.keys(localStorage).filter(key => 
-          key.startsWith('sb-') || key.includes('supabase') || key.includes('auth')
-        );
-        supabaseKeys.forEach(key => {
-          localStorage.removeItem(key);
-          console.log('🔍 DEBUG: Removed storage key:', key);
-        });
+        // Check for existing session
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        // Also try the official signOut
-        await supabase.auth.signOut({ scope: 'local' });
-        console.log('🔍 DEBUG: Completed aggressive session clearing');
+        if (error) {
+          console.log('🔍 DEBUG: Error getting session:', error);
+        } else if (session) {
+          console.log('🔍 DEBUG: Found existing session for:', session.user?.email);
+          setUser(session.user);
+          setSession(session);
+          if (session.user) {
+            await fetchProfile(session.user.id);
+          }
+        } else {
+          console.log('🔍 DEBUG: No existing session found');
+        }
       } catch (error) {
-        console.log('🔍 DEBUG: Error during session clearing:', error);
+        console.log('🔍 DEBUG: Error during session check:', error);
       }
       
       if (isMounted) {
-        setLoading(false); // Start with loading false, no user
+        setLoading(false);
       }
     };
 
