@@ -6,26 +6,41 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    cleartext: true
+    cleartext: true,
+    hostname: 'tossortaste.app'
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 3000,
+      launchShowDuration: 2000,
       backgroundColor: '#ffffff',
       showSpinner: true,
-      spinnerColor: '#f97316'
+      spinnerColor: '#f97316',
+      androidSplashResourceName: 'splash',
+      androidScaleType: 'CENTER_CROP',
+      iosSplashResourceName: 'Default'
     },
     StatusBar: {
-      style: 'light',
-      backgroundColor: '#f97316'
+      style: 'default',
+      backgroundColor: '#ffffff',
+      overlaysWebView: false
     },
     Keyboard: {
       resize: 'body',
-      style: 'dark',
-      resizeOnFullScreen: true
+      style: 'light',
+      resizeOnFullScreen: true,
+      scrollAssist: true
     },
     App: {
-      launchUrl: 'com.tossortaste.app'
+      launchUrl: 'com.tossortaste.app',
+      iosScheme: 'tossortaste',
+      androidScheme: 'tossortaste'
+    },
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert']
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon_config_sample',
+      iconColor: '#f97316'
     }
   }
 };
