@@ -5,13 +5,27 @@ const config: CapacitorConfig = {
   appName: 'Toss or Taste',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    cleartext: true
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 3000,
       backgroundColor: '#ffffff',
-      showSpinner: false
+      showSpinner: true,
+      spinnerColor: '#f97316'
+    },
+    StatusBar: {
+      style: 'light',
+      backgroundColor: '#f97316'
+    },
+    Keyboard: {
+      resize: 'body',
+      style: 'dark',
+      resizeOnFullScreen: true
+    },
+    App: {
+      launchUrl: 'com.tossortaste.app'
     }
   }
 };
