@@ -27,14 +27,6 @@ export const foodTypes: FoodType[] = [
     description: 'Juicy beef patties with fresh toppings between soft buns.'
   },
   { 
-    id: 'tacos', 
-    name: 'Tacos', 
-    category: 'Popular', 
-    emoji: '🌮',
-    image: 'https://images.unsplash.com/photo-1565299507177-b0ac66763828',
-    description: 'Fresh Mexican tacos with flavorful fillings and authentic toppings.'
-  },
-  { 
     id: 'fried_chicken', 
     name: 'Fried Chicken', 
     category: 'Popular', 
@@ -211,36 +203,12 @@ export const foodTypes: FoodType[] = [
     description: 'Texas-style Mexican cuisine with bold flavors and hearty portions.'
   },
   { 
-    id: 'boba', 
-    name: 'Boba / Milk Tea', 
-    category: 'Drinks', 
-    emoji: '🥤',
-    image: 'https://images.unsplash.com/photo-1558857563-b371033873b8',
-    description: 'Sweet bubble tea and milk tea drinks with chewy tapioca pearls.'
-  },
-  { 
     id: 'vegan', 
     name: 'Vegan / Vegetarian', 
     category: 'Health', 
     emoji: '🌱',
     image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd',
     description: 'Plant-based cuisine that\'s both healthy and delicious.'
-  },
-  { 
-    id: 'smoothies', 
-    name: 'Smoothies / Juice', 
-    category: 'Health', 
-    emoji: '🥤',
-    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb',
-    description: 'Fresh pressed juices, smoothies, and healthy drinks.'
-  },
-  { 
-    id: 'noodles', 
-    name: 'Noodles (Generic)', 
-    category: 'Asian', 
-    emoji: '🍜',
-    image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624',
-    description: 'Various Asian noodle dishes from different culinary traditions.'
   },
   { 
     id: 'dessert', 
@@ -425,7 +393,6 @@ export const foodTypeCategories = [
   'Health',
   'Other',
   'Casual',
-  'Drinks',
   'Experience'
 ];
 
