@@ -13,7 +13,6 @@ interface SwipeInterfaceProps {
   onBringToFront?: (restaurantId: string) => void;
   customOrder?: string[];
   onGenerateMore?: () => Promise<boolean>;
-  onTakeSecondLook?: () => void;
   hasReachedEndFromHook?: boolean;
   isLoadingMoreRestaurants?: boolean;
 }
@@ -28,7 +27,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   onBringToFront,
   customOrder,
   onGenerateMore,
-  onTakeSecondLook,
   hasReachedEndFromHook,
   isLoadingMoreRestaurants
 }) => {
@@ -37,8 +35,6 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(false);
   const [viewedRestaurants, setViewedRestaurants] = useState<Set<string>>(new Set());
-  const [isSecondLookMode, setIsSecondLookMode] = useState(false);
-  const [isButtonTouch, setIsButtonTouch] = useState(false); // Track if touch started on button
   const cardRef = useRef<HTMLDivElement>(null);
   const deviceType = useDeviceType();
 
@@ -113,42 +109,22 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
 
   // Get current restaurant based on first unviewed
   const currentRestaurant = React.useMemo(() => {
-    if (isSecondLookMode) {
-      // In second look mode, show restaurants that haven't been liked yet
-      const unlikedRestaurants = getUnlikedRestaurants(orderedRestaurants);
-      return unlikedRestaurants[0] || null;
-    } else {
-      // Normal mode - show unviewed restaurants
-      const unviewedRestaurants = getUnviewedRestaurants(orderedRestaurants, viewedRestaurants);
-      console.log(`🔍 Current restaurant selection: total=${orderedRestaurants.length}, viewed=${viewedRestaurants.size}, unviewed=${unviewedRestaurants.length}, first unviewed=${unviewedRestaurants[0]?.name || 'none'}`);
-      return unviewedRestaurants[0] || null;
-    }
-  }, [orderedRestaurants, viewedRestaurants, isSecondLookMode, roomState, participantId]);
+    // Normal mode - show unviewed restaurants
+    const unviewedRestaurants = getUnviewedRestaurants(orderedRestaurants, viewedRestaurants);
+    console.log(`🔍 Current restaurant selection: total=${orderedRestaurants.length}, viewed=${viewedRestaurants.size}, unviewed=${unviewedRestaurants.length}, first unviewed=${unviewedRestaurants[0]?.name || 'none'}`);
+    return unviewedRestaurants[0] || null;
+  }, [orderedRestaurants, viewedRestaurants, roomState, participantId]);
 
   // Get remaining unviewed count
   const remainingUnviewed = React.useMemo(() => {
-    if (isSecondLookMode) {
-      const unlikedRestaurants = getUnlikedRestaurants(orderedRestaurants);
-      return unlikedRestaurants.length;
-    } else {
-      return getUnviewedRestaurants(orderedRestaurants, viewedRestaurants).length;
-    }
-  }, [orderedRestaurants, viewedRestaurants, isSecondLookMode, roomState, participantId]);
+    return getUnviewedRestaurants(orderedRestaurants, viewedRestaurants).length;
+  }, [orderedRestaurants, viewedRestaurants, roomState, participantId]);
 
   // Debug logging for restaurant state
   useEffect(() => {
     console.log(`🔍 Restaurant state: total=${orderedRestaurants.length}, current=${currentRestaurant?.name || 'none'}, remaining=${remainingUnviewed}, viewed=${viewedRestaurants.size}`);
   }, [orderedRestaurants.length, currentRestaurant?.name, remainingUnviewed, viewedRestaurants.size]);
 
-  // Handle entering second look mode
-  const handleTakeSecondLook = () => {
-    setIsSecondLookMode(true);
-    setViewedRestaurants(new Set()); // Reset viewed restaurants for second look
-    // setHasReachedEnd(false); // This line is removed as per the edit hint
-    if (onTakeSecondLook) {
-      onTakeSecondLook();
-    }
-  };
 
   // Handle swipe
   const handleSwipe = async (direction: 'left' | 'right') => {
@@ -346,21 +322,9 @@ const SwipeInterface: React.FC<SwipeInterfaceProps> = ({
         <div className="text-4xl sm:text-6xl mb-4">🍽️</div>
         <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">No more restaurants</h3>
         <p className="text-sm sm:text-base text-gray-600 mb-4">
-          {isSecondLookMode 
-            ? "You've seen all the restaurants again. Try changing your location or filters to find more options."
-            : "You've seen all the restaurants in your area. Try changing your location or filters to find more options."
-          }
+          You've seen all the restaurants in your area. Try changing your location or filters to find more options.
         </p>
         
-        {/* Show "Take a second look" if not in second look mode and there are unliked restaurants */}
-        {!isSecondLookMode && onTakeSecondLook && getUnlikedRestaurants(orderedRestaurants).length > 0 && (
-          <button
-            onClick={handleTakeSecondLook}
-            className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium mb-3"
-          >
-            Take a second look ({getUnlikedRestaurants(orderedRestaurants).length} restaurants)
-          </button>
-        )}
       </div>
     );
   }

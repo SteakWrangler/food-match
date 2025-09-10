@@ -399,13 +399,13 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
 
                 <div className="space-y-3">
                   <div>
-                    <Label htmlFor="name" className="text-gray-700 text-sm">Your Name</Label>
+                    <Label htmlFor="name" className="text-gray-700 text-sm">Enter unique name</Label>
                     <Input
                       id="name"
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Enter your name"
+                      placeholder="Enter unique name"
                       className="mt-1 text-sm"
                       disabled={isLoading}
                     />

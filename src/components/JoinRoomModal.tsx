@@ -54,13 +54,13 @@ const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ roomId: initialRoomId, on
 
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div>
-              <Label htmlFor="name" className="text-gray-700 text-sm sm:text-base">Your Name</Label>
+              <Label htmlFor="name" className="text-gray-700 text-sm sm:text-base">Enter unique name</Label>
               <Input
                 id="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
+                placeholder="Enter unique name"
                 className="mt-1 text-sm sm:text-base"
                 autoFocus={!initialRoomId}
                 disabled={isLoading}

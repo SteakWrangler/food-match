@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { getHybridRestaurantsAPI } from '@/integrations/supabase/hybridRestaurants';
-import { getRoomService, RoomData } from '@/integrations/supabase/roomService';
+import { getRoomService, RoomData, scheduleRoomCleanup } from '@/integrations/supabase/roomService';
 import { supabase } from '@/integrations/supabase/client';
 import { FilterState, defaultFilters } from '@/utils/restaurantFilters';
 import { useAuth } from './useAuth';
@@ -33,6 +33,7 @@ const useRoom = () => {
   const [isLoadingMoreRestaurants, setIsLoadingMoreRestaurants] = useState(false); // Add separate state for background loading
   const [hasReachedEnd, setHasReachedEnd] = useState(false); // Track if we've reached the end of available restaurants
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [lastKnownRoomState, setLastKnownRoomState] = useState<RoomState | null>(null); // Track previous state for change detection
   const roomService = getRoomService();
 
   // Set participant ID based on authenticated user or generate one for guests
@@ -71,39 +72,136 @@ const useRoom = () => {
     };
   };
 
-  // Poll for room updates to detect matches from other participants
+  // Enhanced real-time synchronization for match updates
   useEffect(() => {
     if (roomState) {
-      // Poll every 2 seconds to get updates from other participants
-      pollingIntervalRef.current = setInterval(async () => {
+      // Use adaptive polling frequency based on recent activity
+      let pollInterval = 2000; // Start with 2 second polling
+      let consecutiveUnchangedPolls = 0;
+      let consecutiveErrors = 0;
+      let lastUpdateTime = roomState.lastUpdated;
+      let isTabVisible = true;
+      
+      // Pause polling when tab is not visible to save resources
+      const handleVisibilityChange = () => {
+        isTabVisible = !document.hidden;
+        if (isTabVisible) {
+          console.log('🔄 Tab became visible, resuming active polling');
+          pollInterval = 2000; // Resume with active polling
+        } else {
+          console.log('🔄 Tab hidden, using slower polling');
+          pollInterval = 10000; // Slow polling when tab is hidden
+        }
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      const poll = async () => {
         try {
+          // Skip polling if offline
+          if (!navigator.onLine) {
+            console.log('🔄 Offline detected, skipping poll');
+            pollInterval = 5000; // Check again in 5 seconds
+            pollingIntervalRef.current = setTimeout(poll, pollInterval);
+            return;
+          }
+          
           const updatedRoomData = await roomService.getRoom(roomState.id);
           if (updatedRoomData) {
+            consecutiveErrors = 0; // Reset error count on success
+            
             const updatedRoomState = convertRoomDataToState(updatedRoomData);
-            setRoomState(updatedRoomState);
+            const hasChanges = updatedRoomState.lastUpdated !== lastUpdateTime;
+            
+            if (hasChanges) {
+              // Room was updated - use faster polling and reset state
+              consecutiveUnchangedPolls = 0;
+              pollInterval = isTabVisible ? 1000 : 3000; // Faster when visible
+              lastUpdateTime = updatedRoomState.lastUpdated;
+              
+              // Check for new matches or important state changes
+              const hasNewSwipes = JSON.stringify(updatedRoomState.restaurantSwipes) !== JSON.stringify(roomState.restaurantSwipes) ||
+                                JSON.stringify(updatedRoomState.foodTypeSwipes) !== JSON.stringify(roomState.foodTypeSwipes);
+              const hasNewParticipants = updatedRoomState.participants.length !== roomState.participants.length;
+              
+              if (hasNewSwipes || hasNewParticipants) {
+                console.log('🔄 Real-time sync: Important room changes detected', { 
+                  hasNewSwipes, 
+                  hasNewParticipants,
+                  participantCount: updatedRoomState.participants.length 
+                });
+              }
+              
+              setRoomState(updatedRoomState);
+            } else {
+              // No changes - gradually slow down polling to reduce server load
+              consecutiveUnchangedPolls++;
+              
+              // Adaptive polling intervals (adjust for tab visibility):
+              const baseInterval = isTabVisible ? 1 : 3; // Multiplier based on visibility
+              
+              if (consecutiveUnchangedPolls <= 5) {
+                pollInterval = Math.max(2000 * baseInterval, pollInterval);
+              } else if (consecutiveUnchangedPolls <= 15) {
+                pollInterval = 3000 * baseInterval;
+              } else {
+                pollInterval = 5000 * baseInterval;
+              }
+            }
           }
         } catch (error) {
-          console.error('Error polling room state:', error);
+          consecutiveErrors++;
+          console.error(`Error in real-time sync (${consecutiveErrors} consecutive):`, error);
+          
+          // Exponential backoff on repeated errors
+          if (consecutiveErrors >= 3) {
+            pollInterval = Math.min(30000, 5000 * Math.pow(2, consecutiveErrors - 3)); // Cap at 30 seconds
+            console.log(`🚨 Multiple sync errors, using ${pollInterval/1000}s interval`);
+          } else {
+            pollInterval = 5000;
+          }
+          
+          // If too many consecutive errors, something might be seriously wrong
+          if (consecutiveErrors >= 10) {
+            console.error('🚨 Too many consecutive sync errors, may need user intervention');
+            // Could potentially show a user notification here
+          }
         }
-      }, 2000);
-
+        
+        // Schedule next poll with current interval
+        pollingIntervalRef.current = setTimeout(poll, pollInterval);
+      };
+      
+      // Start polling
+      poll();
+      
       return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
         if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
+          clearTimeout(pollingIntervalRef.current);
         }
       };
     }
   }, [roomState?.id]);
 
-  // Periodic cleanup of empty rooms
+  // Initialize room cleanup system once
   useEffect(() => {
+    // Schedule cleanup system on first mount
+    const cleanupInitialized = sessionStorage.getItem('roomCleanupInitialized');
+    if (!cleanupInitialized) {
+      console.log('Initializing room cleanup system...');
+      scheduleRoomCleanup();
+      sessionStorage.setItem('roomCleanupInitialized', 'true');
+    }
+    
+    // Also run periodic cleanup for empty rooms more frequently (local cleanup)
     const cleanupInterval = setInterval(async () => {
       try {
-        await roomService.cleanupEmptyRooms();
+        await roomService.runFullCleanup();
       } catch (error) {
-        console.error('Error cleaning up empty rooms:', error);
+        console.error('Error in periodic room cleanup:', error);
       }
-    }, 30000); // Run every 30 seconds
+    }, 300000); // Run every 5 minutes (less frequent than before)
 
     return () => {
       clearInterval(cleanupInterval);
@@ -184,6 +282,13 @@ const useRoom = () => {
       console.log('🏠 DEBUG: roomData.id:', roomData.id);
       console.log(`Created room ${roomData.id} from ${location}`);
       
+      // Store rejoin token in sessionStorage for room host
+      const hostParticipant = roomData.participants.find(p => p.id === participantId);
+      if (hostParticipant?.rejoinToken) {
+        sessionStorage.setItem('rejoinToken', hostParticipant.rejoinToken);
+        console.log('🏠 DEBUG: Stored rejoin token for host:', hostParticipant.rejoinToken);
+      }
+      
       // Load initial 3 restaurants first, then set room state immediately
       console.log('🏠 DEBUG: About to call loadInitialRestaurants');
       const success = await loadInitialRestaurants(roomData.id, location, filters, true);
@@ -257,6 +362,13 @@ const useRoom = () => {
 
       console.log(`Created demo room ${roomData.id}`);
       console.log('Room data:', roomData);
+      
+      // Store rejoin token in sessionStorage for demo room host
+      const hostParticipant = roomData.participants.find(p => p.id === participantId);
+      if (hostParticipant?.rejoinToken) {
+        sessionStorage.setItem('rejoinToken', hostParticipant.rejoinToken);
+        console.log('🏠 DEBUG: Stored rejoin token for demo room host:', hostParticipant.rejoinToken);
+      }
       
       // Create room state immediately without loading restaurants
       const roomState = convertRoomDataToState(roomData);
@@ -431,10 +543,15 @@ const useRoom = () => {
       // Set loading state
       setIsLoadingRestaurants(true);
       
+      // Get rejoin token from sessionStorage
+      const storedToken = sessionStorage.getItem('rejoinToken');
+      console.log('🔄 DEBUG: Retrieved rejoin token from storage:', storedToken);
+      
       const roomData = await roomService.joinRoom({
         roomId: normalizedRoomId,
         participantId,
-        participantName
+        participantName,
+        rejoinToken: storedToken || undefined
       });
 
       // Check if room has restaurants, if not, wait a bit and check again
@@ -446,20 +563,64 @@ const useRoom = () => {
           const updatedRoomData = await roomService.getRoom(normalizedRoomId);
           if (updatedRoomData && updatedRoomData.restaurants && updatedRoomData.restaurants.length > 0) {
             console.log(`Restaurants loaded after ${i + 1} seconds`);
+            
+            // Store rejoin token for this participant
+            const currentParticipant = updatedRoomData.participants.find(p => p.name === participantName);
+            if (currentParticipant?.rejoinToken) {
+              sessionStorage.setItem('rejoinToken', currentParticipant.rejoinToken);
+              console.log('🔄 DEBUG: Stored rejoin token after successful join:', currentParticipant.rejoinToken);
+            }
+            
             const roomState = convertRoomDataToState(updatedRoomData);
             setRoomState(roomState);
             setIsHost(false);
             setIsLoadingRestaurants(false);
+            
+            // Trigger immediate sync to get latest room state and detect any existing matches
+            console.log('🔄 Triggering immediate sync after joining room');
+            setTimeout(async () => {
+              try {
+                const freshRoomData = await roomService.getRoom(normalizedRoomId);
+                if (freshRoomData) {
+                  const freshRoomState = convertRoomDataToState(freshRoomData);
+                  setRoomState(freshRoomState);
+                }
+              } catch (error) {
+                console.error('Error in post-join sync:', error);
+              }
+            }, 500);
+            
             return true;
           }
         }
         console.log('No restaurants loaded after 6 seconds, joining with empty room');
       }
 
+      // Store rejoin token for this participant
+      const currentParticipant = roomData.participants.find(p => p.name === participantName);
+      if (currentParticipant?.rejoinToken) {
+        sessionStorage.setItem('rejoinToken', currentParticipant.rejoinToken);
+        console.log('🔄 DEBUG: Stored rejoin token after successful join:', currentParticipant.rejoinToken);
+      }
+      
       const roomState = convertRoomDataToState(roomData);
       setRoomState(roomState);
       setIsHost(false);
       setIsLoadingRestaurants(false);
+      
+      // Trigger immediate sync after joining
+      console.log('🔄 Triggering immediate sync after joining room');
+      setTimeout(async () => {
+        try {
+          const freshRoomData = await roomService.getRoom(normalizedRoomId);
+          if (freshRoomData) {
+            const freshRoomState = convertRoomDataToState(freshRoomData);
+            setRoomState(freshRoomState);
+          }
+        } catch (error) {
+          console.error('Error in post-join sync:', error);
+        }
+      }, 500);
       
       console.log(`Successfully joined room ${normalizedRoomId} with ${roomData.restaurants?.length || 0} restaurants`);
       return true;
@@ -497,6 +658,32 @@ const useRoom = () => {
       
       const updatedRoomState = convertRoomDataToState(updatedRoomData);
       setRoomState(updatedRoomState);
+      
+      // Immediately trigger a sync check for potential matches
+      // This ensures match detection happens as fast as possible
+      if (direction === 'right') {
+        console.log('🔄 Triggering immediate sync check for potential matches');
+        
+        // Clear current polling timeout and restart with short delay
+        if (pollingIntervalRef.current) {
+          clearTimeout(pollingIntervalRef.current);
+        }
+        
+        // Schedule immediate re-sync in 200ms to catch any concurrent swipes
+        pollingIntervalRef.current = setTimeout(async () => {
+          try {
+            const freshRoomData = await roomService.getRoom(roomState.id);
+            if (freshRoomData) {
+              const freshRoomState = convertRoomDataToState(freshRoomData);
+              setRoomState(freshRoomState);
+              console.log('🔄 Immediate sync completed after swipe');
+            }
+          } catch (error) {
+            console.error('Error in immediate post-swipe sync:', error);
+          }
+        }, 200);
+      }
+      
       console.log('🎯 DEBUG: addSwipe completed successfully');
     } catch (error) {
       console.error('🎯 DEBUG: Error in addSwipe:', error);
@@ -595,6 +782,41 @@ const useRoom = () => {
   };
 
   // Add a test function to check for duplicates
+  // Enhanced debugging function for production issues
+  const debugRoomState = () => {
+    if (!roomState) {
+      console.log('🔍 DEBUG: No room state available');
+      return null;
+    }
+    
+    const debugInfo = {
+      roomId: roomState.id,
+      location: roomState.location,
+      formattedAddress: roomState.formattedAddress,
+      participantCount: roomState.participants.length,
+      restaurantCount: roomState.restaurants.length,
+      hasNextPageToken: !!roomState.nextPageToken,
+      nextPageToken: roomState.nextPageToken ? roomState.nextPageToken.substring(0, 20) + '...' : null,
+      lastUpdated: new Date(roomState.lastUpdated).toISOString(),
+      currentFilters: roomState.filters,
+      swipeStats: {
+        restaurantSwipes: Object.keys(roomState.restaurantSwipes).length,
+        foodTypeSwipes: Object.keys(roomState.foodTypeSwipes).length,
+        totalUserSwipes: Object.values(roomState.restaurantSwipes).reduce(
+          (total, userSwipes) => total + Object.keys(userSwipes).length, 0
+        )
+      },
+      loadingStates: {
+        isLoadingRestaurants,
+        isLoadingMoreRestaurants,
+        hasReachedEnd
+      }
+    };
+    
+    console.log('🔍 ROOM DEBUG INFO:', debugInfo);
+    return debugInfo;
+  };
+  
   const testDuplicateAPI = async () => {
     if (!roomState?.location) {
       console.log('❌ No room location available for testing');
@@ -705,13 +927,68 @@ const useRoom = () => {
           setHasReachedEnd(false);
         }
         
+        console.log(`✅ Successfully loaded ${result.restaurants.length} more restaurants (total: ${newRestaurants.length})`);
         return true;
       } else {
+        console.log('📍 No more restaurants returned from API');
         setHasReachedEnd(true);
         return false;
       }
     } catch (error) {
       console.error('Failed to load next batch:', error);
+      
+      // Handle specific pagination errors
+      if (error.message?.includes('token') || error.message?.includes('invalid') || error.message?.includes('expired')) {
+        console.log('🔄 Page token appears invalid, attempting recovery...');
+        
+        // Try to reset pagination and start fresh
+        try {
+          const resetParams = { ...params, pageToken: undefined };
+          const recoveryResult = await api.searchRestaurants(resetParams);
+          
+          if (recoveryResult.restaurants.length > 0) {
+            console.log('✅ Page token recovery successful');
+            
+            // Filter out duplicates that might already exist
+            const existingIds = new Set(roomState.restaurants.map(r => r.id));
+            const newUniqueRestaurants = recoveryResult.restaurants.filter(r => !existingIds.has(r.id));
+            
+            if (newUniqueRestaurants.length > 0) {
+              const allRestaurants = [...roomState.restaurants, ...newUniqueRestaurants];
+              
+              const recoveredRoom = {
+                ...roomState,
+                restaurants: allRestaurants,
+                nextPageToken: recoveryResult.nextPageToken,
+                lastUpdated: Date.now()
+              };
+              
+              setRoomState(recoveredRoom);
+              await roomService.updateRestaurants(roomState.id, allRestaurants, recoveryResult.nextPageToken);
+              
+              console.log(`✅ Recovered with ${newUniqueRestaurants.length} new restaurants`);
+              return true;
+            }
+          }
+        } catch (recoveryError) {
+          console.error('🚨 Page token recovery failed:', recoveryError);
+        }
+      }
+      
+      // For high-traffic locations like San Francisco, implement backoff
+      if (error.message?.includes('rate') || error.message?.includes('limit') || error.status === 429) {
+        console.log('🚦 Rate limiting detected, implementing backoff strategy');
+        setHasReachedEnd(true); // Temporarily stop loading
+        
+        // Clear the rate limit after 2 minutes
+        setTimeout(() => {
+          if (roomState?.id) {
+            console.log('🔄 Rate limit backoff period ended, re-enabling loading');
+            setHasReachedEnd(false);
+          }
+        }, 120000); // 2 minutes
+      }
+      
       return false;
     } finally {
       setIsLoadingMoreRestaurants(false);
@@ -747,6 +1024,7 @@ const useRoom = () => {
     loadMoreRestaurants: loadNextBatch, // Use the new simple function
     reloadRestaurantsWithFilters,
     testDuplicateAPI,
+    debugRoomState, // Add debugging helper
     leaveRoom
   };
 };

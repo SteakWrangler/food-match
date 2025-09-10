@@ -144,6 +144,7 @@ const Index = () => {
     loadMoreRestaurants,
     reloadRestaurantsWithFilters,
     testDuplicateAPI, // Add test function
+    debugRoomState, // Add debug function
     leaveRoom
   } = useRoom();
 
@@ -659,6 +660,22 @@ const Index = () => {
     console.log('🍕 DEBUG: addSwipe call completed');
   };
 
+  const handleChangeSwipe = async (itemId: string, newDirection: 'left' | 'right') => {
+    if (!roomState || !participantId) return;
+    
+    try {
+      // Determine the type based on current active tab or room type
+      const type = roomState?.location === 'demo' 
+        ? 'foodType' 
+        : activeTab === 'specific' ? 'restaurant' : 'foodType';
+      
+      await addSwipe(itemId, newDirection, type);
+    } catch (error) {
+      console.error('Failed to change swipe:', error);
+      throw error;
+    }
+  };
+
   // Responsive container classes
   const getContainerClasses = () => {
     switch (deviceType) {
@@ -1053,10 +1070,6 @@ const Index = () => {
                       onBringToFront={handleBringRestaurantToFront}
                       customOrder={restaurantOrder}
                       onGenerateMore={handleGenerateMore}
-                      onTakeSecondLook={() => {
-                        // This will be handled by the SwipeInterface component
-                        console.log('Taking a second look at restaurants');
-                      }}
                       hasReachedEndFromHook={hasReachedEnd}
                       isLoadingMoreRestaurants={isLoadingMoreRestaurants}
                     />
@@ -1096,6 +1109,15 @@ const Index = () => {
                   Demo mode • Food types only • Sign in for restaurants
                 </p>
               )}
+              {process.env.NODE_ENV === 'development' && (
+                <button 
+                  onClick={() => debugRoomState()}
+                  className="text-xs text-gray-400 hover:text-gray-600 mt-2"
+                  title="Debug room state (development only)"
+                >
+                  🔍 Debug Room
+                </button>
+              )}
             </div>
 
             {/* Room Stats Modal */}
@@ -1131,6 +1153,7 @@ const Index = () => {
                     ? handleBringFoodTypeToFront 
                     : activeTab === 'specific' ? handleBringRestaurantToFront : handleBringFoodTypeToFront
                 }
+                onChangeSwipe={handleChangeSwipe}
               />
             )}
             
