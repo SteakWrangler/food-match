@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Crown, CreditCard, Loader2 } from 'lucide-react';
+import { Crown, CreditCard, Loader2, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
+import { shouldUseApplePayments, shouldUseStripe, getPlatformName } from '@/utils/platformUtils';
+import { appleIAP } from '@/integrations/apple/appleIAP';
 
 interface SubscriptionInfo {
   subscribed: boolean;
@@ -57,6 +59,20 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
   useEffect(() => {
     if (user) {
       checkSubscription();
+      // Initialize Apple IAP if on iOS
+      console.log('🍎 Platform check in useEffect:', { 
+        shouldUseApplePayments: shouldUseApplePayments(),
+        platform: getPlatformName()
+      });
+      
+      if (shouldUseApplePayments()) {
+        console.log('🍎 Attempting to initialize Apple IAP for user:', user.id);
+        appleIAP.initialize(user.id).catch((error) => {
+          console.error('🍎 Apple IAP initialization failed:', error);
+        });
+      } else {
+        console.log('🍎 Not initializing Apple IAP - not iOS platform');
+      }
     }
   }, [user, checkSubscription]);
 
@@ -70,35 +86,42 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
     setLoadingStates(prev => ({ ...prev, [buttonKey]: true }));
     
     try {
-      console.log('🛒 Creating checkout session for:', { priceId, type });
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId, type }
-      });
-
-      console.log('🛒 Checkout response:', { data, error });
-
-      if (error) {
-        console.error('❌ Checkout error:', error);
-        toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
-      } else if (data?.url) {
-        console.log('✅ Opening Stripe checkout:', data.url);
-        console.log('🔄 Attempting navigation to:', data.url);
+      // Use Apple IAP for iOS, Stripe for web/Android
+      if (shouldUseApplePayments()) {
+        console.log('🍎 Using Apple In-App Purchase for subscription:', type);
+        const subscriptionType = type === 'monthly' ? 'monthly' : 'annual';
+        const success = await appleIAP.purchaseSubscription(subscriptionType);
         
-        // Use a slight delay to ensure the URL is valid and navigation works
-        setTimeout(() => {
-          console.log('🚀 Navigating now...');
-          window.location.href = data.url;
-        }, 100);
-        
-        // Don't set loading to false in finally block since we're navigating away
-        return;
-      } else {
-        console.error('❌ No checkout URL returned');
-        toast.error('No checkout URL received');
+        if (success) {
+          toast.success('Subscription activated successfully!');
+          await checkSubscription(); // Refresh subscription status
+          onPurchaseComplete?.();
+        } else {
+          toast.error('Failed to complete subscription purchase');
+        }
+      } else if (shouldUseStripe()) {
+        console.log('💳 Using Stripe for subscription:', { priceId, type });
+        const { data, error } = await supabase.functions.invoke('create-checkout', {
+          body: { priceId, type }
+        });
+
+        if (error) {
+          console.error('❌ Checkout error:', error);
+          toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
+        } else if (data?.url) {
+          console.log('✅ Opening Stripe checkout:', data.url);
+          setTimeout(() => {
+            window.location.href = data.url;
+          }, 100);
+          return; // Don't set loading to false since we're navigating away
+        } else {
+          console.error('❌ No checkout URL returned');
+          toast.error('No checkout URL received');
+        }
       }
     } catch (error) {
-      console.error('❌ Exception during checkout:', error);
-      toast.error('Failed to start checkout');
+      console.error('❌ Exception during subscription:', error);
+      toast.error('Failed to start subscription');
     } finally {
       setLoadingStates(prev => ({ ...prev, [buttonKey]: false }));
     }
@@ -145,35 +168,42 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
     setLoadingStates(prev => ({ ...prev, [buttonKey]: true }));
     
     try {
-      console.log('🛒 Creating checkout session for credits:', { priceId, credits });
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId, type: 'credits' }
-      });
-
-      console.log('🛒 Credits checkout response:', { data, error });
-
-      if (error) {
-        console.error('❌ Credits checkout error:', error);
-        toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
-      } else if (data?.url) {
-        console.log('✅ Opening Stripe checkout for credits:', data.url);
-        console.log('🔄 Attempting navigation to:', data.url);
+      // Use Apple IAP for iOS, Stripe for web/Android
+      if (shouldUseApplePayments()) {
+        console.log('🍎 Using Apple In-App Purchase for credits:', credits);
+        const creditAmount = credits as 1 | 5;
+        const success = await appleIAP.purchaseCredits(creditAmount);
         
-        // Use a slight delay to ensure the URL is valid and navigation works
-        setTimeout(() => {
-          console.log('🚀 Navigating now...');
-          window.location.href = data.url;
-        }, 100);
-        
-        // Don't set loading to false in finally block since we're navigating away
-        return;
-      } else {
-        console.error('❌ No checkout URL returned for credits');
-        toast.error('No checkout URL received');
+        if (success) {
+          toast.success(`Successfully purchased ${credits} credits!`);
+          await checkSubscription(); // Refresh to get updated credit count
+          onPurchaseComplete?.();
+        } else {
+          toast.error('Failed to complete credit purchase');
+        }
+      } else if (shouldUseStripe()) {
+        console.log('💳 Using Stripe for credits:', { priceId, credits });
+        const { data, error } = await supabase.functions.invoke('create-checkout', {
+          body: { priceId, type: 'credits' }
+        });
+
+        if (error) {
+          console.error('❌ Credits checkout error:', error);
+          toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
+        } else if (data?.url) {
+          console.log('✅ Opening Stripe checkout for credits:', data.url);
+          setTimeout(() => {
+            window.location.href = data.url;
+          }, 100);
+          return; // Don't set loading to false since we're navigating away
+        } else {
+          console.error('❌ No checkout URL returned for credits');
+          toast.error('No checkout URL received');
+        }
       }
     } catch (error) {
-      console.error('❌ Exception during credits checkout:', error);
-      toast.error('Failed to start checkout');
+      console.error('❌ Exception during credits purchase:', error);
+      toast.error('Failed to purchase credits');
     } finally {
       setLoadingStates(prev => ({ ...prev, [buttonKey]: false }));
     }
@@ -204,6 +234,18 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
+      {/* Platform Indicator */}
+      {shouldUseApplePayments() && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="flex items-center gap-2 py-3">
+            <Smartphone className="h-4 w-4 text-blue-600" />
+            <span className="text-sm text-blue-700">
+              Using Native Apple In-App Purchases - Payments processed securely through Apple
+            </span>
+          </CardContent>
+        </Card>
+      )}
+      
       {/* Subscription Status */}
       <Card className="border-primary">
         <CardHeader>

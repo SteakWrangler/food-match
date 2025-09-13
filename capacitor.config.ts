@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.tossortaste.app',
+  appId: 'com.linksmarttech.tossortaste',
   appName: 'Toss or Taste',
   webDir: 'dist',
   server: {
