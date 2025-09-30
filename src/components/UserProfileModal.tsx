@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, Heart, Clock, Trash2, RefreshCw, MapPin, Users, CreditCard } from 'lucide-react';
+import { Loader2, Mail, Lock, User, AlertCircle, Eye, EyeOff, Heart, Clock, Trash2, RefreshCw, MapPin, Users, CreditCard, ShieldAlert } from 'lucide-react';
 import SubscriptionManager from '@/components/SubscriptionManager';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getFavoritesService, Restaurant } from '@/integrations/supabase/favoritesService';
 import { getRoomHistoryService, RoomHistoryEntry } from '@/integrations/supabase/roomHistoryService';
 import { useToast } from '@/hooks/use-toast';
+import { DeleteAccountDialog } from '@/components/account-deletion/DeleteAccountDialog';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
   const [roomHistory, setRoomHistory] = useState<RoomHistoryEntry[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
 
   const favoritesService = getFavoritesService();
   const roomHistoryService = getRoomHistoryService();
@@ -237,6 +239,20 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
     } catch (error) {
       console.error('Sign out failed:', error);
     }
+  };
+
+  const handleDeleteAccountClick = () => {
+    setShowDeleteAccountDialog(true);
+  };
+
+  const handleAccountDeleted = () => {
+    // Account deleted successfully, user will be signed out automatically
+    setShowDeleteAccountDialog(false);
+    onClose();
+    toast({
+      title: "Account deleted",
+      description: "Your account has been permanently deleted.",
+    });
   };
 
   const handleRemoveFavorite = async (restaurantId: string) => {
@@ -524,6 +540,32 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
             </Alert>
           )}
 
+          {/* Danger Zone */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="font-medium text-red-700 flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4" />
+              Danger Zone
+            </h3>
+            
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+              <div>
+                <h4 className="font-medium text-red-800">Delete Account</h4>
+                <p className="text-sm text-red-600 mt-1">
+                  Permanently delete your account and all associated data. This action cannot be undone.
+                </p>
+              </div>
+              
+              <Button
+                variant="destructive"
+                onClick={handleDeleteAccountClick}
+                className="w-full bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Account
+              </Button>
+            </div>
+          </div>
+
           {/* Sign Out */}
           <div className="pt-4 border-t">
             <Button
@@ -656,6 +698,13 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
         </Tabs>
       </DialogContent>
     </Dialog>
+
+    {/* Delete Account Dialog */}
+    <DeleteAccountDialog
+      isOpen={showDeleteAccountDialog}
+      onClose={() => setShowDeleteAccountDialog(false)}
+      onAccountDeleted={handleAccountDeleted}
+    />
   );
 };
 
