@@ -332,379 +332,381 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-center">
-            User Settings
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              User Settings
+            </DialogTitle>
+          </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-gray-100 rounded-lg p-1">
-            <TabsTrigger 
-              value="account" 
-              className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
-            >
-              <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Account
-            </TabsTrigger>
-            <TabsTrigger 
-              value="subscription" 
-              className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
-            >
-              <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Billing
-            </TabsTrigger>
-            <TabsTrigger 
-              value="favorites" 
-              className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
-            >
-              <Heart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Favorites
-            </TabsTrigger>
-            <TabsTrigger 
-              value="history" 
-              className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
-            >
-              <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              History
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Account Settings Tab */}
-          <TabsContent value="account" className="mt-4">
-            <div className="space-y-6">
-          {/* User Info */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">
-                  {profile?.first_name && profile?.last_name 
-                    ? `${profile.first_name} ${profile.last_name}` 
-                    : 'User'}
-                </div>
-                <div className="text-sm text-gray-500">{user?.email}</div>
-              </div>
-            </div>
-
-            {/* Email Verification Status - Only show if not verified */}
-            {!isEmailVerified && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-5 w-5 text-gray-500" />
-                  <span className="text-sm text-gray-700">Email Verification</span>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    <span className="text-sm text-yellow-700">Email not verified</span>
-                  </div>
-                  
-                  <div className="text-xs text-gray-600 mb-2">
-                    Verify your email to secure your account and enable password reset functionality.
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleResendVerification}
-                    disabled={isLoading}
-                    className="w-full"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Send Verification Email
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Profile Settings */}
-          <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Profile Settings</h3>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="firstName"
-                    type="text"
-                    value={firstName}
-                    onChange={handleFirstNameChange}
-                    placeholder="Enter your first name"
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="lastName"
-                    type="text"
-                    value={lastName}
-                    onChange={handleLastNameChange}
-                    placeholder="Enter your last name"
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleUpdateProfile}
-              disabled={isLoading || (!firstName.trim() && !lastName.trim())}
-              className="w-full"
-            >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Update Profile
-            </Button>
-          </div>
-
-          {/* Change Password */}
-          <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Change Password</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="new-password"
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={handleNewPasswordChange}
-                  placeholder="Enter new password"
-                  className="pl-10 pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
-                >
-                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm New Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmNewPassword}
-                  onChange={handleConfirmPasswordChange}
-                  placeholder="Confirm new password"
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <Button
-              onClick={handleChangePassword}
-              disabled={isLoading || !newPassword || !confirmNewPassword}
-              className="w-full"
-            >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Change Password
-            </Button>
-          </div>
-
-          {/* Error and Success Messages */}
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {success && (
-            <Alert>
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Danger Zone */}
-          <div className="space-y-4 pt-4 border-t">
-            <h3 className="font-medium text-red-700 flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4" />
-              Danger Zone
-            </h3>
-            
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
-              <div>
-                <h4 className="font-medium text-red-800">Delete Account</h4>
-                <p className="text-sm text-red-600 mt-1">
-                  Permanently delete your account and all associated data. This action cannot be undone.
-                </p>
-              </div>
-              
-              <Button
-                variant="destructive"
-                onClick={handleDeleteAccountClick}
-                className="w-full bg-red-600 hover:bg-red-700"
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4 bg-gray-100 rounded-lg p-1">
+              <TabsTrigger 
+                value="account" 
+                className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Account
-              </Button>
-            </div>
-          </div>
+                <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Account
+              </TabsTrigger>
+              <TabsTrigger 
+                value="subscription" 
+                className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
+              >
+                <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Billing
+              </TabsTrigger>
+              <TabsTrigger 
+                value="favorites" 
+                className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
+              >
+                <Heart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Favorites
+              </TabsTrigger>
+              <TabsTrigger 
+                value="history" 
+                className="data-[state=active]:bg-orange-500 data-[state=active]:text-white bg-white text-gray-700 text-xs sm:text-sm py-1.5 sm:py-2 rounded-md transition-all"
+              >
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                History
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Sign Out */}
-          <div className="pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={handleSignOut}
-              className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              Sign Out
-            </Button>
-            </div>
-            </div>
-          </TabsContent>
-
-          {/* Subscription/Billing Tab */}
-          <TabsContent value="subscription" className="mt-4">
-            <SubscriptionManager />
-          </TabsContent>
-
-          {/* Favorites Tab */}
-          <TabsContent value="favorites" className="mt-4">
-            {isDataLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            {/* Account Settings Tab */}
+            <TabsContent value="account" className="mt-4">
+              <div className="space-y-6">
+            {/* User Info */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">
+                    {profile?.first_name && profile?.last_name 
+                      ? `${profile.first_name} ${profile.last_name}` 
+                      : 'User'}
+                  </div>
+                  <div className="text-sm text-gray-500">{user?.email}</div>
+                </div>
               </div>
-            ) : favorites.length === 0 ? (
-              <div className="text-center py-8">
-                <Heart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No favorites yet</h3>
-                <p className="text-gray-500">Start swiping to add restaurants to your favorites!</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {favorites.map((restaurant) => (
-                  <div key={restaurant.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <img 
-                      src={restaurant.image} 
-                      alt={restaurant.name}
-                      className="w-12 h-12 rounded-lg object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/placeholder.svg';
-                      }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-800 truncate">{restaurant.name}</h4>
-                      <p className="text-sm text-gray-600">{restaurant.cuisine || 'Restaurant'}</p>
-                      {restaurant.vicinity && (
-                        <p className="text-xs text-gray-500 truncate">{restaurant.vicinity}</p>
-                      )}
+
+              {/* Email Verification Status - Only show if not verified */}
+              {!isEmailVerified && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-5 w-5 text-gray-500" />
+                    <span className="text-sm text-gray-700">Email Verification</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                      <span className="text-sm text-yellow-700">Email not verified</span>
                     </div>
+                    
+                    <div className="text-xs text-gray-600 mb-2">
+                      Verify your email to secure your account and enable password reset functionality.
+                    </div>
+                    
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => handleRemoveFavorite(restaurant.id)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={handleResendVerification}
+                      disabled={isLoading}
+                      className="w-full"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="mr-2 h-4 w-4" />
+                          Send Verification Email
+                        </>
+                      )}
                     </Button>
                   </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
+                </div>
+              )}
+            </div>
 
-          {/* Room History Tab */}
-          <TabsContent value="history" className="mt-4">
-            {isDataLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            {/* Profile Settings */}
+            <div className="space-y-4">
+              <h3 className="font-medium text-gray-900">Profile Settings</h3>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="firstName"
+                      type="text"
+                      value={firstName}
+                      onChange={handleFirstNameChange}
+                      placeholder="Enter your first name"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="lastName"
+                      type="text"
+                      value={lastName}
+                      onChange={handleLastNameChange}
+                      placeholder="Enter your last name"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
               </div>
-            ) : roomHistory.length === 0 ? (
-              <div className="text-center py-8">
-                <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">No room history</h3>
-                <p className="text-gray-500">Create rooms to see them here!</p>
+
+              <Button
+                onClick={handleUpdateProfile}
+                disabled={isLoading || (!firstName.trim() && !lastName.trim())}
+                className="w-full"
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Profile
+              </Button>
+            </div>
+
+            {/* Change Password */}
+            <div className="space-y-4">
+              <h3 className="font-medium text-gray-900">Change Password</h3>
+              
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="new-password"
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={handleNewPasswordChange}
+                    placeholder="Enter new password"
+                    className="pl-10 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {roomHistory.map((room) => (
-                  <div key={room.id} className="p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-start justify-between mb-2">
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={handleConfirmPasswordChange}
+                    placeholder="Confirm new password"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <Button
+                onClick={handleChangePassword}
+                disabled={isLoading || !newPassword || !confirmNewPassword}
+                className="w-full"
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Change Password
+              </Button>
+            </div>
+
+            {/* Error and Success Messages */}
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {success && (
+              <Alert>
+                <AlertDescription>{success}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Danger Zone */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="font-medium text-red-700 flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4" />
+                Danger Zone
+              </h3>
+              
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-medium text-red-800">Delete Account</h4>
+                  <p className="text-sm text-red-600 mt-1">
+                    Permanently delete your account and all associated data. This action cannot be undone.
+                  </p>
+                </div>
+                
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAccountClick}
+                  className="w-full bg-red-600 hover:bg-red-700"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Account
+                </Button>
+              </div>
+            </div>
+
+            {/* Sign Out */}
+            <div className="pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={handleSignOut}
+                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                Sign Out
+              </Button>
+              </div>
+              </div>
+            </TabsContent>
+
+            {/* Subscription/Billing Tab */}
+            <TabsContent value="subscription" className="mt-4">
+              <SubscriptionManager />
+            </TabsContent>
+
+            {/* Favorites Tab */}
+            <TabsContent value="favorites" className="mt-4">
+              {isDataLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                </div>
+              ) : favorites.length === 0 ? (
+                <div className="text-center py-8">
+                  <Heart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">No favorites yet</h3>
+                  <p className="text-gray-500">Start swiping to add restaurants to your favorites!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {favorites.map((restaurant) => (
+                    <div key={restaurant.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <img 
+                        src={restaurant.image} 
+                        alt={restaurant.name}
+                        className="w-12 h-12 rounded-lg object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/placeholder.svg';
+                        }}
+                      />
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-800 truncate">
-                          {room.room_name || `Room ${room.room_id.slice(-4)}`}
-                        </h4>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                          <Users className="w-3 h-3" />
-                          <span>{room.restaurants.length} restaurants</span>
-                        </div>
-                        {room.matches && room.matches.length > 0 && (
-                          <div className="text-sm text-green-600 mt-1">
-                            <span className="font-medium">Matches: </span>
-                            <span className="truncate">
-                              {room.matches.slice(0, 2).join(', ')}
-                              {room.matches.length > 2 && ` +${room.matches.length - 2} more`}
-                            </span>
-                          </div>
+                        <h4 className="font-semibold text-gray-800 truncate">{restaurant.name}</h4>
+                        <p className="text-sm text-gray-600">{restaurant.cuisine || 'Restaurant'}</p>
+                        {restaurant.vicinity && (
+                          <p className="text-xs text-gray-500 truncate">{restaurant.vicinity}</p>
                         )}
-                        <p className="text-xs text-gray-500 mt-1">
-                          Last accessed: {formatDate(room.last_accessed)}
-                        </p>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRecreateRoom(room)}
-                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                          title="Recreate room"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteRoomHistory(room.id)}
-                          disabled={isDeleting === room.id}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          title="Delete room history"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveFavorite(restaurant.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Room History Tab */}
+            <TabsContent value="history" className="mt-4">
+              {isDataLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                </div>
+              ) : roomHistory.length === 0 ? (
+                <div className="text-center py-8">
+                  <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">No room history</h3>
+                  <p className="text-gray-500">Create rooms to see them here!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {roomHistory.map((room) => (
+                    <div key={room.id} className="p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-800 truncate">
+                            {room.room_name || `Room ${room.room_id.slice(-4)}`}
+                          </h4>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                            <Users className="w-3 h-3" />
+                            <span>{room.restaurants.length} restaurants</span>
+                          </div>
+                          {room.matches && room.matches.length > 0 && (
+                            <div className="text-sm text-green-600 mt-1">
+                              <span className="font-medium">Matches: </span>
+                              <span className="truncate">
+                                {room.matches.slice(0, 2).join(', ')}
+                                {room.matches.length > 2 && ` +${room.matches.length - 2} more`}
+                              </span>
+                            </div>
+                          )}
+                          <p className="text-xs text-gray-500 mt-1">
+                            Last accessed: {formatDate(room.last_accessed)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRecreateRoom(room)}
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            title="Recreate room"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteRoomHistory(room.id)}
+                            disabled={isDeleting === room.id}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            title="Delete room history"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
 
-    {/* Delete Account Dialog */}
-    <DeleteAccountDialog
-      isOpen={showDeleteAccountDialog}
-      onClose={() => setShowDeleteAccountDialog(false)}
-      onAccountDeleted={handleAccountDeleted}
-    />
+      {/* Delete Account Dialog */}
+      <DeleteAccountDialog
+        isOpen={showDeleteAccountDialog}
+        onClose={() => setShowDeleteAccountDialog(false)}
+        onAccountDeleted={handleAccountDeleted}
+      />
+    </>
   );
 };
 
