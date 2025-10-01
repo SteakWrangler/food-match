@@ -323,12 +323,14 @@ export class AppleIAPService {
       const productId = creditAmount === 1 ? APPLE_PRODUCT_IDS.SINGLE_CREDIT : APPLE_PRODUCT_IDS.CREDIT_PACK;
       
       console.log('🍎 Initiating credit purchase:', productId);
-      console.log('🍎 Product info before purchase:', window.store.get(productId));
+      const product = window.store.get(productId);
+      console.log('🍎 Product info before purchase:', product);
       
       // TEMPORARY: Mock successful purchase for testing while App Store Connect products are being set up
-      if (product === undefined) {
+      if (!product || !product.loaded || !product.valid) {
         console.log('🍎 Product not loaded from App Store - using MOCK PURCHASE for testing');
         console.log('🍎 ⚠️  This is a TEST ONLY - no actual payment is processed!');
+        console.log('🍎 Product details:', { loaded: product?.loaded, valid: product?.valid, canPurchase: product?.canPurchase });
         
         // Simulate a successful purchase after 1 second
         setTimeout(async () => {

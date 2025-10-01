@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Crown, CreditCard, Loader2, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { shouldUseApplePayments, shouldUseStripe, getPlatformName } from '@/utils/platformUtils';
-import { appleIAP } from '@/integrations/apple/appleIAP';
+import { paymentService } from '@/services/paymentService';
 
 interface SubscriptionInfo {
   subscribed: boolean;
@@ -65,14 +65,10 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
         platform: getPlatformName()
       });
       
-      if (shouldUseApplePayments()) {
-        console.log('🍎 Attempting to initialize Apple IAP for user:', user.id);
-        appleIAP.initialize(user.id).catch((error) => {
-          console.error('🍎 Apple IAP initialization failed:', error);
-        });
-      } else {
-        console.log('🍎 Not initializing Apple IAP - not iOS platform');
-      }
+      // Initialize payment service
+      paymentService.initializePayments(user.id).catch((error) => {
+        console.error('Payment service initialization failed:', error);
+      });
     }
   }, [user, checkSubscription]);
 
@@ -86,70 +82,47 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
     setLoadingStates(prev => ({ ...prev, [buttonKey]: true }));
     
     try {
-      // Use Apple IAP for iOS, Stripe for web/Android
-      if (shouldUseApplePayments()) {
-        console.log('🍎 Using Apple In-App Purchase for subscription:', type);
-        const subscriptionType = type === 'monthly' ? 'monthly' : 'annual';
-        const success = await appleIAP.purchaseSubscription(subscriptionType);
-        
-        if (success) {
+      console.log(`Using payment service for subscription: ${type}`);
+      const success = await paymentService.purchaseSubscription(
+        type === 'monthly' ? 'monthly' : 'yearly', 
+        priceId
+      );
+      
+      if (success) {
+        if (shouldUseApplePayments()) {
           toast.success('Subscription activated successfully!');
           await checkSubscription(); // Refresh subscription status
           onPurchaseComplete?.();
-        } else {
-          toast.error('Failed to complete subscription purchase');
         }
-      } else if (shouldUseStripe()) {
-        console.log('💳 Using Stripe for subscription:', { priceId, type });
-        const { data, error } = await supabase.functions.invoke('create-checkout', {
-          body: { priceId, type }
-        });
-
-        if (error) {
-          console.error('❌ Checkout error:', error);
-          toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
-        } else if (data?.url) {
-          console.log('✅ Opening Stripe checkout:', data.url);
-          setTimeout(() => {
-            window.location.href = data.url;
-          }, 100);
-          return; // Don't set loading to false since we're navigating away
-        } else {
-          console.error('❌ No checkout URL returned');
-          toast.error('No checkout URL received');
-        }
+        // For Stripe, we navigate away so no success message needed here
+      } else {
+        toast.error('Failed to complete subscription purchase');
       }
     } catch (error) {
       console.error('❌ Exception during subscription:', error);
       toast.error('Failed to start subscription');
     } finally {
-      setLoadingStates(prev => ({ ...prev, [buttonKey]: false }));
+      if (shouldUseApplePayments()) {
+        // Only reset loading state for Apple payments (Stripe navigates away)
+        setLoadingStates(prev => ({ ...prev, [buttonKey]: false }));
+      }
     }
   };
 
   const handleManageSubscription = async () => {
     if (!user) return;
 
+    // Only show manage subscription for Stripe users (web/Android)
+    if (!shouldUseStripe()) {
+      toast.error('Subscription management not available on this platform');
+      return;
+    }
+
     const buttonKey = 'manage-subscription';
     setLoadingStates(prev => ({ ...prev, [buttonKey]: true }));
     
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
-      if (error) {
-        toast.error('Failed to access customer portal');
-        console.error('Portal error:', error);
-      } else if (data?.url) {
-        console.log('🔄 Attempting navigation to customer portal:', data.url);
-        
-        // Use a slight delay to ensure navigation works
-        setTimeout(() => {
-          console.log('🚀 Navigating to customer portal...');
-          window.location.href = data.url;
-        }, 100);
-        
-        // Don't set loading to false since we're navigating away
-        return;
-      }
+      await paymentService.manageSubscription?.();
     } catch (error) {
       console.error('Error:', error);
       toast.error('Failed to access customer portal');
@@ -168,44 +141,28 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
     setLoadingStates(prev => ({ ...prev, [buttonKey]: true }));
     
     try {
-      // Use Apple IAP for iOS, Stripe for web/Android
-      if (shouldUseApplePayments()) {
-        console.log('🍎 Using Apple In-App Purchase for credits:', credits);
-        const creditAmount = credits as 1 | 5;
-        const success = await appleIAP.purchaseCredits(creditAmount);
-        
-        if (success) {
+      console.log(`Using payment service for credits: ${credits}`);
+      const creditAmount = credits as 1 | 5;
+      const success = await paymentService.purchaseCredits(creditAmount, priceId);
+      
+      if (success) {
+        if (shouldUseApplePayments()) {
           toast.success(`Successfully purchased ${credits} credits!`);
           await checkSubscription(); // Refresh to get updated credit count
           onPurchaseComplete?.();
-        } else {
-          toast.error('Failed to complete credit purchase');
         }
-      } else if (shouldUseStripe()) {
-        console.log('💳 Using Stripe for credits:', { priceId, credits });
-        const { data, error } = await supabase.functions.invoke('create-checkout', {
-          body: { priceId, type: 'credits' }
-        });
-
-        if (error) {
-          console.error('❌ Credits checkout error:', error);
-          toast.error(`Failed to create checkout session: ${error.message || 'Unknown error'}`);
-        } else if (data?.url) {
-          console.log('✅ Opening Stripe checkout for credits:', data.url);
-          setTimeout(() => {
-            window.location.href = data.url;
-          }, 100);
-          return; // Don't set loading to false since we're navigating away
-        } else {
-          console.error('❌ No checkout URL returned for credits');
-          toast.error('No checkout URL received');
-        }
+        // For Stripe, we navigate away so no success message needed here
+      } else {
+        toast.error('Failed to complete credit purchase');
       }
     } catch (error) {
       console.error('❌ Exception during credits purchase:', error);
       toast.error('Failed to purchase credits');
     } finally {
-      setLoadingStates(prev => ({ ...prev, [buttonKey]: false }));
+      if (shouldUseApplePayments()) {
+        // Only reset loading state for Apple payments (Stripe navigates away)
+        setLoadingStates(prev => ({ ...prev, [buttonKey]: false }));
+      }
     }
   };
 
@@ -277,7 +234,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
             </div>
           )}
 
-          {isSubscribed && (
+          {isSubscribed && shouldUseStripe() && (
             <Button onClick={handleManageSubscription} disabled={loadingStates['manage-subscription']}>
               {loadingStates['manage-subscription'] ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Manage Subscription
@@ -309,7 +266,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
               </ul>
               <Button 
                 className="w-full" 
-                onClick={() => handleSubscribe('price_1RvnXJD2Qzu3jxiC4fn6yJul', 'monthly')}
+                onClick={() => handleSubscribe('price_1SDX5iRdA5Qg3GBA9Ho0SuS9', 'monthly')}
                 disabled={loadingStates['subscribe-monthly']}
               >
                 {loadingStates['subscribe-monthly'] ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
@@ -338,7 +295,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
               </ul>
               <Button 
                 className="w-full" 
-                onClick={() => handleSubscribe('price_1RvnXJD2Qzu3jxiCZQ5TO4TR', 'yearly')}
+                onClick={() => handleSubscribe('price_1SDX6iRdA5Qg3GBARzuWkZ3z', 'yearly')}
                 disabled={loadingStates['subscribe-yearly']}
               >
                 {loadingStates['subscribe-yearly'] ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
@@ -370,7 +327,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
                 <div className="text-sm text-muted-foreground mb-2">Create one room with real restaurant data</div>
                 <Button 
                   className="w-full"
-                  onClick={() => buyCredits('price_1RvncFD2Qzu3jxiCzi4Lrh5o', 1)}
+                  onClick={() => buyCredits('price_1SDX7uRdA5Qg3GBAL4zTzdR1', 1)}
                   disabled={loadingStates['credits-1']}
                 >
                   {loadingStates['credits-1'] ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
@@ -387,7 +344,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ onPurchaseCom
                 <div className="text-sm text-muted-foreground mb-2">Create five rooms with real restaurant data</div>
                 <Button 
                   className="w-full"
-                  onClick={() => buyCredits('price_1RvncpD2Qzu3jxiCbbDsb8FS', 5)}
+                  onClick={() => buyCredits('price_1SDX7uRdA5Qg3GBA5VBiI2aE', 5)}
                   disabled={loadingStates['credits-5']}
                 >
                   {loadingStates['credits-5'] ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

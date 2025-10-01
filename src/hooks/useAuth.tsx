@@ -17,6 +17,7 @@ export interface UserProfile {
   subscription_type?: string;
   subscription_expires_at?: string;
   total_rooms_created?: number;
+  // Note: Stripe fields only used for web/Android platforms
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
 }

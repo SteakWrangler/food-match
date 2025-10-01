@@ -72,12 +72,12 @@ serve(async (req) => {
           let monthlyValue = 0;
           
           // Determine subscription type and value
-          if (priceId === "price_1RvnXJD2Qzu3jxiC4fn6yJul") {
+          if (priceId === "price_1SDX5iRdA5Qg3GBA9Ho0SuS9") {
             subscriptionType = "monthly";
-            monthlyValue = 9.99; // Assuming $9.99/month
-          } else if (priceId === "price_1RvnXJD2Qzu3jxiCZQ5TO4TR") {
+            monthlyValue = 5.00; // $5.00/month
+          } else if (priceId === "price_1SDX6iRdA5Qg3GBARzuWkZ3z") {
             subscriptionType = "yearly";
-            monthlyValue = 99.99 / 12; // Assuming $99.99/year
+            monthlyValue = 50.00 / 12; // $50.00/year
           }
           
           const remainingValue = (daysRemaining / 30) * monthlyValue;
@@ -113,9 +113,9 @@ serve(async (req) => {
         
         let monthlyValue = 0;
         if (profile.subscription_type === 'monthly') {
-          monthlyValue = 9.99; // Assuming $9.99/month
+          monthlyValue = 5.00; // $5.00/month
         } else if (profile.subscription_type === 'annual') {
-          monthlyValue = 99.99 / 12; // Assuming $99.99/year
+          monthlyValue = 50.00 / 12; // $50.00/year
         }
         
         const remainingValue = (daysRemaining / 30) * monthlyValue;

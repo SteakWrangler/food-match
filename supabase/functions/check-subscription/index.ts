@@ -87,9 +87,9 @@ serve(async (req) => {
       logStep("Price ID found", { priceId });
       
       // Determine subscription type from price ID
-      if (priceId === "price_1RvnXJD2Qzu3jxiC4fn6yJul") {
+      if (priceId === "price_1SDX5iRdA5Qg3GBA9Ho0SuS9") {
         subscriptionType = "monthly";
-      } else if (priceId === "price_1RvnXJD2Qzu3jxiCZQ5TO4TR") {
+      } else if (priceId === "price_1SDX6iRdA5Qg3GBARzuWkZ3z") {
         subscriptionType = "yearly";
       }
       

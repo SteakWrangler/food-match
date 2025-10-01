@@ -54,7 +54,7 @@ serve(async (req) => {
     }
 
     // Determine checkout mode based on price ID
-    const isSubscription = priceId === "price_1RvnXJD2Qzu3jxiC4fn6yJul" || priceId === "price_1RvnXJD2Qzu3jxiCZQ5TO4TR";
+    const isSubscription = priceId === "price_1SDX5iRdA5Qg3GBA9Ho0SuS9" || priceId === "price_1SDX6iRdA5Qg3GBARzuWkZ3z";
     const mode = isSubscription ? "subscription" : "payment";
     logStep("Checkout mode determined", { mode, isSubscription });
 
