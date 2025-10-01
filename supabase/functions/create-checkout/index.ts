@@ -58,7 +58,7 @@ serve(async (req) => {
     const mode = isSubscription ? "subscription" : "payment";
     logStep("Checkout mode determined", { mode, isSubscription });
 
-    const origin = req.headers.get("origin") || "https://ahfytcfndbnwrabryjnz.supabase.co";
+    const origin = req.headers.get("origin") || ":https//www.tossorTaste.com";
     
     const sessionParams: any = {
       customer: customerId,
