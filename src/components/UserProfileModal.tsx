@@ -376,6 +376,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
             {/* Account Settings Tab */}
             <TabsContent value="account" className="mt-4">
               <div className="space-y-6">
+                {console.log('Account tab is rendering!')}
             {/* User Info */}
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -542,27 +543,30 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
             )}
 
             {/* Danger Zone */}
-            <div className="space-y-4 pt-4 border-t">
-              <h3 className="font-medium text-red-700 flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4" />
-                Danger Zone
+            <div className="space-y-4 pt-4 border-t-2 border-red-200" style={{backgroundColor: '#fff5f5'}}>
+              <h3 className="font-bold text-red-700 flex items-center gap-2 text-lg">
+                <ShieldAlert className="h-5 w-5" />
+                ⚠️ DANGER ZONE ⚠️
               </h3>
               
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+              <div className="bg-red-100 border-2 border-red-300 rounded-lg p-6 space-y-4">
                 <div>
-                  <h4 className="font-medium text-red-800">Delete Account</h4>
-                  <p className="text-sm text-red-600 mt-1">
+                  <h4 className="font-bold text-red-900 text-lg">Delete Account</h4>
+                  <p className="text-red-700 mt-2 font-medium">
                     Permanently delete your account and all associated data. This action cannot be undone.
                   </p>
                 </div>
                 
                 <Button
                   variant="destructive"
-                  onClick={handleDeleteAccountClick}
-                  className="w-full bg-red-600 hover:bg-red-700"
+                  onClick={() => {
+                    console.log('Delete account button clicked!');
+                    handleDeleteAccountClick();
+                  }}
+                  className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 text-lg"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Account
+                  <Trash2 className="mr-2 h-5 w-5" />
+                  🗑️ DELETE ACCOUNT
                 </Button>
               </div>
             </div>
